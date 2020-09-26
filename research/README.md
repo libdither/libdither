@@ -1,1 +1,1 @@
-# Dissonance
+# Dither Client
