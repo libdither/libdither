@@ -10,7 +10,6 @@ edition = "2018"
 members = [
 	"core",
 	"cmd",
-	"pubsub_test",
 	"floodsub_test",
 ]
 
