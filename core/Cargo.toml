@@ -11,3 +11,5 @@ name = "dither_core"
 
 [dependencies]
 libp2p = "0.28.1"
+futures = "0.3.5"
+async-std = "1.6.4"
