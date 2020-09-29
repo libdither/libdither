@@ -1,4 +1,4 @@
-use async_std::{io, task};
+use tokio::{io};
 use futures::{future, prelude::*};
 use libp2p::{
     Multiaddr,
@@ -10,7 +10,7 @@ use libp2p::{
     mdns::{Mdns, MdnsEvent},
     swarm::NetworkBehaviourEventProcess
 };
-use std::{error::Error, task::{Context, Poll}};
+use std::{error::Error};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -90,55 +90,32 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Read full lines from stdin
-    //let mut stdin = io::BufReader::new(io::stdin()).lines();
-    use std::io::Lines;
-    
-    //let mut stdin = tokio::io::lines(std::io::BufReader::new(tokio::io::stdin()));
-    
+    use io::AsyncBufReadExt;
+    let mut stdin = io::BufReader::new(io::stdin()).lines();
+
     // Listen on all interfaces and whatever port the OS assigns
     Swarm::listen_on(&mut swarm, "/ip4/0.0.0.0/tcp/0".parse()?)?;
-    //swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
 
     // Kick it off
-    for addr in Swarm::listeners(&swarm) {
-        println!("Listening on {:?}", addr);
-        //listening = true;
-    }
-    tokio::spawn(async move {
-        use tokio::io::{AsyncBufRead, AsyncBufReadExt};
-        let mut lines = io::BufReader::new(io::stdin()).lines();
-        while let Some(line) = lines.next().await {
-            swarm.floodsub.publish(floodsub_topic.clone(), line.expect("Failed to read line"))
-        }
-    });
-    while let event = swarm.next_event().await {
-        println!("New Event: {:?}", event);
-    }
-    
-    /*task::block_on(future::poll_fn(move |cx: &mut Context<'_>| {
-        loop {
-            match stdin.try_poll_next_unpin(cx)? {
-                Poll::Ready(Some(line)) => swarm.floodsub.publish(floodsub_topic.clone(), line.as_bytes()),
-                Poll::Ready(None) => panic!("Stdin closed"),
-                Poll::Pending => break
-            }
-        }
-        loop {
-            match swarm.poll_next_unpin(cx) {
-                Poll::Ready(Some(event)) => println!("{:?}", event),
-                Poll::Ready(None) => return Poll::Ready(Ok(())),
-                Poll::Pending => {
-                    if !listening {
-                        for addr in Swarm::listeners(&swarm) {
-                            println!("Listening on {:?}", addr);
-                            listening = true;
-                        }
-                    }
-                    break
+    let mut listening = false;
+    loop {
+        let to_publish = {
+            tokio::select! {
+                line = stdin.try_next() => Some((floodsub_topic.clone(), line?.expect("Stdin closed"))),
+                event = swarm.next() => {
+                    println!("New Event: {:?}", event);
+                    None
                 }
             }
+        };
+        if let Some((topic, line)) = to_publish {
+            swarm.floodsub.publish(topic, line.as_bytes());
         }
-        Poll::Pending
-    }));*/
-    Ok(())
+        if !listening {
+            for addr in Swarm::listeners(&swarm) {
+                println!("Listening on {:?}", addr);
+                listening = true;
+            }
+        }
+    }
 }
