@@ -1,11 +1,17 @@
 
-use cursive::views::TextView;
-use dither_core::{Config, Client, DitherAction};
-
-use std::{error::Error};
-use tokio::{io};
-
+#![allow(unused_imports)]
+use std::error::Error;
 use log::error;
+
+use cursive::{
+	Cursive,
+	views::{
+		TextView,
+		EditView,
+		Dialog,
+	},
+};
+use dither_core::{Config, Client, DitherAction};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -19,13 +25,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
 		//match args here
 	}*/
 
-	/*let mut siv = cursive::default();
+	let mut siv = cursive::default();
 	
-	siv.add_global_callback('q', |s| s.quit());
+	siv.add_global_callback('q', |s| {println!("Quitting"); s.quit()});
 
-	siv.add_layer(TextView::new("Hello cursive! Press <q> to quit."));
-
-	siv.run();*/
+	//siv.add_layer(TextView::new("Hello cursive! Press <q> to quit."));
+	siv.add_layer(
+		Dialog::new()
+			.title("Enter your username")
+			.padding_lrtb(1, 1, 1, 0)
+			.content(
+				EditView::new()
+					.on_submit(show_popup)
+					//.with_name("name")
+					.max_content_width(20),
+			)
+			.button("Ok", |s| {
+				let name = s.call_on_name(
+					"name",
+					|view: &mut EditView| view.get_content(),
+				).unwrap();
+				show_popup(s, &name);
+			}),
+	);
 	
 	let (mut tx, rx) = client.connect()?;
 	tokio::spawn( async move {
@@ -33,11 +55,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
 		error!("Swarm Exited: {:?}", err);
 	});
 	
-	use io::AsyncBufReadExt;
+	siv.run();
+	/*use io::AsyncBufReadExt;
 	let mut stdin = io::BufReader::new(io::stdin()).lines();
 	loop {
 		if let Some(line) = stdin.next_line().await? {
 			tx.send(DitherAction::FloodSub("chat".to_owned(), line)).await?;
 		}
-	}
+	}*/
+	Ok(())
+}
+
+fn show_popup(s: &mut Cursive, name: &str) {
+    if name.is_empty() {
+        s.add_layer(Dialog::info("Please enter a name!"));
+    } else {
+        let content = format!("Hello {}!", name);
+        s.pop_layer();
+        s.add_layer(Dialog::around(TextView::new(content))
+            .button("Quit", |s| s.quit()));
+    }
 }
