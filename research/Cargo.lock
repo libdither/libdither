@@ -917,16 +917,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "floodsub_test"
-version = "0.1.0"
-dependencies = [
- "env_logger",
- "futures",
- "libp2p",
- "tokio",
-]
-
-[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
