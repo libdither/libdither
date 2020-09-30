@@ -87,10 +87,6 @@ impl Client {
 	pub fn connect(&mut self) -> Result<(mpsc::Sender<DitherAction>, mpsc::Receiver<DitherAction>), Box<dyn Error>> {
 		let (tx, rx) = mpsc::channel::<DitherAction>(100);
 		
-		// Create a Floodsub topic
-		let floodsub_topic = floodsub::Topic::new("chat");
-		
-		
 		Swarm::listen_on(&mut self.swarm, "/ip4/0.0.0.0/tcp/0".parse()?)?;
 		println!("Local peer id: {:?}", self.user.peer_id);
 		
@@ -98,7 +94,6 @@ impl Client {
 	}
 	pub async fn run(&mut self, mut action_listener: mpsc::Receiver<DitherAction>) -> Result<(), Box<dyn Error>> {
 		// Listen for 
-		let mut listening = false;
 		loop {
 			let action = {
 				tokio::select! {
@@ -122,12 +117,6 @@ impl Client {
 					self.swarm.floodsub.publish(topic, data);
 				},
 				_ => {},
-			}
-			if !listening {
-				for addr in Swarm::listeners(&self.swarm) {
-					println!("Listening on {:?}", addr);
-					listening = true;
-				}
 			}
 		}
 		Ok(())
