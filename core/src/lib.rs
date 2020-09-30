@@ -38,9 +38,10 @@ pub struct Client {
 	config: Config,
 	user: User,
 }
+#[derive(Debug)]
 pub enum DitherAction {
 	Empty,
-	FloodSub(floodsub::Topic, String), // Going to be a lot more complicated
+	FloodSub(String, String), // Going to be a lot more complicated
 }
 
 //fn make_swarm() -> Swarm<DitherBehaviour, PeerId> {}
@@ -83,7 +84,7 @@ impl Client {
 		};
 		Ok(client)
 	}
-	fn connect(&mut self) -> Result<(mpsc::Sender<DitherAction>, mpsc::Receiver<DitherAction>), Box<dyn Error>> {
+	pub fn connect(&mut self) -> Result<(mpsc::Sender<DitherAction>, mpsc::Receiver<DitherAction>), Box<dyn Error>> {
 		let (tx, rx) = mpsc::channel::<DitherAction>(100);
 		
 		// Create a Floodsub topic
@@ -95,7 +96,7 @@ impl Client {
 		
 		Ok((tx, rx))
 	}
-	async fn run(&mut self, mut action_listener: mpsc::Receiver<DitherAction>) -> Result<(), Box<dyn Error>> {
+	pub async fn run(&mut self, mut action_listener: mpsc::Receiver<DitherAction>) -> Result<(), Box<dyn Error>> {
 		// Listen for 
 		let mut listening = false;
 		loop {
@@ -117,6 +118,7 @@ impl Client {
 			use DitherAction::*;
 			match action {
 				FloodSub(topic, data) => {
+					let topic = libp2p::floodsub::Topic::new(topic);
 					self.swarm.floodsub.publish(topic, data);
 				},
 				_ => {},
