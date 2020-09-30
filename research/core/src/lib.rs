@@ -10,7 +10,7 @@ use futures::{future, prelude::*};
 use libp2p::{
     Multiaddr,
     PeerId,
-    Swarm,
+    Swarm, swarm::SwarmBuilder,
     NetworkBehaviour,
     identity::{self, Keypair},
     floodsub::{self, Floodsub, FloodsubEvent},
@@ -75,7 +75,9 @@ impl Client {
 			let floodsub_topic = floodsub::Topic::new(config.pubsub_topic.clone());
 	
 			behaviour.floodsub.subscribe(floodsub_topic);
-			Swarm::new(transport, behaviour, peer_id)
+			SwarmBuilder::new(transport, behaviour, user.peer_id.clone())
+			.executor(Box::new(|fut| { tokio::spawn(fut); }))
+			.build()
 		};
 		let client = Client {
 			swarm,
