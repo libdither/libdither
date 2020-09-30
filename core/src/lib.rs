@@ -1,37 +1,134 @@
-use libp2p::{Multiaddr, Transport, tcp::TcpConfig};
+#![allow(dead_code)]
+#![allow(unused_imports)]
 
-pub struct Config {
-	thing: bool,
-}
+use tokio::{
+	io,
+	sync::mpsc,
+	task,
+};
+use futures::{future, prelude::*};
+use libp2p::{
+    Multiaddr,
+    PeerId,
+    Swarm,
+    NetworkBehaviour,
+    identity::{self, Keypair},
+    floodsub::{self, Floodsub, FloodsubEvent},
+    mdns::Mdns,
+    swarm::NetworkBehaviourEventProcess
+};
+use log::{debug, warn, error};
+use std::{
+	error::Error,
+};
+
+mod behaviour;
+use behaviour::DitherBehaviour;
+
+pub mod config;
+pub use config::Config;
+
 pub struct User {
-	
+	key: Keypair,
+	peer_id: PeerId,
 }
 
 pub struct Client {
-	//Node data here
+	swarm: Swarm<DitherBehaviour, PeerId>,
 	config: Config,
-	accounts: ,
+	user: User,
 }
+pub enum DitherAction {
+	Empty,
+	FloodSub(floodsub::Topic, String), // Going to be a lot more complicated
+}
+
+//fn make_swarm() -> Swarm<DitherBehaviour, PeerId> {}
+
 impl Client {
-	pub fn new(config: Config) {
-		let tcp = TcpConfig::new();
+	pub fn new(config: Config) -> Result<Client, Box<dyn Error>> {
+		let key = Keypair::generate_ed25519();
+		let peer_id = PeerId::from(key.public());
+		let user = User {
+			key: key.clone(),
+			peer_id: peer_id.clone(),
+		};
 		
-		// Generate PeerID keypair
-		let id_keys = Keypair::generate_ed25519();
+		// Set up a an encrypted DNS-enabled TCP Transport over the Mplex and Yamux protocols
+		let transport = {
+			if config.dev_mode {
+				libp2p::build_development_transport(key.clone())? // Use base "development" transport
+			} else {
+				panic!("Custom Transports not implemented yet"); // TODO: Create custom transport based on config
+			}
+		};
 		
-		//noise_keys
-		let noise_keys = noise::Keypair::<noise::X25519Spec>::new().into_authentic(&id_keys).unwrap();
-		let noise = noise::NoiseConfig::xx(noise_keys).into_authenticated();
-		
-		let yamux = yamux::Config::default();
-		let transport = tcp.upgrade(upgrade::Version::V1).authenticate(noise).multiplex(yamux);
-		
-		let tcp = TcpConfig::new();
-		let addr: Multiaddr = "/unix//home/zyansheep/Dissonance/test1.socket".parse().expect("invalid multiaddr");
-		let _conn = tcp.dial(addr).await;
+		let swarm = {
+			let mdns = Mdns::new()?;
+			let mut behaviour = DitherBehaviour {
+				floodsub: Floodsub::new(peer_id.clone()),
+				mdns,
+				ignored_member: false,
+			};
+			
+			let floodsub_topic = floodsub::Topic::new(config.pubsub_topic.clone());
+	
+			behaviour.floodsub.subscribe(floodsub_topic);
+			Swarm::new(transport, behaviour, peer_id)
+		};
+		let client = Client {
+			swarm,
+			config,
+			user,
+		};
+		Ok(client)
 	}
-	fn init() {
+	fn connect(&mut self) -> Result<(mpsc::Sender<DitherAction>, mpsc::Receiver<DitherAction>), Box<dyn Error>> {
+		let (tx, rx) = mpsc::channel::<DitherAction>(100);
 		
+		// Create a Floodsub topic
+		let floodsub_topic = floodsub::Topic::new("chat");
+		
+		
+		Swarm::listen_on(&mut self.swarm, "/ip4/0.0.0.0/tcp/0".parse()?)?;
+		println!("Local peer id: {:?}", self.user.peer_id);
+		
+		Ok((tx, rx))
+	}
+	async fn run(&mut self, mut action_listener: mpsc::Receiver<DitherAction>) -> Result<(), Box<dyn Error>> {
+		// Listen for 
+		let mut listening = false;
+		loop {
+			let action = {
+				tokio::select! {
+					received_action = action_listener.recv() => {
+						if let Some(ret) = received_action { ret }
+						else {
+							println!("Client Channel Closed, Stopping...");
+							break;
+						}
+					},
+					event = self.swarm.next() => {
+						println!("New Event: {:?}", event);
+						Empty
+					}
+				}
+			};
+			use DitherAction::*;
+			match action {
+				FloodSub(topic, data) => {
+					self.swarm.floodsub.publish(topic, data);
+				},
+				_ => {},
+			}
+			if !listening {
+				for addr in Swarm::listeners(&self.swarm) {
+					println!("Listening on {:?}", addr);
+					listening = true;
+				}
+			}
+		}
+		Ok(())
 	}
 }
 
