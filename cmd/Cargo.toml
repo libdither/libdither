@@ -13,6 +13,6 @@ path = "src/main.rs"
 [dependencies]
 dither-core = { path = "../core" }
 cursive = "0.15.0"
-tokio = "0.2.22"
+tokio = {version = "0.2.22", features = ["full"]}
 log = "0.4.11"
 env_logger = "0.7.1"

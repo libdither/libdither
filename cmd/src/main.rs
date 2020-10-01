@@ -2,6 +2,7 @@
 #![allow(unused_imports)]
 use std::error::Error;
 use log::error;
+use tokio::io;
 
 use cursive::{
 	Cursive,
@@ -9,6 +10,7 @@ use cursive::{
 		TextView,
 		EditView,
 		Dialog,
+		TextContent,
 	},
 };
 use dither_core::{Config, Client, DitherAction};
@@ -28,17 +30,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
 	let mut siv = cursive::default();
 	
 	siv.add_global_callback('q', |s| {println!("Quitting"); s.quit()});
-
+	
+	let mut content = TextContent::new("");
+	let mut internal_content = content.clone();
 	//siv.add_layer(TextView::new("Hello cursive! Press <q> to quit."));
+	
 	siv.add_layer(
 		Dialog::new()
 			.title("Enter your username")
 			.padding_lrtb(1, 1, 1, 0)
 			.content(
 				EditView::new()
-					.on_submit(show_popup)
-					//.with_name("name")
-					.max_content_width(20),
+				.on_submit(move |s, text| {
+					
+				})
+				//.with_name("name")
+				.max_content_width(20)
 			)
 			.button("Ok", |s| {
 				let name = s.call_on_name(
@@ -56,9 +63,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
 	});
 	
 	siv.run();
+	
 	/*use io::AsyncBufReadExt;
 	let mut stdin = io::BufReader::new(io::stdin()).lines();
+	let name = content.get_content().source().to_owned();
+	println!("Setting username to: {}", name);
 	loop {
+		print!("Chat> ");
 		if let Some(line) = stdin.next_line().await? {
 			tx.send(DitherAction::FloodSub("chat".to_owned(), line)).await?;
 		}
