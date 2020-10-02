@@ -8,18 +8,27 @@ use dither_core::{Config, Client, DitherAction};
 
 use iced::{
 	Settings,
-	Sandbox,
+	Application,
 };
 pub mod app;
-use app::Dither;
+use app::{DitherChat, DitherChatSettings};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-	let mut client = Client::new(Config::development())?;
-	env_logger::Builder::new().filter_level(log::LevelFilter::Info).init(); // Init Logger
+	// Init Logger
+	env_logger::Builder::new().filter_level(log::LevelFilter::Info).init();
 	
-	let settings = Settings::default();
-	Dither::run(settings);
+	// Init Client Backend
+	let mut client = Client::new(Config::development())?;
+	let (tx, rx) = client.connect()?;
+	tokio::spawn( async move {
+		let err = client.run(rx).await;
+		error!("Swarm Exited: {:?}", err);
+	});
+	
+	//Run GUI
+	let settings = DitherChatSettings::new(tx);
+	DitherChat::run(settings);
 	
 	/*let yaml = load_yaml!("app.yml");
 	let app = App::from_yaml(yaml);
@@ -27,12 +36,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 	match matches.args() {
 		//match args here
 	}*/
-	
-	let (mut tx, rx) = client.connect()?;
-	tokio::spawn( async move {
-		let err = client.run(rx).await;
-		error!("Swarm Exited: {:?}", err);
-	});
 	
 	/*use io::AsyncBufReadExt;
 	let mut stdin = io::BufReader::new(io::stdin()).lines();
