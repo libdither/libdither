@@ -74,6 +74,7 @@ impl Application for DitherChat {
 	fn view(&mut self) -> Element<Message> {
 		Column::new()
 			.padding(20)
+			//.push(messages)
 			.align_items(Align::Center)
 			/*.push(
 				Scrollable::new(&mut self.scrollable_state)

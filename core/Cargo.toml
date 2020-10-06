@@ -11,9 +11,13 @@ name = "dither_core"
 
 [dependencies]
 tokio = {version = "0.2.22", features = ["full"]}
-libp2p = "0.28.1"
 futures = "0.3.5"
 serde_json = "1.0.57"
 log = "0.4.11"
 serde_derive = "1.0.116"
 serde = "1.0.116"
+
+[dependencies.libp2p]
+default-features = false
+version = "0.28.1"
+features = [ "tcp-tokio", "mdns-tokio", "floodsub", "identify", "yamux", "mplex", "noise", "websocket", "dns" ]
