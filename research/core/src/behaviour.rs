@@ -1,16 +1,15 @@
 
 use libp2p::{
 	NetworkBehaviour,
-    identity,
-    floodsub::{self, Floodsub, FloodsubEvent},
-    mdns::{Mdns, MdnsEvent},
+    floodsub::{Floodsub, FloodsubEvent},
+    mdns::{TokioMdns, MdnsEvent},
     swarm::NetworkBehaviourEventProcess
 };
 
 #[derive(NetworkBehaviour)]
 pub struct DitherBehaviour {
 	pub floodsub: Floodsub,
-	pub mdns: Mdns,
+	pub mdns: TokioMdns,
 
 	// Struct fields which do not implement NetworkBehaviour need to be ignored
 	#[behaviour(ignore)]

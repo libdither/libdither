@@ -1,23 +1,13 @@
 #![allow(dead_code)]
-#![allow(unused_imports)]
 
-use tokio::{
-	io,
-	sync::mpsc,
-	task,
-};
-use futures::{future, prelude::*};
+use tokio::sync::mpsc;
 use libp2p::{
-    Multiaddr,
     PeerId,
     Swarm, swarm::SwarmBuilder,
-    NetworkBehaviour,
-    identity::{self, Keypair},
-    floodsub::{self, Floodsub, FloodsubEvent},
-    mdns::Mdns,
-    swarm::NetworkBehaviourEventProcess
+    identity::{Keypair},
+    floodsub::{self, Floodsub},
+    mdns::TokioMdns,
 };
-use log::{debug, warn, error};
 use std::{
 	error::Error,
 };
@@ -27,6 +17,8 @@ use behaviour::DitherBehaviour;
 
 pub mod config;
 pub use config::Config;
+
+pub mod chat;
 
 pub struct User {
 	key: Keypair,
@@ -65,7 +57,7 @@ impl Client {
 		};
 		
 		let swarm = {
-			let mdns = Mdns::new()?;
+			let mdns = TokioMdns::new()?;
 			let mut behaviour = DitherBehaviour {
 				floodsub: Floodsub::new(peer_id.clone()),
 				mdns,
