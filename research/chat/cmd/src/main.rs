@@ -1,5 +1,8 @@
 
 #![allow(unused_imports)]
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 use std::error::Error;
 use log::error;
 use tokio::io;
@@ -13,12 +16,18 @@ use cursive::{
 		TextContent,
 	},
 };
-use dither_core::{Config, Client, DitherAction};
+use dither_chat::{Client, Config, DitherChatAction, DitherChatEvent};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-	let mut client = Client::new(Config::development())?;
 	env_logger::Builder::new().filter_level(log::LevelFilter::Info).init(); // Init Logger
+	let client = Client::new(Config::development())?;
+	//let (tx, rx) = client.connect()?;
+	// Run swarm and get join handle + thread channels
+	let swarm_handle = client.start();
+	
+	// Run chat middleware using swarm
+	let chat_handle = dither_chat::DitherChat::start(swarm_handle);
 	
 	/*let yaml = load_yaml!("app.yml");
 	let app = App::from_yaml(yaml);
@@ -31,8 +40,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 	
 	siv.add_global_callback('q', |s| {println!("Quitting"); s.quit()});
 	
-	let mut content = TextContent::new("");
-	let mut internal_content = content.clone();
+	let content = TextContent::new("");
+	let internal_content = content.clone();
 	//siv.add_layer(TextView::new("Hello cursive! Press <q> to quit."));
 	
 	siv.add_layer(
@@ -55,12 +64,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 				show_popup(s, &name);
 			}),
 	);
-	
-	let (mut tx, rx) = client.connect()?;
-	tokio::spawn( async move {
-		let err = client.run(rx).await;
-		error!("Swarm Exited: {:?}", err);
-	});
 	
 	siv.run();
 	

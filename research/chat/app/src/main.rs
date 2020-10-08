@@ -4,8 +4,7 @@ use std::error::Error;
 use log::error;
 use tokio::io;
 
-use dither::{Config, Client};
-use dither_chat::{DitherChatAction, DitherChatEvent};
+use dither_chat::{Config, Client, DitherChatAction, DitherChatEvent};
 
 use iced::{
 	Settings,
