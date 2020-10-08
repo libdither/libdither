@@ -54,7 +54,7 @@ impl Message {
 					delete_button: button::State::new(),
 				};
 			},
-			MessageMessage::FinishEdit(new_content) {
+			MessageMessage::FinishEdit(new_content) => {
 				if self.content != new_content {
 					self.content = new_content;
 				}
@@ -96,7 +96,7 @@ impl Message {
 const ICONS: Font = Font::External {
 	name: "Icons",
 	bytes: include_bytes!("../fonts/icons.ttf"),
-}
+};
 
 fn icon(unicode: char) -> Text {
 	Text::new(&unicode.to_string())

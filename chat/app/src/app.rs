@@ -60,9 +60,10 @@ impl Application for DitherChat {
 				match event {
 					ReceivedMessage(msg) => {
 						println!("Received Message: {:?}", msg);
-					}
+					},
+					_ => {}
 				}
-				return Command::perform(self.settings.ditherchat_handle.receiver.recv(), Message::ReceivedDitherChatEvent)
+				//return Command::perform(self.settings.ditherchat_handle.receiver.recv(), Message::ReceivedDitherChatEvent)
 			}
 			Message::TypingText(text) => {
 				self.message_text = text;
@@ -75,7 +76,7 @@ impl Application for DitherChat {
 				}
 			}
 		}
-		Command::none();
+		Command::none()
 	}
 	/*fn subscription(&self) -> Subscription<Self::Message> {
 		iced_native::subscription::events().map(Message::ReceivedDitherChatEvent)

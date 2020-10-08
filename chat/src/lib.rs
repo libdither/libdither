@@ -3,11 +3,14 @@
 use dither::{DitherAction, DitherEvent};
 use tokio::sync::mpsc::{self}; //, Sender, Receiver};
 use serde_derive::{Serialize, Deserialize};
-use serde::Serializer;
 use std::time::SystemTime;
 
-pub use dither::ThreadHandle;
-pub use dither::PeerId;
+pub use dither::{
+	ThreadHandle,
+	PeerId,
+	Client,
+	Config,
+};
 
 #[derive(Debug, Clone)]
 pub enum DitherChatAction {
