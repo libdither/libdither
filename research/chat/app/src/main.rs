@@ -4,7 +4,8 @@ use std::error::Error;
 use log::error;
 use tokio::io;
 
-use dither_core::{Config, Client, DitherAction};
+use dither::{Config, Client};
+use dither_chat::{DitherChatAction, DitherChatEvent};
 
 use iced::{
 	Settings,
@@ -19,15 +20,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
 	env_logger::Builder::new().filter_level(log::LevelFilter::Info).init();
 	
 	// Init Client Backend
-	let mut client = Client::new(Config::development())?;
-	let (tx, rx) = client.connect()?;
-	tokio::spawn( async move {
-		let err = client.run(rx).await;
-		error!("Swarm Exited: {:?}", err);
-	});
+	let client = Client::new(Config::development())?;
+	//let (tx, rx) = client.connect()?;
+	// Run swarm and get join handle + thread channels
+	let swarm_handle = client.start();
+	
+	// Run chat middleware using swarm
+	let chat_handle = dither_chat::DitherChat::start(swarm_handle);
 	
 	//Run GUI
-	let settings = DitherChatSettings::new(tx);
+	let settings = DitherChatSettings::new(chat_handle);
 	DitherChat::run(settings);
 	
 	/*let yaml = load_yaml!("app.yml");

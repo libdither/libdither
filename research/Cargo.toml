@@ -7,8 +7,9 @@ description = "A Collection of Peer 2 Peer Network functions and various applica
 
 [workspace]
 members = [
-	"cmd",
-	"app",
+	"chat",
+	"chat/app",
+	"chat/cmd",
 ]
 
 [dependencies]

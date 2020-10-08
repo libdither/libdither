@@ -11,8 +11,10 @@ name = "dither"
 path = "src/main.rs"
 
 [dependencies]
-dither-core = { path = "../core" }
+dither-chat = { path = "../" }
 iced = "0.1.1"
 tokio = {version = "0.2.22", features = ["full"]}
 log = "0.4.11"
 env_logger = "0.7.1"
+dither = { path = "../.." }
+iced_native = "0.2.2"

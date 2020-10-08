@@ -1,29 +1,15 @@
 
 use iced::*;
-use dither_core::chat::DitherMessage;
+use dither_chat::Message;
 
-use serde_derive::{Deserialize, Serialize};
-use std::time::SystemTime;
-
-pub enum DitherType {
-	Message(DitherMessage),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Message {
-	content: String, // Markdown text
-	user: String, // Peer ID of sender
-	attachment: Vec<u8>, //
-	time_sent: SystemTime, // Time sent
-	last_edited: Option<SystemTime>, // (Optional if edited, last time edited)
-	// reactions: Vec<Reaction>,
-	
-	#[serde(skip)]
+#[derive(Debug, Clone)]
+pub struct MessageWidget {
+	message: Message,
 	state: MessageState,
 }
 
 #[derive(Debug, Clone)]
-pub enum MessageState {
+pub enum MessageWidgetState {
 	DisplayMessage {
 		edit_button: button::State,
 		settings_button: button::State,

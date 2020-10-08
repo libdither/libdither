@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{self, Sender, Receiver};
+use tokio::task::JoinHandle;
 use libp2p::{
-    PeerId,
     Swarm, swarm::SwarmBuilder,
     identity::{Keypair},
     floodsub::{self, Floodsub},
@@ -17,8 +17,7 @@ use behaviour::DitherBehaviour;
 
 pub mod config;
 pub use config::Config;
-
-pub mod chat;
+pub use libp2p::PeerId;
 
 pub struct User {
 	key: Keypair,
@@ -35,8 +34,16 @@ pub enum DitherAction {
 	Empty,
 	FloodSub(String, String), // Going to be a lot more complicated
 }
+#[derive(Debug)]
+pub enum DitherEvent {
+	ReceivedData(String),
+}
 
-//fn make_swarm() -> Swarm<DitherBehaviour, PeerId> {}
+pub struct ThreadHandle<Return, ActionObject, EventObject> {
+	pub join: JoinHandle<Return>,
+	pub sender: Sender<ActionObject>,
+	pub receiver: Receiver<EventObject>,
+}
 
 impl Client {
 	pub fn new(config: Config) -> Result<Client, Box<dyn Error>> {
@@ -78,42 +85,51 @@ impl Client {
 		};
 		Ok(client)
 	}
-	pub fn connect(&mut self) -> Result<(mpsc::Sender<DitherAction>, mpsc::Receiver<DitherAction>), Box<dyn Error>> {
-		let (tx, rx) = mpsc::channel::<DitherAction>(100);
-		
+	pub fn connect(&mut self) -> Result<(), Box<dyn Error>> {
 		Swarm::listen_on(&mut self.swarm, "/ip4/0.0.0.0/tcp/0".parse()?)?;
 		println!("Local peer id: {:?}", self.user.peer_id);
 		
-		Ok((tx, rx))
-	}
-	pub async fn run(&mut self, mut action_listener: mpsc::Receiver<DitherAction>) -> Result<(), Box<dyn Error>> {
-		// Listen for 
-		loop {
-			let action = {
-				tokio::select! {
-					received_action = action_listener.recv() => {
-						if let Some(ret) = received_action { ret }
-						else {
-							println!("Client Channel Closed, Stopping...");
-							break;
-						}
-					},
-					event = self.swarm.next() => {
-						println!("New Event: {:?}", event);
-						Empty
-					}
-				}
-			};
-			use DitherAction::*;
-			match action {
-				FloodSub(topic, data) => {
-					let topic = libp2p::floodsub::Topic::new(topic);
-					self.swarm.floodsub.publish(topic, data);
-				},
-				_ => {},
-			}
-		}
 		Ok(())
+	}
+	pub fn start(mut self) -> ThreadHandle<(), DitherAction, DitherEvent> {
+		// Listen for
+		let (outer_sender, mut receiver) = mpsc::channel(64);
+		let (mut sender, outer_receiver) = mpsc::channel(64);
+		let join = tokio::spawn(async move {
+			loop {
+				let action = {
+					tokio::select! {
+						received_action = receiver.recv() => {
+							if let Some(ret) = received_action { ret }
+							else {
+								log::error!("All Senders Closed, Stopping...");
+								break;
+							}
+						},
+						event = self.swarm.next() => {
+							// When Receive Event, send to receiver thread
+							/*match event {
+								
+							}*/
+							if let Err(err) = sender.send(DitherEvent::ReceivedData("This is some data".to_owned())).await {
+								log::error!("Network Thread could not send event: {:?}", err);
+							}
+							println!("New Event: {:?}", event);
+							Empty
+						}
+					}
+				};
+				use DitherAction::*;
+				match action {
+					FloodSub(topic, data) => {
+						let topic = libp2p::floodsub::Topic::new(topic);
+						self.swarm.floodsub.publish(topic, data);
+					},
+					_ => {},
+				}
+			}
+		});
+		ThreadHandle { join, sender: outer_sender, receiver: outer_receiver }
 	}
 }
 
