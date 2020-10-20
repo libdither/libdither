@@ -92,13 +92,17 @@ impl Client {
 		Ok(())
 	}
 	pub fn start(mut self) -> ThreadHandle<(), DitherAction, DitherEvent> {
+		println!("Local peer id: {:?}", self.user.peer_id);
 		// Listen for
 		let (outer_sender, mut receiver) = mpsc::channel(64);
 		let (mut sender, outer_receiver) = mpsc::channel(64);
+		
+		// Receiver thread
 		let join = tokio::spawn(async move {
 			loop {
 				let action = {
 					tokio::select! {
+						// Await Actions from Higher Layers
 						received_action = receiver.recv() => {
 							if let Some(ret) = received_action { ret }
 							else {
@@ -106,15 +110,17 @@ impl Client {
 								break;
 							}
 						},
+						// Await events from swarm
 						event = self.swarm.next() => {
 							// When Receive Event, send to receiver thread
+							
+							println!("New Event: {:?}", event);
 							/*match event {
 								
 							}*/
-							if let Err(err) = sender.send(DitherEvent::ReceivedData("This is some data".to_owned())).await {
+							if let Err(err) = sender.try_send(DitherEvent::ReceivedData("This is some data".to_owned())) {
 								log::error!("Network Thread could not send event: {:?}", err);
 							}
-							println!("New Event: {:?}", event);
 							Empty
 						}
 					}

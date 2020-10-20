@@ -80,15 +80,11 @@ impl ChatChannel {
 		
 		let channel_content = Scrollable::new(&mut self.scroll_state)
 			.padding(30)
-			.max_height(900)
+			.height(Length::Fill)
 			.push(
 				Container::new(message_widgets)
 				//.width(Length::Fill)
 			);
-		
-		let channel_content = Column::new()
-			.height(Length::Fill)
-			.push(channel_content);
 		
 		let input_bar = Row::new()
 			.padding(20)
