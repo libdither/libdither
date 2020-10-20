@@ -1,9 +1,9 @@
-use dither_chat::{DitherChatAction, DitherChatEvent};
-use dither_chat::ThreadHandle;
-
 use iced::*;
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
+
+use dither_chat::{DitherChatAction, DitherChatEvent};
+use dither_chat::ThreadHandle;
 
 use crate::chat;
 
@@ -20,6 +20,7 @@ pub enum DitherChat {
 	Loaded(State), // Loaded, (not necessarily connected to the network)
 }
 
+#[allow(dead_code)]
 pub struct State {
 	chat_sender: mpsc::Sender<DitherChatAction>, // Send actions to the dither_chat layer
 	chat_join: JoinHandle<()>,

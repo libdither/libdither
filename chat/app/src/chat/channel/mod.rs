@@ -1,3 +1,4 @@
+#![allow(unreachable_patterns)]
 
 use tokio::sync::mpsc::Sender;
 use dither_chat::*;
@@ -79,10 +80,15 @@ impl ChatChannel {
 		
 		let channel_content = Scrollable::new(&mut self.scroll_state)
 			.padding(30)
+			.max_height(900)
 			.push(
 				Container::new(message_widgets)
-					.width(Length::Fill).center_x(),
+				//.width(Length::Fill)
 			);
+		
+		let channel_content = Column::new()
+			.height(Length::Fill)
+			.push(channel_content);
 		
 		let input_bar = Row::new()
 			.padding(20)
@@ -97,6 +103,7 @@ impl ChatChannel {
 			
 		Column::new()
 			.spacing(20)
+			.align_items(Align::Center)
 			.push(channel_content)
 			.push(input_bar)
 			.into()
