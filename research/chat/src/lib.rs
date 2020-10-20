@@ -1,7 +1,10 @@
 //use libp2p::core::PeerId;
 
 use dither::{DitherAction, DitherEvent};
-use tokio::sync::mpsc::{self}; //, Sender, Receiver};
+use tokio::{
+	sync::mpsc,
+	task::JoinHandle,
+};
 use serde_derive::{Serialize, Deserialize};
 use std::time::SystemTime;
 
@@ -19,8 +22,9 @@ pub enum DitherChatAction {
 	UpdateMessage(Message),
 	DeleteMessage(Message),
 }
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum DitherChatEvent {
+	Connection(JoinHandle<()>, mpsc::Sender<DitherChatAction>),
 	ReceivedMessage(Message),
 	Error(String),
 }
@@ -91,7 +95,7 @@ pub struct Message {
 	// reactions: Vec<Reaction>,
 }
 impl Message {
-	pub fn new(content: String) -> Self {
+	pub fn new(content: &str) -> Self {
 		Self {
 			content: content.to_owned(),
 			sender: None,
