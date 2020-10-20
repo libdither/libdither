@@ -18,8 +18,6 @@ pub enum State {
 	Disconnected,
 }
 
-
-
 // Make sure iced can use our download stream
 impl<H, I> iced_native::subscription::Recipe<H, I> for DitherChatSubscriptionRecipe
 where
@@ -43,6 +41,7 @@ where
 			|state| async move {
 				match state {
 					State::Connecting => {
+						log::info!("Connecting...");
 						// Setup
 						match Client::new(Config::development()) {
 							Ok(client) => {
@@ -53,6 +52,7 @@ where
 								
 								let dither_chat::ThreadHandle { join, sender, receiver } = chat_handle;
 								
+								log::info!("Connection Established");
 								Some(( DitherChatEvent::Connection(join, sender), State::Connected(receiver) ))
 							},
 							Err(err) => {

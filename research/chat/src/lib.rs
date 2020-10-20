@@ -44,25 +44,34 @@ impl DitherChat {
 			// App Layer -> Chat Layer -> Network Layer
 			let ThreadHandle { join: network_join, sender: mut network_sender, receiver: mut network_receiver } = swarm_handle;
 			let chat_action_join = tokio::spawn(async move {
-				if let Some(chat_action) = receiver.recv().await {
-					use DitherChatAction::*;
-					match chat_action {
-						BroadcastMessage(msg) => {
-							network_sender.send(DitherAction::FloodSub("chat".to_owned(), msg.serialize())).await.expect("Failed");
-						},
-						_ => {},
+				loop {
+					if let Some(chat_action) = receiver.recv().await {
+						use DitherChatAction::*;
+						match chat_action {
+							BroadcastMessage(msg) => {
+								network_sender.send(DitherAction::FloodSub("chat".to_owned(), msg.serialize())).await.expect("Failed");
+							},
+							_ => {},
+						}
+					} else {
+						log::error!("All DitherChatAction Senders Closed, Stopping...")
 					}
 				}
 			});
 			// Network Layer -> UI Layer -> App Layer
 			let chat_event_join = tokio::spawn(async move {
-				if let Some(dither_action) = network_receiver.recv().await {
-					use DitherEvent::*;
-					match dither_action {
-						ReceivedData(data) => {
-							let msg = Message::deserialize(&data).expect("Failed to parse incoming message");
-							sender.send(DitherChatEvent::ReceivedMessage(msg)).await.expect("App side closed");
+				loop {
+					if let Some(dither_action) = network_receiver.recv().await {
+						use DitherEvent::*;
+						match dither_action {
+							ReceivedData(data) => {
+								println!("Recieved data");
+								let msg = Message::deserialize(&data).expect("Failed to parse incoming message");
+								sender.send(DitherChatEvent::ReceivedMessage(msg)).await.expect("App side closed");
+							}
 						}
+					} else {
+						log::error!("Dither Layer Stopped...");
 					}
 				}
 			});

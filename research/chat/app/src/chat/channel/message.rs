@@ -1,4 +1,6 @@
 
+#![allow(unused_variables)]
+
 use tokio::sync::mpsc::Sender;
 use iced::*;
 
@@ -105,7 +107,7 @@ impl MessageWidget {
 		match &mut self.state {
 			State::Display { edit_button, settings_button } => {
 				Row::new()
-					.push(Text::new(&self.message.content)) // TODO: Display markdown instead of text
+					.push(Text::new(&self.message.content).width(Length::Fill)) // TODO: Display markdown instead of text
 					.spacing(20)
 					.align_items(Align::Center)
 					.push(
@@ -152,61 +154,59 @@ fn icon(unicode: char) -> Text {
 }
 
 mod style {
-    use iced::{button, Background, Color, Vector};
+	use iced::{button, Background, Color, Vector};
 
-    pub enum Button {
-        Filter { selected: bool },
-        Icon,
-        Destructive,
-    }
+	pub enum Button {
+		Icon,
+	}
 
-    impl button::StyleSheet for Button {
-        fn active(&self) -> button::Style {
-            match self {
-                Button::Filter { selected } => {
-                    if *selected {
-                        button::Style {
-                            background: Some(Background::Color(
-                                Color::from_rgb(0.2, 0.2, 0.7),
-                            )),
-                            border_radius: 10,
-                            text_color: Color::WHITE,
-                            ..button::Style::default()
-                        }
-                    } else {
-                        button::Style::default()
-                    }
-                }
-                Button::Icon => button::Style {
-                    text_color: Color::from_rgb(0.5, 0.5, 0.5),
-                    ..button::Style::default()
-                },
-                Button::Destructive => button::Style {
-                    background: Some(Background::Color(Color::from_rgb(
-                        0.8, 0.2, 0.2,
-                    ))),
-                    border_radius: 5,
-                    text_color: Color::WHITE,
-                    shadow_offset: Vector::new(1.0, 1.0),
-                    ..button::Style::default()
-                },
-            }
-        }
+	impl button::StyleSheet for Button {
+		fn active(&self) -> button::Style {
+			match self {
+				/*Button::Filter { selected } => {
+					if *selected {
+						button::Style {
+							background: Some(Background::Color(
+								Color::from_rgb(0.2, 0.2, 0.7),
+							)),
+							border_radius: 10,
+							text_color: Color::WHITE,
+							..button::Style::default()
+						}
+					} else {
+						button::Style::default()
+					}
+				}*/
+				Button::Icon => button::Style {
+					text_color: Color::from_rgb(0.5, 0.5, 0.5),
+					..button::Style::default()
+				},
+				/*Button::Destructive => button::Style {
+					background: Some(Background::Color(Color::from_rgb(
+						0.8, 0.2, 0.2,
+					))),
+					border_radius: 5,
+					text_color: Color::WHITE,
+					shadow_offset: Vector::new(1.0, 1.0),
+					..button::Style::default()
+				},*/
+			}
+		}
 
-        fn hovered(&self) -> button::Style {
-            let active = self.active();
+		fn hovered(&self) -> button::Style {
+			let active = self.active();
 
-            button::Style {
-                text_color: match self {
-                    Button::Icon => Color::from_rgb(0.2, 0.2, 0.7),
-                    Button::Filter { selected } if !selected => {
-                        Color::from_rgb(0.2, 0.2, 0.7)
-                    }
-                    _ => active.text_color,
-                },
-                shadow_offset: active.shadow_offset + Vector::new(0.0, 1.0),
-                ..active
-            }
-        }
-    }
+			button::Style {
+				text_color: match self {
+					Button::Icon => Color::from_rgb(0.2, 0.2, 0.7),
+					/*Button::Filter { selected } if !selected => {
+						Color::from_rgb(0.2, 0.2, 0.7)
+					}
+					_ => active.text_color,*/
+				},
+				shadow_offset: active.shadow_offset + Vector::new(0.0, 1.0),
+				..active
+			}
+		}
+	}
 }
