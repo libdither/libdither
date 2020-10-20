@@ -66,9 +66,9 @@ impl MessageWidget {
 						};
 					},
 					Event::TriggerMenu => {
-						log::info!("Message Triggered");
+						log::info!("Message Menu Triggered");
 					},
-					// Edit updating handled in application
+					// TODO: Propagate message editing back to DitherChat layer
 					/*Event::SubmitEdit(new_content) => {
 						
 						if self.message.content != new_content {

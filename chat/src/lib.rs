@@ -54,7 +54,8 @@ impl DitherChat {
 							_ => {},
 						}
 					} else {
-						log::error!("All DitherChatAction Senders Closed, Stopping...")
+						log::error!("All DitherChatAction Senders Closed, Stopping...");
+						break;
 					}
 				}
 			});
@@ -65,13 +66,14 @@ impl DitherChat {
 						use DitherEvent::*;
 						match dither_action {
 							ReceivedData(data) => {
-								println!("Recieved data");
+								println!("Recieved data: {:?}", data);
 								let msg = Message::deserialize(&data).expect("Failed to parse incoming message");
 								sender.send(DitherChatEvent::ReceivedMessage(msg)).await.expect("App side closed");
 							}
 						}
 					} else {
-						log::error!("Dither Layer Stopped...");
+						log::error!("Network Layer Stopped...");
+						break;
 					}
 				}
 			});
