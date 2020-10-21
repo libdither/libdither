@@ -84,7 +84,7 @@ impl DitherChat {
 						match chat_action {
 							SendMessage(message, channel) => {
 								log::info!("Sending Message: {:?} on channel: {:?}", message, channel);
-								output_sender.send(DitherChatEvent::ReceivedMessage(message.clone())).await.expect("Failure");
+								output_sender.send(DitherChatEvent::ReceivedMessage(message.clone())).await.expect("Channel Closed");
 								match channel {
 									Channel::FloodSub(topic) => {
 										if let Err(err) = network_sender.send(DitherAction::FloodSub(topic, message.serialize())).await {
