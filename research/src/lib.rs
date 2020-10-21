@@ -3,21 +3,26 @@
 use tokio::sync::mpsc::{self, Sender, Receiver};
 use tokio::task::JoinHandle;
 use libp2p::{
-    Swarm, swarm::SwarmBuilder,
-    identity::{Keypair},
-    floodsub::{self, Floodsub},
-    mdns::TokioMdns,
+	Swarm,
+	Transport,
+	core::upgrade,
+	identity::Keypair,
+	floodsub::{self, Floodsub},
+	mdns::TokioMdns, // `TokioMdns` is available through the `mdns-tokio` feature.
+	mplex,
+	noise,
+	swarm::SwarmBuilder, // `TokioTcpConfig` is available through the `tcp-tokio` feature.
+	tcp::TokioTcpConfig,
 };
-use std::{
-	error::Error,
-};
+pub use libp2p::PeerId;
+
+use std::error::Error;
 
 mod behaviour;
 use behaviour::DitherBehaviour;
 
 pub mod config;
 pub use config::Config;
-pub use libp2p::PeerId;
 
 pub struct User {
 	key: Keypair,
@@ -55,10 +60,19 @@ impl Client {
 			peer_id: peer_id.clone(),
 		};
 		
+		let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
+			.into_authentic(&key)
+			.expect("Signing libp2p-noise static DH keypair failed.");
+		
 		// Set up a an encrypted DNS-enabled TCP Transport over the Mplex and Yamux protocols
 		let transport = {
 			if config.dev_mode {
-				libp2p::build_development_transport(key.clone())? // Use base "development" transport
+				TokioTcpConfig::new().nodelay(true)
+					.upgrade(upgrade::Version::V1)
+					.authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
+					.multiplex(mplex::MplexConfig::new())
+					.boxed()
+				//libp2p::build_development_transport(key.clone())? // Use base "development" transport
 			} else {
 				panic!("Custom Transports not implemented yet"); // TODO: Create custom transport based on config
 			}
@@ -73,8 +87,8 @@ impl Client {
 			};
 			
 			let floodsub_topic = floodsub::Topic::new(config.pubsub_topic.clone());
-	
 			behaviour.floodsub.subscribe(floodsub_topic);
+			
 			SwarmBuilder::new(transport, behaviour, user.peer_id.clone())
 			.executor(Box::new(|fut| { tokio::spawn(fut); }))
 			.build()
@@ -115,7 +129,7 @@ impl Client {
 						event = self.swarm.next() => {
 							// When Receive Event, send to receiver thread
 							
-							println!("New Event: {:?}", event);
+							log::info!("New Event: {:?}", event);
 							/*match event {
 								
 							}*/
@@ -126,6 +140,7 @@ impl Client {
 						}
 					}
 				};
+				log::info!("Network Action: {:?}", action);
 				use DitherAction::*;
 				match action {
 					FloodSub(topic, data) => {
