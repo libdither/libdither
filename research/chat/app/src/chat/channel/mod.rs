@@ -46,6 +46,7 @@ impl ChatChannel {
 	pub fn update(&mut self, event: Event) {
 		match event {
 			Event::ReceivedMessage(msg) => {
+				println!("PUSHING MESSAGE: {:?}", msg);
 				self.messages.push(message::MessageWidget::new(self.ditherchat_sender.clone(), msg));
 			},
 			

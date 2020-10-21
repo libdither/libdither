@@ -102,12 +102,11 @@ impl Client {
 	}
 	pub fn connect(&mut self) -> Result<(), Box<dyn Error>> {
 		Swarm::listen_on(&mut self.swarm, "/ip4/0.0.0.0/tcp/0".parse()?)?;
-		println!("Local peer id: {:?}", self.user.peer_id);
+		log::info!("Local peer id: {:?}", self.user.peer_id);
 		
 		Ok(())
 	}
 	pub fn start(mut self) -> ThreadHandle<(), DitherAction, DitherEvent> {
-		//println!("Local peer id: {:?}", self.user.peer_id);
 		// Listen for
 		let (outer_sender, mut receiver) = mpsc::channel(64);
 		let (mut sender, outer_receiver) = mpsc::channel(64);
