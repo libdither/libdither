@@ -106,7 +106,9 @@ impl MessageWidget {
 		// Match current view state
 		match &mut self.state {
 			State::Display { edit_button, settings_button } => {
+				let author = self.message.sender.clone().unwrap_or("{Unknown}".to_owned()).clone();
 				Row::new()
+					.push(Text::new(author))
 					.push(Text::new(&self.message.content).width(Length::Fill)) // TODO: Display markdown instead of text
 					.spacing(20)
 					.align_items(Align::Center)

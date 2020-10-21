@@ -59,6 +59,7 @@ impl Application for DitherChat {
 			Self::Loading => {
 				match app_event {
 					Event::DitherChatEvent(dither_event) => {
+						log::info!("Received dither_event: {:?}", dither_event);
 						match dither_event {
 							DitherChatEvent::Connection(join, sender) => { // Set connection
 								*self = DitherChat::Loaded(State {
@@ -79,9 +80,9 @@ impl Application for DitherChat {
 					Event::DitherChatEvent(event) => {
 						match event {
 							DitherChatEvent::Connection(_join, _sender) => log::error!("Received DitherChat Connection Event when in Loaded State"),
-							DitherChatEvent::ReceivedMessage(msg) => {
-								println!("Received Message: {:?}", msg);
-								state.chat_channel.update(chat::channel::Event::AddMessage(msg));
+							DitherChatEvent::ReceivedMessage(message) => {
+								println!("Received Message: {:?}", message);
+								state.chat_channel.update(chat::channel::Event::ReceivedMessage(message));
 							},
 							_ => {}
 						}
@@ -97,19 +98,8 @@ impl Application for DitherChat {
 		Command::none()
 	}
 	fn subscription(&self) -> Subscription<Event> {
-		use DitherChat::*;
-		match self {
-			Loading => {
-				log::debug!("Connected to dither_chat subscription");
-				chat::subscription::connect()
-					.map(Event::DitherChatEvent)
-				
-			},
-			_ => {
-				log::debug!("Disconnected to dither_chat subscription");
-				Subscription::none()
-			},
-		}
+		chat::subscription::connect()
+			.map(Event::DitherChatEvent)
 	}
 
 	fn view(&mut self) -> Element<Event> {

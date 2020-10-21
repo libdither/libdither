@@ -24,7 +24,7 @@ pub enum Event {
 	// Called from Application
 	//ReceivedMessage(dither_chat::Message),
 	
-	AddMessage(dither_chat::Message),
+	ReceivedMessage(dither_chat::Message),
 	
 	TriggerSend,
 	TextInputUpdate(String),
@@ -45,17 +45,17 @@ impl ChatChannel {
 	}
 	pub fn update(&mut self, event: Event) {
 		match event {
-			Event::AddMessage(msg) => {
+			Event::ReceivedMessage(msg) => {
 				self.messages.push(message::MessageWidget::new(self.ditherchat_sender.clone(), msg));
 			},
 			
 			Event::TriggerSend => {
 				let message = dither_chat::Message::new(&self.current_text);
-				if let Err(err) = self.ditherchat_sender.try_send(DitherChatAction::BroadcastMessage(message.clone())) {
+				if let Err(err) = self.ditherchat_sender.try_send(DitherChatAction::SendMessage(message.clone(), Channel::FloodSub("chat".to_owned()))) {
 					log::error!("Can't send message: {:?}", err); // TODO: Popup error message if it closes
 				}
 				self.current_text.clear();
-				self.update(Event::AddMessage(message));
+				//self.update(Event::AddMessage(message));
 			},
 			
 			Event::TextInputUpdate(text) => {
