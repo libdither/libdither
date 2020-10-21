@@ -21,7 +21,7 @@ impl NetworkBehaviourEventProcess<FloodsubEvent> for DitherBehaviour {
 	// Called when `floodsub` produces an event.
 	fn inject_event(&mut self, message: FloodsubEvent) {
 		if let FloodsubEvent::Message(message) = message {
-			println!("Received: '{:?}' from {:?}", String::from_utf8_lossy(&message.data), message.source);
+			log::info!("Received: '{:?}' from {:?}", String::from_utf8_lossy(&message.data), message.source);
 		}
 	}
 }

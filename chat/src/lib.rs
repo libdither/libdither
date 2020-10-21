@@ -109,12 +109,13 @@ impl DitherChat {
 			let chat_event_join = tokio::spawn(async move {
 				loop {
 					if let Some(dither_action) = network_receiver.recv().await {
-						use DitherEvent::*;
 						match dither_action {
-							ReceivedData(data) => {
-								println!("Recieved data: {:?}", data);
+							DitherEvent::ReceivedData(data) => {
+								log::info!("Recieved data from network: {:?}", data);
 								let msg = Message::deserialize(&data).expect("Failed to parse incoming message");
+								println!("DESERIALIZED MSG: {:?}", msg);
 								sender.send(DitherChatEvent::ReceivedMessage(msg)).await.expect("App side closed");
+								println!("DESERIALIZED MSG SENT");
 							}
 						}
 					} else {

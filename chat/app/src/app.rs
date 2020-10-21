@@ -81,7 +81,7 @@ impl Application for DitherChat {
 						match event {
 							DitherChatEvent::Connection(_join, _sender) => log::error!("Received DitherChat Connection Event when in Loaded State"),
 							DitherChatEvent::ReceivedMessage(message) => {
-								println!("Received Message: {:?}", message);
+								log::info!("Received DitherChat Message: {:?}", message);
 								state.chat_channel.update(chat::channel::Event::ReceivedMessage(message));
 							},
 							_ => {}
