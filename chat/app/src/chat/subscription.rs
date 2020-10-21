@@ -44,9 +44,13 @@ where
 						log::info!("Connecting...");
 						// Setup
 						match Client::new(Config::development()) {
-							Ok(client) => {
+							Ok(mut client) => {
 								// Run swarm and get join handle + thread channels
+								if let Err(err) = client.connect() {
+									return Some(( DitherChatEvent::Error(format!("Failed to connect to network: {:?}", err)), State::Connecting ))
+								}
 								let swarm_handle = client.start();
+
 								// Run chat middleware using swarm
 								let chat_handle = dither_chat::DitherChat::start(swarm_handle);
 								

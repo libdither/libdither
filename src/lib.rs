@@ -32,6 +32,7 @@ pub struct Client {
 #[derive(Debug)]
 pub enum DitherAction {
 	Empty,
+	Connect(PeerId),
 	FloodSub(String, String), // Going to be a lot more complicated
 }
 #[derive(Debug)]
@@ -92,7 +93,7 @@ impl Client {
 		Ok(())
 	}
 	pub fn start(mut self) -> ThreadHandle<(), DitherAction, DitherEvent> {
-		println!("Local peer id: {:?}", self.user.peer_id);
+		//println!("Local peer id: {:?}", self.user.peer_id);
 		// Listen for
 		let (outer_sender, mut receiver) = mpsc::channel(64);
 		let (mut sender, outer_receiver) = mpsc::channel(64);
@@ -106,7 +107,7 @@ impl Client {
 						received_action = receiver.recv() => {
 							if let Some(ret) = received_action { ret }
 							else {
-								log::error!("All Senders Closed, Stopping...");
+								log::info!("All Senders Closed, Stopping...");
 								break;
 							}
 						},
@@ -134,6 +135,7 @@ impl Client {
 					_ => {},
 				}
 			}
+			log::info!("Network Layer Ended");
 		});
 		ThreadHandle { join, sender: outer_sender, receiver: outer_receiver }
 	}
