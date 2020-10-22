@@ -1,15 +1,15 @@
 
 use libp2p::{
 	NetworkBehaviour,
-    floodsub::{Floodsub, FloodsubEvent},
-    mdns::{TokioMdns, MdnsEvent},
-    swarm::NetworkBehaviourEventProcess
+	floodsub::{Floodsub, FloodsubEvent},
+	//mdns::{TokioMdns, MdnsEvent},
+	swarm::NetworkBehaviourEventProcess
 };
 
 #[derive(NetworkBehaviour)]
 pub struct DitherBehaviour {
 	pub floodsub: Floodsub,
-	pub mdns: TokioMdns,
+	//pub mdns: TokioMdns,
 
 	// Struct fields which do not implement NetworkBehaviour need to be ignored
 	#[behaviour(ignore)]
@@ -26,7 +26,7 @@ impl NetworkBehaviourEventProcess<FloodsubEvent> for DitherBehaviour {
 	}
 }
 
-impl NetworkBehaviourEventProcess<MdnsEvent> for DitherBehaviour {
+/*impl NetworkBehaviourEventProcess<MdnsEvent> for DitherBehaviour {
 	// Called when `mdns` produces an event.
 	fn inject_event(&mut self, event: MdnsEvent) {
 		match event {
@@ -42,4 +42,4 @@ impl NetworkBehaviourEventProcess<MdnsEvent> for DitherBehaviour {
 				}
 		}
 	}
-}
+}*/

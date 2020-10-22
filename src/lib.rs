@@ -83,10 +83,10 @@ impl Client {
 		};
 		
 		let swarm = {
-			let mdns = TokioMdns::new()?;
+			//let mdns = TokioMdns::new()?;
 			let mut behaviour = DitherBehaviour {
 				floodsub: Floodsub::new(peer_id.clone()),
-				mdns,
+				//mdns,
 				ignored_member: false,
 			};
 			
@@ -119,7 +119,7 @@ impl Client {
 			DitherAction::Dial(addr) => {
 				log::info!("Dialing: {}", addr);
 				Swarm::dial_addr(&mut self.swarm, addr)?;
-
+				//self.floodsub.add_node_to_partial_view(peer);
 			},
 			DitherAction::PrintListening => {
 				for addr in Swarm::listeners(&self.swarm) {
