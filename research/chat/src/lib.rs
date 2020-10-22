@@ -57,7 +57,7 @@ impl DitherChat {
 								output_sender.send(DitherChatEvent::ReceivedMessage(message.clone())).await.expect("Channel Closed");
 								match channel {
 									Channel::FloodSub(topic) => {
-										if let Err(err) = network_sender.send(DitherAction::FloodSub(topic, message.serialize())).await {
+										if let Err(err) = network_sender.send(DitherAction::GossipSubBroadcast(topic, message.serialize())).await {
 											log::error!("Failed to send floodsub: {:?}", err);
 										}
 									}

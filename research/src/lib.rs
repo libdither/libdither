@@ -1,4 +1,12 @@
 #![allow(dead_code)]
+#![allow(unused_imports)]
+
+use std::{
+	collections::hash_map::DefaultHasher,
+	hash::{Hash, Hasher},
+	time::Duration,
+	error::Error,
+};
 
 use tokio::sync::mpsc::{self, Sender, Receiver};
 use tokio::task::JoinHandle;
@@ -7,8 +15,9 @@ use libp2p::{
 	Transport,
 	core::upgrade,
 	identity::Keypair,
-	floodsub::{self, Floodsub},
-	mdns::TokioMdns, // `TokioMdns` is available through the `mdns-tokio` feature.
+	//floodsub::{self, Floodsub},
+	gossipsub::{protocol::MessageId, GossipsubMessage, GossipsubEvent, MessageAuthenticity, Topic, self},
+	//mdns::TokioMdns, // `TokioMdns` is available through the `mdns-tokio` feature.
 	mplex,
 	noise,
 	swarm::SwarmBuilder, // `TokioTcpConfig` is available through the `tcp-tokio` feature.
@@ -18,8 +27,6 @@ pub use libp2p::{
 	PeerId,
 	Multiaddr,
 };
-
-use std::error::Error;
 
 mod behaviour;
 use behaviour::DitherBehaviour;
@@ -32,7 +39,7 @@ pub struct User {
 	peer_id: PeerId,
 }
 pub struct Client {
-	swarm: Swarm<DitherBehaviour, PeerId>,
+	swarm: Swarm<gossipsub::Gossipsub, PeerId>,
 	config: Config,
 	user: User,
 }
@@ -40,7 +47,11 @@ pub struct Client {
 pub enum DitherAction {
 	Connect(PeerId),
 	Dial(Multiaddr),
-	FloodSub(String, String), // Going to be a lot more complicated
+	
+	GossipSubSubscribe(String),
+	GossipSubUnsubscribe(String),
+	GossipSubBroadcast(String, String),
+	//FloodSub(String, String), // Going to be a lot more complicated
 	PrintListening,
 	None,
 }
@@ -84,16 +95,33 @@ impl Client {
 		
 		let swarm = {
 			//let mdns = TokioMdns::new()?;
-			let mut behaviour = DitherBehaviour {
+			/*let mut behaviour = DitherBehaviour {
 				floodsub: Floodsub::new(peer_id.clone()),
 				//mdns,
 				ignored_member: false,
+			};*/
+			
+			//let floodsub_topic = floodsub::Topic::new(config.pubsub_topic.clone());
+			//behaviour.floodsub.subscribe(floodsub_topic);
+			
+			let message_id_fn = |message: &GossipsubMessage| {
+				let mut s = DefaultHasher::new();
+				message.data.hash(&mut s);
+				MessageId::from(s.finish().to_string())
 			};
+	
+			// set custom gossipsub
+			let gossipsub_config = gossipsub::GossipsubConfigBuilder::new()
+				.heartbeat_interval(Duration::from_secs(10))
+				.message_id_fn(message_id_fn) // content-address messages. No two messages of the
+				//same content will be propagated.
+				.build();
+			// build a gossipsub network behaviour
+			let mut gossipsub =
+				gossipsub::Gossipsub::new(MessageAuthenticity::Signed(key), gossipsub_config);
+			//gossipsub.subscribe(topic.clone());
 			
-			let floodsub_topic = floodsub::Topic::new(config.pubsub_topic.clone());
-			behaviour.floodsub.subscribe(floodsub_topic);
-			
-			SwarmBuilder::new(transport, behaviour, user.peer_id.clone())
+			SwarmBuilder::new(transport, gossipsub, user.peer_id.clone())
 			.executor(Box::new(|fut| { tokio::spawn(fut); }))
 			.build()
 		};
@@ -112,9 +140,14 @@ impl Client {
 	}
 	fn parse_ditheraction(&mut self, action: DitherAction) -> Result<(), Box<dyn Error>> {
 		match action {
-			DitherAction::FloodSub(topic, data) => {
-				let topic = libp2p::floodsub::Topic::new(topic);
-				self.swarm.floodsub.publish(topic, data);
+			DitherAction::GossipSubBroadcast(topic, data) => {
+				self.swarm.publish(&Topic::new(topic), data);
+			},
+			DitherAction::GossipSubSubscribe(topic) => {
+				self.swarm.subscribe(Topic::new(topic));
+			},
+			DitherAction::GossipSubUnsubscribe(topic) => {
+				self.swarm.unsubscribe(Topic::new(topic));
 			},
 			DitherAction::Dial(addr) => {
 				log::info!("Dialing: {}", addr);
