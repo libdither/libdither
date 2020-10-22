@@ -14,7 +14,10 @@ use libp2p::{
 	swarm::SwarmBuilder, // `TokioTcpConfig` is available through the `tcp-tokio` feature.
 	tcp::TokioTcpConfig,
 };
-pub use libp2p::PeerId;
+pub use libp2p::{
+	PeerId,
+	Multiaddr,
+};
 
 use std::error::Error;
 
@@ -28,7 +31,6 @@ pub struct User {
 	key: Keypair,
 	peer_id: PeerId,
 }
-
 pub struct Client {
 	swarm: Swarm<DitherBehaviour, PeerId>,
 	config: Config,
@@ -36,9 +38,11 @@ pub struct Client {
 }
 #[derive(Debug)]
 pub enum DitherAction {
-	Empty,
 	Connect(PeerId),
+	Dial(Multiaddr),
 	FloodSub(String, String), // Going to be a lot more complicated
+	PrintListening,
+	None,
 }
 #[derive(Debug)]
 pub enum DitherEvent {
@@ -106,10 +110,32 @@ impl Client {
 		
 		Ok(())
 	}
+	fn parse_ditheraction(&mut self, action: DitherAction) -> Result<(), Box<dyn Error>> {
+		match action {
+			DitherAction::FloodSub(topic, data) => {
+				let topic = libp2p::floodsub::Topic::new(topic);
+				self.swarm.floodsub.publish(topic, data);
+			},
+			DitherAction::Dial(addr) => {
+				log::info!("Dialing: {}", addr);
+				Swarm::dial_addr(&mut self.swarm, addr)?;
+
+			},
+			DitherAction::PrintListening => {
+				for addr in Swarm::listeners(&self.swarm) {
+					log::info!("Listening on: {:?}", addr);
+				}
+			}
+			_ => { log::error!("Unimplemented DitherAction: {:?}", action) },
+		}
+		Ok(())
+	}
 	pub fn start(mut self) -> ThreadHandle<(), DitherAction, DitherEvent> {
 		// Listen for
 		let (outer_sender, mut receiver) = mpsc::channel(64);
 		let (mut sender, outer_receiver) = mpsc::channel(64);
+		
+		//let self_sender = outer_sender.clone();
 		
 		// Receiver thread
 		let join = tokio::spawn(async move {
@@ -135,18 +161,13 @@ impl Client {
 							if let Err(err) = sender.try_send(DitherEvent::ReceivedData("This is some data".to_owned())) {
 								log::error!("Network Thread could not send event: {:?}", err);
 							}
-							Empty
+							DitherAction::None
 						}
 					}
 				};
 				log::info!("Network Action: {:?}", action);
-				use DitherAction::*;
-				match action {
-					FloodSub(topic, data) => {
-						let topic = libp2p::floodsub::Topic::new(topic);
-						self.swarm.floodsub.publish(topic, data);
-					},
-					_ => {},
+				if let Err(err) = self.parse_ditheraction(action) {
+					log::error!("Failed to parse DitherAction: {:?}", err);
 				}
 			}
 			log::info!("Network Layer Ended");

@@ -1,15 +1,15 @@
 use iced_futures::futures;
 use tokio::sync::mpsc::Receiver;
 
-use dither_chat::{Config, Client, DitherChatAction, DitherChatEvent};
+use dither_chat::{Config, Client, DitherChatAction, DitherChatEvent, DitherChatConfig};
 
 // Just a little utility function
-pub fn connect() -> iced::Subscription<DitherChatEvent> {
-	iced::Subscription::from_recipe(DitherChatSubscriptionRecipe {})
+pub fn connect(config: Option<DitherChatConfig>) -> iced::Subscription<DitherChatEvent> {
+	iced::Subscription::from_recipe(DitherChatAppSubscriptionRecipe {config})
 }
 
-pub struct DitherChatSubscriptionRecipe {
-	
+pub struct DitherChatAppSubscriptionRecipe {
+	config: Option<DitherChatConfig>,
 }
 
 pub enum State {
@@ -19,7 +19,7 @@ pub enum State {
 }
 
 // Make sure iced can use our download stream
-impl<H, I> iced_native::subscription::Recipe<H, I> for DitherChatSubscriptionRecipe
+impl<H, I> iced_native::subscription::Recipe<H, I> for DitherChatAppSubscriptionRecipe
 where
 	H: std::hash::Hasher,
 {
