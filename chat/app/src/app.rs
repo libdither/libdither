@@ -68,7 +68,7 @@ impl Application for DitherChatApp {
 						log::info!("Received dither_event: {:?}", dither_event);
 						match dither_event {
 							DitherChatEvent::Connection(join, mut sender) => { // Set connection
-								if let Err(err) = sender.try_send(DitherChatAction::Configure(settings.dither_config.clone())) {
+								if let Err(_err) = sender.try_send(DitherChatAction::Configure(settings.dither_config.clone())) {
 									log::error!("Failed to send DitherChatAction Configuration");
 								}
 								*self = DitherChatApp::Loaded(State {
