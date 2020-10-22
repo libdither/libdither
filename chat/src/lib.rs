@@ -13,7 +13,20 @@ pub use dither::{
 	PeerId,
 	Client,
 	Config,
+	Multiaddr,
 };
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DitherChatConfig {
+	pub bootstraps: Vec<Multiaddr>,
+}
+impl DitherChatConfig {
+	pub fn new(peer: Option<Multiaddr>) -> DitherChatConfig {
+		Self {
+			bootstraps: if let Some(peer) = peer { vec![peer] } else { vec![] },
+		}
+	}
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message {
@@ -51,6 +64,7 @@ pub enum Channel {
 #[derive(Debug, Clone)]
 pub enum DitherChatAction {
 	SendMessage(Message, Channel),
+	Configure(DitherChatConfig),
 	//SendMessage(Message, PeerId),
 	//UpdateMessage(Message),
 	//DeleteMessage(Message),
@@ -78,11 +92,11 @@ impl DitherChat {
 			// App Layer -> Chat Layer -> Network Layer
 			let ThreadHandle { join: network_join, sender: mut network_sender, receiver: mut network_receiver } = swarm_handle;
 			let chat_action_join = tokio::spawn(async move {
+				network_sender.send(DitherAction::PrintListening).await.expect("Failed to print listening");
 				loop {
 					if let Some(chat_action) = receiver.recv().await {
-						use DitherChatAction::*;
 						match chat_action {
-							SendMessage(message, channel) => {
+							DitherChatAction::SendMessage(message, channel) => {
 								log::info!("Sending Message: {:?} on channel: {:?}", message, channel);
 								output_sender.send(DitherChatEvent::ReceivedMessage(message.clone())).await.expect("Channel Closed");
 								match channel {
@@ -96,6 +110,14 @@ impl DitherChat {
 									}
 								}
 								
+							},
+							DitherChatAction::Configure(config) => {
+								log::info!("Configuring DitherChat: {:?}", config);
+								for addr in config.bootstraps {
+									if let Err(err) = network_sender.send(DitherAction::Dial(addr)).await {
+										log::error!("Failed to send floodsub: {:?}", err);
+									}
+								}
 							},
 							//_ => {},
 						}

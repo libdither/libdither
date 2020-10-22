@@ -11,7 +11,8 @@ use iced::{
 pub mod chat;
 pub mod app;
 
-use app::{DitherChat, DitherChatSettings};
+use app::{DitherChatApp, DitherChatAppSettings};
+use dither_chat::{DitherChatConfig, Multiaddr};
 
 
 
@@ -24,8 +25,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
 	.filter_level(log::LevelFilter::Info).init();
 	
 	//Run GUI
-	let settings = DitherChatSettings::create();
-	DitherChat::run(settings);
+	let settings = DitherChatAppSettings::create( DitherChatConfig::new(
+		{
+			if let Some(arg) = std::env::args().nth(1) {
+				if let Ok(addr) = arg.parse::<Multiaddr>() {
+					Some(addr)
+				} else { None }
+			} else { None }
+		}
+	));
+	DitherChatApp::run(settings);
 	
 	Ok(())
 }
