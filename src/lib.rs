@@ -48,9 +48,9 @@ pub enum DitherAction {
 	Connect(PeerId),
 	Dial(Multiaddr),
 	
-	GossipSubSubscribe(String),
-	GossipSubUnsubscribe(String),
-	GossipSubBroadcast(String, String),
+	PubSubSubscribe(String),
+	PubSubUnsubscribe(String),
+	PubSubBroadcast(String, String),
 	//FloodSub(String, String), // Going to be a lot more complicated
 	PrintListening,
 	None,
@@ -142,19 +142,19 @@ impl Client {
 	}
 	fn parse_dither_action(&mut self, action: DitherAction) -> Result<(), Box<dyn Error>> {
 		match action {
-			DitherAction::GossipSubBroadcast(topic, data) => {
+			DitherAction::PubSubBroadcast(topic, data) => {
 				self.swarm.publish(Topic::new(topic), data);
 			},
-			DitherAction::GossipSubSubscribe(topic) => {
+			DitherAction::PubSubSubscribe(topic) => {
 				self.swarm.subscribe(Topic::new(topic));
 			},
-			DitherAction::GossipSubUnsubscribe(topic) => {
+			DitherAction::PubSubUnsubscribe(topic) => {
 				self.swarm.unsubscribe(Topic::new(topic));
 			},
 			DitherAction::Dial(addr) => {
 				log::info!("Dialing: {}", addr);
 				Swarm::dial_addr(&mut self.swarm, addr)?;
-				//self.floodsub.add_node_to_partial_view(peer);
+				//self.swarm.floodsub.add_node_to_partial_view(peer);
 			},
 			DitherAction::Connect(peer) => {
 				self.swarm.add_node_to_partial_view(peer);

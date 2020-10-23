@@ -76,11 +76,12 @@ impl Application for DitherChatApp {
 								if let Err(_err) = sender.try_send(DitherChatAction::Configure(settings.dither_config.clone())) {
 									log::error!("Failed to send DitherChatAction Configuration");
 								}
+								let channel = dither_chat::Channel::FloodSub(settings.dither_config.pubsub_topic.clone());
 								*self = DitherChatApp::Loaded(State {
 									settings: settings.clone(),
 									chat_sender: sender.clone(),
 									chat_join: join,
-									chat_channel: chat::channel::ChatChannel::new(sender.clone()),
+									chat_channel: chat::channel::ChatChannel::new(sender.clone(), channel),
 								});
 							}
 							DitherChatEvent::Error(err) => log::error!("Dither Chat Error Received: {:?}", err),
