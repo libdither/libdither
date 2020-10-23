@@ -12,6 +12,7 @@ mod message;
 pub struct ChatChannel {
 	// TODO: Message saving
 	ditherchat_sender: Sender<DitherChatAction>,
+	channel: dither_chat::Channel,
 	
 	messages: Vec<message::MessageWidget>,
 	scroll_state: scrollable::State,
@@ -35,9 +36,10 @@ pub enum Event {
 }
 
 impl ChatChannel {
-	pub fn new(sender: Sender<DitherChatAction>) -> Self {
+	pub fn new(sender: Sender<DitherChatAction>, channel: Channel) -> Self {
 		ChatChannel {
 			ditherchat_sender: sender,
+			channel,
 			messages: Vec::with_capacity(16),
 			scroll_state: scrollable::State::new(),
 			text_input: text_input::State::new(),
@@ -54,7 +56,7 @@ impl ChatChannel {
 			
 			Event::TriggerSend => {
 				let message = dither_chat::Message::new(&self.current_text);
-				if let Err(err) = self.ditherchat_sender.try_send(DitherChatAction::SendMessage(message.clone(), Channel::FloodSub("chat".to_owned()))) {
+				if let Err(err) = self.ditherchat_sender.try_send(DitherChatAction::SendMessage(message.clone(), self.channel.clone())) {
 					log::error!("Can't send message: {:?}", err); // TODO: Popup error message if it closes
 				}
 				self.current_text.clear();

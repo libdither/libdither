@@ -45,7 +45,7 @@ impl DitherChat {
 				event_sender.send(DitherChatEvent::ReceivedMessage(message.clone())).await.expect("Channel Closed");
 				match channel {
 					Channel::FloodSub(topic) => {
-						network_sender.send(DitherAction::GossipSubBroadcast(topic, message.serialize())).await?;
+						network_sender.send(DitherAction::PubSubBroadcast(topic, message.serialize())).await?;
 					}
 					Channel::Peer(_peer) => {
 						log::warn!("Unimplemented sending directly to peers");
@@ -63,7 +63,7 @@ impl DitherChat {
 						self_sender.send(DitherChatAction::Connect(peer)).await?;
 					}
 				}
-				network_sender.send(DitherAction::GossipSubSubscribe(config.gossipsub_topic)).await?;
+				network_sender.send(DitherAction::PubSubSubscribe(config.pubsub_topic)).await?;
 			},
 			DitherChatAction::Connect(peer) => {
 				network_sender.send(DitherAction::Connect(peer)).await?;
