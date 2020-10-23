@@ -12,8 +12,7 @@ pub mod chat;
 pub mod app;
 
 use app::{DitherChatApp, DitherChatAppSettings};
-use dither_chat::{DitherChatConfig, Multiaddr};
-
+use dither_chat::{DitherChatConfig, Multiaddr, PeerId};
 
 
 #[tokio::main]
@@ -32,7 +31,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 					Some(addr)
 				} else { None }
 			} else { None }
-		}
+		},
+		std::env::args().nth(2),
+		String::from("global_chat"),
 	));
 	DitherChatApp::run(settings);
 	

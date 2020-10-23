@@ -10,11 +10,15 @@ use dither::{
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DitherChatConfig {
 	pub bootstraps: Vec<Multiaddr>,
+	pub init_peer: Option<String>,
+	pub gossipsub_topic: String,
 }
 impl DitherChatConfig {
-	pub fn new(peer: Option<Multiaddr>) -> DitherChatConfig {
+	pub fn new(bootstrap: Option<Multiaddr>, init_peer: Option<String>, topic: String) -> DitherChatConfig {
 		Self {
-			bootstraps: if let Some(peer) = peer { vec![peer] } else { vec![] },
+			bootstraps: if let Some(addr) = bootstrap { vec![addr] } else { vec![] },
+			init_peer,
+			gossipsub_topic: topic,
 		}
 	}
 }
