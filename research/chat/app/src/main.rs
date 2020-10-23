@@ -10,6 +10,7 @@ use iced::{
 };
 pub mod chat;
 pub mod app;
+pub mod style;
 
 use app::{DitherChatApp, DitherChatAppSettings};
 use dither_chat::{DitherChatConfig, Multiaddr, PeerId};

@@ -4,6 +4,8 @@ use tokio::sync::mpsc::Sender;
 use dither_chat::*;
 use iced::*;
 
+use crate::DitherChatAppSettings;
+
 mod message;
 
 // Message channel structure (describes viewing and sending messages)
@@ -69,12 +71,12 @@ impl ChatChannel {
 			_ => {log::error!("Unimplemented ChatChannelEvent");},
 		}
 	}
-	pub fn view(&mut self) -> Element<Event> {
+	pub fn view(&mut self, settings: &DitherChatAppSettings) -> Element<Event> {
 		let message_widgets = self.messages
 			.iter_mut()
 			.enumerate()
 			.fold(Column::new().spacing(20), |column, (i, widget)| {
-				column.push(widget.view().map(move |message| {
+				column.push(widget.view(settings).map(move |message| {
 					Event::MessageWidgetEvent(i, message)
 				}))
 			});
@@ -85,17 +87,20 @@ impl ChatChannel {
 			.push(
 				Container::new(message_widgets)
 				//.width(Length::Fill)
-			);
+			)
+			.style(settings.theme);
 		
 		let input_bar = Row::new()
 			.padding(20)
 			.push(
 				TextInput::new(&mut self.text_input, "Message Network", &self.current_text, Event::TextInputUpdate)
 				.on_submit(Event::TriggerSend)
+				.style(settings.theme)
 			)
 			.push(
 				Button::new(&mut self.send_button, Text::new("Send"))
 				.on_press(Event::TriggerSend)
+				.style(settings.theme)
 			);
 			
 		Column::new()

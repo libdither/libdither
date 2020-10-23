@@ -9,13 +9,17 @@ use dither_chat::{
 };
 
 use crate::chat;
+use crate::style::Theme;
 
+#[derive(Debug, Clone)]
 pub struct DitherChatAppSettings {
-	dither_config: DitherChatConfig,
+	pub dither_config: DitherChatConfig,
+	pub theme: Theme,
 }
 impl DitherChatAppSettings {
 	pub fn create(config: DitherChatConfig) -> Settings<DitherChatAppSettings> {
-		Settings::with_flags(DitherChatAppSettings{
+		Settings::with_flags(DitherChatAppSettings {
+			theme: Theme::Dark,
 			dither_config: config,
 		})
 	}
@@ -28,6 +32,7 @@ pub enum DitherChatApp {
 
 #[allow(dead_code)]
 pub struct State {
+	settings: DitherChatAppSettings,
 	chat_sender: mpsc::Sender<DitherChatAction>, // Send actions to the dither_chat layer
 	chat_join: JoinHandle<()>,
 	
@@ -72,6 +77,7 @@ impl Application for DitherChatApp {
 									log::error!("Failed to send DitherChatAction Configuration");
 								}
 								*self = DitherChatApp::Loaded(State {
+									settings: settings.clone(),
 									chat_sender: sender.clone(),
 									chat_join: join,
 									chat_channel: chat::channel::ChatChannel::new(sender.clone()),
@@ -111,29 +117,41 @@ impl Application for DitherChatApp {
 	}
 
 	fn view(&mut self) -> Element<Event> {
-		let app = match self {
+		match self {
 			Self::Loading(_settings) => {
 				Row::new()
 					.align_items(Align::Center)
 					.push(
-						Text::new("Connecting...")
+						Text::new("Loading...")
+						.horizontal_alignment(HorizontalAlignment::Center)
+						.vertical_alignment(VerticalAlignment::Center)
 						.size(40)
 					)
+					.into()
 			},
 			Self::Loaded(state) => {
-				Row::new()
+				let app = Row::new()
 					.padding(20)
 					.align_items(Align::Center)
-					.push(state.chat_channel.view().map(move |event| {
-						Event::ChatChannelEvent(event)
-					}))
+					.push(
+						state.chat_channel.view(&state.settings).map(move |event| {
+							Event::ChatChannelEvent(event)
+						})
+					);
+				
+				let app = Element::explain(app.into(), Color::BLACK);
+				
+				Container::new(app)
+					.width(Length::Fill)
+					.height(Length::Fill)
+					.center_x()
+					.center_y()
+					.style(state.settings.theme)
+					.into()
 			}
-		};
-		let app = Element::explain(app.into(), Color::BLACK);
+		}
+
 		
-		Column::new()
-			.push(app)
-			.into()
 		/*Column::new()
 			.padding(20)
 			//.push(messages)

@@ -72,7 +72,7 @@ impl DitherChat {
 		}
 		Ok(())
 	}
-	async fn handle_dither_event(dither_event: DitherEvent, network_sender: &mut Sender<DitherAction>, event_sender: &mut Sender<DitherChatEvent>, self_sender: &mut Sender<DitherChatAction>) -> Result<(), Box<dyn Error>> {
+	async fn handle_dither_event(dither_event: DitherEvent, _network_sender: &mut Sender<DitherAction>, event_sender: &mut Sender<DitherChatEvent>, _self_sender: &mut Sender<DitherChatAction>) -> Result<(), Box<dyn Error>> {
 		match dither_event {
 			DitherEvent::ReceivedData(data) => {
 				log::info!("Recieved data from network: {:?}", data);

@@ -5,6 +5,7 @@ use tokio::sync::mpsc::Sender;
 use iced::*;
 
 use dither_chat::DitherChatAction;
+use crate::DitherChatAppSettings;
 
 #[derive(Debug, Clone)]
 pub struct MessageWidget {
@@ -102,7 +103,7 @@ impl MessageWidget {
 		}
 		
 	}
-	pub fn view(&mut self) -> Element<Event> {
+	pub fn view(&mut self, settings: &DitherChatAppSettings) -> Element<Event> {
 		// Match current view state
 		match &mut self.state {
 			State::Display { edit_button, settings_button } => {
@@ -121,6 +122,7 @@ impl MessageWidget {
 						Button::new(settings_button, icon('\u{F141}')) // Settings button
 							.on_press(Event::TriggerMenu)
 							.padding(10)
+							.style(settings.theme)
 					)
 					.into()
 			},
@@ -131,10 +133,12 @@ impl MessageWidget {
 					.push(
 						TextInput::new(text_input, "", current_edit, Event::EditUpdate)
 						.on_submit(Event::SubmitEdit)
+						.style(settings.theme)
 					)
 					.push(
 						Button::new(cancel_button, Text::new("Cancel") )
 						.on_press(Event::CancelEdit)
+						.style(settings.theme)
 					)
 					.into()
 			}
