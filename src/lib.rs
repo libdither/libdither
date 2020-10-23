@@ -15,8 +15,8 @@ use libp2p::{
 	Transport,
 	core::upgrade,
 	identity::Keypair,
-	//floodsub::{self, Floodsub},
-	gossipsub::{protocol::MessageId, GossipsubMessage, GossipsubEvent, MessageAuthenticity, Topic, self},
+	floodsub::{self, Floodsub, Topic, FloodsubEvent},
+	//gossipsub::{protocol::MessageId, GossipsubMessage, GossipsubEvent, MessageAuthenticity, Topic, self},
 	//mdns::TokioMdns, // `TokioMdns` is available through the `mdns-tokio` feature.
 	mplex,
 	noise,
@@ -39,7 +39,7 @@ pub struct User {
 	peer_id: PeerId,
 }
 pub struct Client {
-	swarm: Swarm<gossipsub::Gossipsub, PeerId>,
+	swarm: Swarm<Floodsub, PeerId>,
 	config: Config,
 	user: User,
 }
@@ -57,7 +57,7 @@ pub enum DitherAction {
 }
 #[derive(Debug)]
 pub enum DitherEvent {
-	ReceivedData(String),
+	ReceivedData(Vec<u8>),
 }
 
 pub struct ThreadHandle<Return, ActionObject, EventObject> {
@@ -104,7 +104,7 @@ impl Client {
 			//let floodsub_topic = floodsub::Topic::new(config.pubsub_topic.clone());
 			//behaviour.floodsub.subscribe(floodsub_topic);
 			
-			let message_id_fn = |message: &GossipsubMessage| {
+			/*let message_id_fn = |message: &GossipsubMessage| {
 				let mut s = DefaultHasher::new();
 				message.data.hash(&mut s);
 				MessageId::from(s.finish().to_string())
@@ -117,11 +117,13 @@ impl Client {
 				//same content will be propagated.
 				.build();
 			// build a gossipsub network behaviour
-			let mut gossipsub =
+			let gossipsub =
 				gossipsub::Gossipsub::new(MessageAuthenticity::Signed(key), gossipsub_config);
-			//gossipsub.subscribe(topic.clone());
+			//gossipsub.subscribe(topic.clone());*/
 			
-			SwarmBuilder::new(transport, gossipsub, user.peer_id.clone())
+			let floodsub = Floodsub::new(user.peer_id.clone());
+			
+			SwarmBuilder::new(transport, floodsub, user.peer_id.clone())
 			.executor(Box::new(|fut| { tokio::spawn(fut); }))
 			.build()
 		};
@@ -138,10 +140,10 @@ impl Client {
 		
 		Ok(())
 	}
-	fn parse_ditheraction(&mut self, action: DitherAction) -> Result<(), Box<dyn Error>> {
+	fn parse_dither_action(&mut self, action: DitherAction) -> Result<(), Box<dyn Error>> {
 		match action {
 			DitherAction::GossipSubBroadcast(topic, data) => {
-				self.swarm.publish(&Topic::new(topic), data);
+				self.swarm.publish(Topic::new(topic), data);
 			},
 			DitherAction::GossipSubSubscribe(topic) => {
 				self.swarm.subscribe(Topic::new(topic));
@@ -154,11 +156,14 @@ impl Client {
 				Swarm::dial_addr(&mut self.swarm, addr)?;
 				//self.floodsub.add_node_to_partial_view(peer);
 			},
+			DitherAction::Connect(peer) => {
+				self.swarm.add_node_to_partial_view(peer);
+			},
 			DitherAction::PrintListening => {
 				for addr in Swarm::listeners(&self.swarm) {
 					log::info!("Listening on: {:?}", addr);
 				}
-			}
+			},
 			_ => { log::error!("Unimplemented DitherAction: {:?}", action) },
 		}
 		Ok(())
@@ -188,18 +193,21 @@ impl Client {
 							// When Receive Event, send to receiver thread
 							
 							log::info!("New Event: {:?}", event);
-							/*match event {
-								
-							}*/
-							if let Err(err) = sender.try_send(DitherEvent::ReceivedData("This is some data".to_owned())) {
-								log::error!("Network Thread could not send event: {:?}", err);
+							match event {
+								FloodsubEvent::Message(message) => {
+									if let Err(err) = sender.try_send(DitherEvent::ReceivedData(message.data)) {
+										log::error!("Network Thread could not send event: {:?}", err);
+									}
+								}
+								_ => {},
 							}
+							
 							DitherAction::None
 						}
 					}
 				};
 				log::info!("Network Action: {:?}", action);
-				if let Err(err) = self.parse_ditheraction(action) {
+				if let Err(err) = self.parse_dither_action(action) {
 					log::error!("Failed to parse DitherAction: {:?}", err);
 				}
 			}

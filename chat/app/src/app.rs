@@ -107,17 +107,7 @@ impl Application for DitherChatApp {
 		Command::none()
 	}
 	fn subscription(&self) -> Subscription<Event> {
-		match self {
-			Self::Loading(settings) => {
-				chat::subscription::connect(Some(settings.dither_config.clone()))
-					.map(Event::DitherChatEvent)
-			}
-			Self::Loaded(_state) => {
-				chat::subscription::connect(None)
-					.map(Event::DitherChatEvent)
-			}
-		}
-		
+		chat::subscription::connect().map(Event::DitherChatEvent)
 	}
 
 	fn view(&mut self) -> Element<Event> {

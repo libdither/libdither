@@ -4,13 +4,11 @@ use tokio::sync::mpsc::Receiver;
 use dither_chat::{Config, Client, DitherChatAction, DitherChatEvent, DitherChatConfig};
 
 // Just a little utility function
-pub fn connect(config: Option<DitherChatConfig>) -> iced::Subscription<DitherChatEvent> {
-	iced::Subscription::from_recipe(DitherChatAppSubscriptionRecipe {config})
+pub fn connect() -> iced::Subscription<DitherChatEvent> {
+	iced::Subscription::from_recipe(DitherChatAppSubscriptionRecipe{})
 }
 
-pub struct DitherChatAppSubscriptionRecipe {
-	config: Option<DitherChatConfig>,
-}
+pub struct DitherChatAppSubscriptionRecipe {}
 
 pub enum State {
 	Connecting,
