@@ -69,7 +69,7 @@ impl ChatChannel {
 				self.messages[index].update(event);
 			}
 			
-			_ => {log::error!("Unimplemented ChatChannelEvent");},
+			_ => { log::error!("Unimplemented ChatChannelEvent"); },
 		}
 	}
 	pub fn view(&mut self, settings: &DitherChatAppSettings) -> Element<Event> {

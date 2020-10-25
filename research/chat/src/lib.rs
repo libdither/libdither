@@ -34,6 +34,7 @@ pub enum DitherChatEvent {
 }
 
 pub struct DitherChat {
+	user_id: PeerId,
 	// Internal chat state
 }
 
@@ -42,7 +43,8 @@ impl DitherChat {
 		match chat_action {
 			DitherChatAction::SendMessage(message, channel) => {
 				log::info!("Sending Message: {:?} on channel: {:?}", message, channel);
-				event_sender.send(DitherChatEvent::ReceivedMessage(message.clone())).await.expect("Channel Closed");
+				message.sender = Some()
+				event_sender.send(DitherChatEvent::ReceivedMessage(message.clone())).await?;
 				match channel {
 					Channel::FloodSub(topic) => {
 						let data = serde_json::to_vec(&message)?;
@@ -97,6 +99,10 @@ impl DitherChat {
 			let mut n_network_sender = network_sender.clone();
 			let mut n_event_sender = event_sender.clone();
 			let mut n_self_sender = self_sender.clone();
+			
+			// Setup Network Layer
+			network_sender.send(Create)
+			
 			
 			// App Layer -> Chat Layer -> Network Layer
 			let chat_action_join = tokio::spawn(async move {
