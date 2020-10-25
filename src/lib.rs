@@ -14,7 +14,6 @@ use libp2p::{
 	Swarm,
 	Transport,
 	core::upgrade,
-	identity::Keypair,
 	floodsub::{self, Floodsub, Topic, FloodsubEvent},
 	//gossipsub::{protocol::MessageId, GossipsubMessage, GossipsubEvent, MessageAuthenticity, Topic, self},
 	mdns::TokioMdns, // `TokioMdns` is available through the `mdns-tokio` feature.
@@ -22,10 +21,12 @@ use libp2p::{
 	noise,
 	swarm::SwarmBuilder, // `TokioTcpConfig` is available through the `tcp-tokio` feature.
 	tcp::TokioTcpConfig,
+	swarm::NetworkBehaviour,
 };
 pub use libp2p::{
 	PeerId,
 	Multiaddr,
+	identity::Keypair,
 };
 
 mod behaviour;
@@ -34,20 +35,34 @@ pub use behaviour::DitherEvent;
 
 pub mod config;
 pub use config::Config;
+pub mod types;
+pub use types::User;
 
-pub struct User {
+/// Base structure of a Dither Network.
+/// Contains all the necessary information to run a Node
+/// There should only be one of these across all instances of applications using Dither
+pub struct Node {
+	/// Each Node has its own keys apart from `User` keys for baseline secure communcation between nodes
 	key: Keypair,
 	peer_id: PeerId,
-}
-pub struct Client {
+	/// `Swarm` object for managing behaviour and connected nodes
 	swarm: Swarm<DitherBehaviour, PeerId>,
+	/// General Configuration for the node (e.g. developer mode / test features)
 	config: Config,
-	user: User,
+	/// Users of the network
+	/// There can be any number of these created by different applications for different purposes (or shared between applications)
+	/// All information is stored in the `User` objects
+	users: Vec<Box<User>>
 }
 #[derive(Debug)]
 pub enum DitherAction {
-	Connect(PeerId),
-	Dial(Multiaddr),
+	/// Create new user, `User` object will be sent back to the application that requested
+	CreateUser(),
+	
+	Bootstrap(Multiaddr),
+	
+	Connect(User),
+	
 	
 	PubSubSubscribe(String),
 	PubSubUnsubscribe(String),
@@ -63,46 +78,29 @@ pub struct ThreadHandle<Return, ActionObject, EventObject> {
 	pub receiver: Receiver<EventObject>,
 }
 
-impl Client {
-	pub fn new(config: Config) -> Result<Client, Box<dyn Error>> {
+impl Node {
+	pub fn new(config: Config) -> Result<Node, Box<dyn Error>> {
 		let key = Keypair::generate_ed25519();
 		let peer_id = PeerId::from(key.public());
-		let user = User {
-			key: key.clone(),
-			peer_id: peer_id.clone(),
-		};
 		
 		let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
 			.into_authentic(&key)?;
-		
-		// Set up a an encrypted DNS-enabled TCP Transport over the Mplex and Yamux protocols
-		let transport = {
-			if config.dev_mode {
-				TokioTcpConfig::new().nodelay(true)
-					.upgrade(upgrade::Version::V1)
-					.authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
-					.multiplex(mplex::MplexConfig::new())
-					.boxed()
-				//libp2p::build_development_transport(key.clone())? // Use base "development" transport
-			} else {
-				panic!("Custom Transports not implemented yet"); // TODO: Create custom transport based on config
-			}
-		};
-		
-		let swarm = {
-			let mdns = TokioMdns::new()?;
-			let behaviour = DitherBehaviour::new(user.peer_id.clone(), mdns);
+		let transport = TokioTcpConfig::new().nodelay(true)
+			.upgrade(upgrade::Version::V1)
+			.authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
+			.multiplex(mplex::MplexConfig::new())
+			.boxed();
 			
-			SwarmBuilder::new(transport, behaviour, user.peer_id.clone())
-			.executor(Box::new(|fut| { tokio::spawn(fut); }))
-			.build()
-		};
-		let client = Client {
-			swarm,
+		let behaviour = behaviour::DitherBehaviour::new(peer_id.clone(), TokioMdns::new()?);
+		
+		Ok(Node {
+			key: key.clone(),
+			peer_id: peer_id.clone(),
+			swarm: SwarmBuilder::new(transport, behaviour, peer_id)
+				.executor(Box::new(|fut| { tokio::spawn(fut); }))
+				.build(),
 			config,
-			user,
-		};
-		Ok(client)
+		})
 	}
 	pub fn connect(&mut self) -> Result<(), Box<dyn Error>> {
 		Swarm::listen_on(&mut self.swarm, "/ip4/0.0.0.0/tcp/0".parse()?)?;

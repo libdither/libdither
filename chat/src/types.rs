@@ -5,6 +5,7 @@ use std::time::SystemTime;
 use dither::{
 	Multiaddr,
 	PeerId,
+	Keypair,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

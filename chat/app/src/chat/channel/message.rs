@@ -69,13 +69,6 @@ impl MessageWidget {
 					Event::TriggerMenu => {
 						log::info!("Message Menu Triggered");
 					},
-					// TODO: Propagate message editing back to DitherChat layer
-					/*Event::SubmitEdit(new_content) => {
-						
-						if self.message.content != new_content {
-							self.message.content = new_content;
-						}
-					},*/
 					_ => log::error!("Invalid Event for State::Display: {:?}", event),
 				}
 			},
@@ -97,7 +90,7 @@ impl MessageWidget {
 						self.message.content = format!("{} EDIT: {}", self.message.content, current_edit);
 
 					},
-					_ => log::error!("Invalid Event for State::Edited: {:?}", event),
+					_ => log::error!("Invalid Event for State::Editing: {:?}", event),
 				}
 			}
 		}
@@ -107,10 +100,13 @@ impl MessageWidget {
 		// Match current view state
 		match &mut self.state {
 			State::Display { edit_button, settings_button } => {
-				let author = self.message.sender.clone().unwrap_or("{Unknown}".to_owned()).clone();
+				let author = self.message.sender.clone().unwrap_or("{Anonymous}".to_owned()).clone();
 				Row::new()
-					.push(Text::new(author))
-					.push(Text::new(&self.message.content).width(Length::Fill)) // TODO: Display markdown instead of text
+					.push(
+						Column::new()
+							.push(Text::new(author))
+							.push(Text::new(&self.message.content).width(Length::Fill)) // TODO: Display markdown instead of text
+					)
 					.spacing(20)
 					.align_items(Align::Center)
 					.push(
