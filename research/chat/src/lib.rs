@@ -45,7 +45,8 @@ impl DitherChat {
 				event_sender.send(DitherChatEvent::ReceivedMessage(message.clone())).await.expect("Channel Closed");
 				match channel {
 					Channel::FloodSub(topic) => {
-						network_sender.send(DitherAction::PubSubBroadcast(topic, message.serialize())).await?;
+						let data = serde_json::to_vec(&message)?;
+						network_sender.send(DitherAction::PubSubBroadcast(topic, data)).await?;
 					}
 					Channel::Peer(_peer) => {
 						log::warn!("Unimplemented sending directly to peers");
@@ -78,7 +79,8 @@ impl DitherChat {
 				log::info!("Recieved data from network: {:?}", data);
 				let msg = serde_json::from_slice(&data)?;
 				event_sender.send(DitherChatEvent::ReceivedMessage(msg)).await.expect("App side closed");
-			}
+			},
+			_ => {},
 		}
 		Ok(())
 	}
