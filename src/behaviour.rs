@@ -1,3 +1,4 @@
+// Define the behaviour of any connection in Dither
 
 use libp2p::{
 	NetworkBehaviour,
@@ -7,9 +8,9 @@ use libp2p::{
 	PeerId,
 };
 
-#[derive(NetworkBehaviour)]
+/*#[derive(NetworkBehaviour)]
 #[behaviour(out_event = "DitherEvent")]
-#[behaviour(event_process = false)]
+#[behaviour(event_process = false)]*/
 pub struct DitherBehaviour {
 	//#[behaviour(ignore)]
 	pub floodsub: Floodsub,
@@ -24,13 +25,13 @@ pub struct DitherBehaviour {
 use std::any::Any;
 #[derive(Debug)]
 pub enum DitherEvent {
-	ReceivedData(Vec<u8>),
+	ReceivedData(Application, Vec<u8>),
 	FloodsubEvent(FloodsubEvent),
 	MdnsEvent(MdnsEvent),
 	//Unhandled(Box<dyn Any + Send + Sync>),
 }
 
-impl From<FloodsubEvent> for DitherEvent {
+/*impl From<FloodsubEvent> for DitherEvent {
 	fn from(event: FloodsubEvent) -> DitherEvent {
 		match event {
 			FloodsubEvent::Message(msg) => DitherEvent::ReceivedData(msg.data),
@@ -44,7 +45,7 @@ impl From<MdnsEvent> for DitherEvent {
 			_ => DitherEvent::MdnsEvent(event),
 		}
 	}
-}
+}*/
 
 impl DitherBehaviour {
 	pub fn new(peer: PeerId, mdns: TokioMdns) -> DitherBehaviour {
