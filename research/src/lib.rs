@@ -3,6 +3,7 @@
 
 use std::{
 	collections::hash_map::DefaultHasher,
+	collections::HashMap,
 	hash::{Hash, Hasher},
 	time::Duration,
 	error::Error,
@@ -33,43 +34,66 @@ mod behaviour;
 use behaviour::DitherBehaviour;
 pub use behaviour::DitherEvent;
 
-pub mod config;
-pub use config::Config;
 pub mod types;
-pub use types::User;
+pub use types::*;
+pub mod config;
+pub use config::DitherConfig;
+pub mod user;
+pub use user::*;
 
-/// Base structure of a Dither Network.
+/// The Dither object, runs the swarm
 /// Contains all the necessary information to run a Node
 /// There should only be one of these across all instances of applications using Dither
-pub struct Node {
+pub struct Dither {
+	/// Node data
 	/// Each Node has its own keys apart from `User` keys for baseline secure communcation between nodes
 	key: Keypair,
 	peer_id: PeerId,
-	/// `Swarm` object for managing behaviour and connected nodes
-	swarm: Swarm<DitherBehaviour, PeerId>,
+	
 	/// General Configuration for the node (e.g. developer mode / test features)
-	config: Config,
+	//config: Config,
+	
 	/// Users of the network
 	/// There can be any number of these created by different applications for different purposes (or shared between applications)
 	/// All information is stored in the `User` objects
-	users: Vec<Box<User>>
+	/// Applications can Authenticate into existing users with some token(s) (e.g. password, 2auth key, temp application token) or private key
+	users: HashMap<UserId, User>,
+	/// Dither configuration
+	config: DitherConfig,
+	/// `Swarm` object for managing behaviour and connected nodes
+	swarm: Swarm<DitherBehaviour, PeerId>,
 }
+
 #[derive(Debug)]
 pub enum DitherAction {
-	/// Create new user, `User` object will be sent back to the application that requested
+	/// Create new user, `User` and `NetworkKey` object will be sent back to the application that requested a new user
 	CreateUser(),
-	
+	/// Bootstrap node for initial nat connection (choose this with care, MITM attacks beware)
 	Bootstrap(Multiaddr),
 	
-	Connect(User),
+	/// Discover this user and nodes related to it
+	/// Fetch public user data from network and store locally. Network Tree Request will be made if user is not locally stored
+	Discover(UserId),
 	
+	/// Authenticate as user for application
+	/// Will return `NetworkKey` of the user if found locally
+	/// If User is not found locally, `DitherAction::Discover` should be called to resolve hosting node
+	/// Node will send back `NetworkKey` (may be temporary priv key) and `User` object (`User` object will contain instructions on how to route messages, etc.)
+	Authenticate(UserId, UserToken),
 	
-	PubSubSubscribe(String),
-	PubSubUnsubscribe(String),
-	PubSubBroadcast(String, Vec<u8>),
+	/// This will attempt to connect to a User on the network
+	/// If user is found, UserConnection will be sent to the application
+	Connect(UserId, Application),
+	/// Send data on an application to specific UserId
+	/// If Public Id and Hosting Nodes of User is known, data is sent to desired node encrypted with public key
+	SendData(UserConnection, Vec<u8>),
+	
+	//PubSubSubscribe(String),
+	//PubSubUnsubscribe(String),
+	//PubSubBroadcast(String, Vec<u8>),
 	//FloodSub(String, String), // Going to be a lot more complicated
+	/// [Debug] Print listening addrs to console
 	PrintListening,
-	None,
 }
 
 pub struct ThreadHandle<Return, ActionObject, EventObject> {
@@ -78,8 +102,8 @@ pub struct ThreadHandle<Return, ActionObject, EventObject> {
 	pub receiver: Receiver<EventObject>,
 }
 
-impl Node {
-	pub fn new(config: Config) -> Result<Node, Box<dyn Error>> {
+impl Dither {
+	pub fn new(config: DitherConfig) -> Result<Dither, Box<dyn Error>> {
 		let key = Keypair::generate_ed25519();
 		let peer_id = PeerId::from(key.public());
 		
@@ -93,13 +117,17 @@ impl Node {
 			
 		let behaviour = behaviour::DitherBehaviour::new(peer_id.clone(), TokioMdns::new()?);
 		
-		Ok(Node {
+		Ok(Dither {
+			node: Node {
+				
+			}
 			key: key.clone(),
 			peer_id: peer_id.clone(),
 			swarm: SwarmBuilder::new(transport, behaviour, peer_id)
 				.executor(Box::new(|fut| { tokio::spawn(fut); }))
 				.build(),
 			config,
+			users: Vec::new(),
 		})
 	}
 	pub fn connect(&mut self) -> Result<(), Box<dyn Error>> {
@@ -110,31 +138,19 @@ impl Node {
 	}
 	fn parse_dither_action(&mut self, action: DitherAction) -> Result<(), Box<dyn Error>> {
 		match action {
-			DitherAction::PubSubBroadcast(topic, data) => {
-				log::info!("Broadcasting: {:?}", String::from_utf8_lossy(&data));
-				self.swarm.broadcast(Topic::new(topic), data);
-			},
-			DitherAction::PubSubSubscribe(topic) => {
-				log::info!("Subscribing: {:?}", topic);
-				self.swarm.subscribe(Topic::new(topic));
-			},
-			DitherAction::PubSubUnsubscribe(topic) => {
-				self.swarm.unsubscribe(Topic::new(topic));
-			},
-			DitherAction::Dial(addr) => {
-				log::info!("Dialing: {}", addr);
-				Swarm::dial_addr(&mut self.swarm, addr)?;
-				//self.swarm.floodsub.add_node_to_partial_view(peer);
-			},
-			DitherAction::Connect(peer) => {
-				self.swarm.add_peer(peer);
-			},
+			/// Create new user, `User` and `NetworkKey` object will be sent back to the application that requested a new user
+			CreateUser(),
+			Bootstrap(Multiaddr),
+			Discover(UserId),
+			Authenticate(UserId, UserToken),
+			Connect(UserId, Application),
+			SendData(UserConnection, Vec<u8>),
+		
 			DitherAction::PrintListening => {
 				for addr in Swarm::listeners(&self.swarm) {
 					log::info!("Listening on: {:?}", addr);
 				}
 			},
-			DitherAction::None => {},
 			//_ => { log::error!("Unimplemented DitherAction: {:?}", action) },
 		}
 		Ok(())
