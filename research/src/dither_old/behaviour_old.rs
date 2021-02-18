@@ -13,8 +13,8 @@ use libp2p::{
 #[behaviour(event_process = false)]*/
 pub struct DitherBehaviour {
 	//#[behaviour(ignore)]
-	pub floodsub: Floodsub,
-	pub mdns: TokioMdns,
+	//pub floodsub: Floodsub,
+	//pub mdns: TokioMdns,
 
 	// Struct fields which do not implement NetworkBehaviour need to be ignored
 	//#[behaviour(ignore)]
