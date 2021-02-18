@@ -40,6 +40,8 @@ pub mod config;
 pub use config::DitherConfig;
 pub mod user;
 pub use user::*;
+pub mod routing;
+pub use routing;
 
 /// The Dither object, runs the swarm
 /// Contains all the necessary information to run a Node
