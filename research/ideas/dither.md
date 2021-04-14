@@ -7,9 +7,10 @@
     - [Distance-Based Routing](#distance-based-routing)
   - [Core Layer](#core-layer)
     - [Data Structuring](#data-structuring)
-    - [Trait Typing](#trait-typing)
-    - [Reverse Hash Lookup Versioned Binary Tree](#reverse-hash-lookup-versioned-binary-tree)
-    - [Example Traits](#example-traits)
+      - [Trait Typing](#trait-typing)
+      - [Reverse Hash Lookup Versioned Binary Tree](#reverse-hash-lookup-versioned-binary-tree)
+      - [Example Traits](#example-traits)
+    - [Gravity Tree Search](#gravity-tree-search)
     - [User Management](#user-management)
     - [Custom Routing](#custom-routing)
     - [API](#api)
@@ -47,8 +48,9 @@ See the [Distance-Based Routing Notebook](https://github.com/zyansheep/routing-r
 ### Data Structuring
  - Dither data will work much like IPFS where data is content-addressed with a multihash
  - Application data structures must start with the multihash of a trait definition.
+ - The trait tree defines layout of the data structure
 
-### Trait Typing
+#### Trait Typing
  - Traits are the type system for Dither. They prescibe meaning to data.
  - Trait definitions define how a data structure should be layed out and what requirements it has for validity.
  - An Example of a trait might be anything from being a "Video" to being a "Comment" or even a "Transaction".
@@ -69,10 +71,10 @@ See the [Distance-Based Routing Notebook](https://github.com/zyansheep/routing-r
       3. List<String> (UTF-8 String encoding name for each field)
  - Trait Localizations are found through the Reverse Lookup Blockchain
 
-### Reverse Hash Lookup Versioned Binary Tree
+#### Reverse Hash Lookup Versioned Binary Tree
  - This is a system by which one can find structures that link to a given hash implementing the reverse trait.
 
-### Example Traits
+#### Example Traits
 Traits can define literally any data structure and method of validation.
  - "Transaction" (With localization fields)
    - previous_transaction: SelfRef
@@ -81,6 +83,14 @@ Traits can define literally any data structure and method of validation.
    - destination: Multikey
    - pederson_commitment: PedersonCommitment
    - signature: RingSignature
+
+### Gravity Tree Search
+Content needs to be able to be located on the network. Traditionally this is done through a DHT (Distributed Hash Table) that maps content hashes to peers on the network that host data corresponding to the hashes. In constrast, Gravity Tree Searching (GTS) creates something like a gravitational well, or "hole" in the network around the node hosting a given piece of data. The surrounding nodes will use a binary search tree to map hashes to relative directions with a certain "confidence level". The confidence level being how certain the node thinks there is a node hosting the desired data in the certain relative direction. Nodes close to the hoster will know exactly which direction to go while nodes farther away will be less certain. This constructs a "hole" by which traversing packets that travel near the hole will be drawn in by nodes changing the trajectory of the packet (like a gravitational well). Once the requesting packet reaches the hosting node it can be returned directly and a direct / traversed / routed session can be established to transfer the data.
+
+Nodes looking for specific data corresponding to a hash can broadcast a content request packet which traverses through the network until it either encounters a hole, or remote nodes think it is too far off course and return an error.
+If none of the packets traveling across the network fall into a hole (because there weren't enough packets or not enough holes) a traditional, slow DHT lookup can be performed. 
+
+GTS is much faster and more effective than a DHT because DHT data hosting is distributed randomly across the network meaning that you might have to traverse back and forth across the internet to find someone hosting the data you need.
 
 ### User Management
 - Permissioned Definitions
