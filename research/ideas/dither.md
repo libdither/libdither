@@ -14,8 +14,8 @@
     - [User Management](#user-management)
     - [Custom Routing](#custom-routing)
     - [API](#api)
-    - [Dither Chain](#dither-chain)
-    - [Dither Consensus](#dither-consensus)
+    - [Dither Chain References](#dither-chain-references)
+    - [Dither Consensus Chains](#dither-consensus-chains)
     - [WIP - Dither Weighted Voting](#wip---dither-weighted-voting)
 
 ## What it is
@@ -132,14 +132,22 @@ GTS is much faster and more effective than a DHT because DHT data hosting is dis
   - Can potentially be a local application (such as dither-scp or dither-db)
   - Or another dither service running on another peer
 
-### Dither Chain
+### Dither Chain References
+Ideas for Dither Consensus
+ - IOTA Tangle
+ - Stellar Consensus Protocol
+ - zk-STARKS (for privacy)
+ - Layered on top of Dither Gravity Tree Search for storage
 
-
-### Dither Consensus
-- This will use the Stellar Consensus Protocol to enshrine information on a public, distributed ledger. It can be used for unique names
-- Quorum slices will be created through a “trusted user” api which can be added to by various user applications with permission (e.g. the friends list of Dither Chat)
+### Dither Consensus Chains
+- Regular Chains
+  - A chain is created just by linking to one or more other Hashtraits (fundamental format of Dither objects)
+  - Regular Chains can be used to represent filesystems, linked data, pretty much anything.
+- Consensus chains are different in that blocks linking to other blocks are weighted by how much they are linked to themselves. (Like the IOTA tangle)
+- Blocks are added via "active consensus", where new blocks are broadcast to computers actively participating in consensus and organized / verified using the Stellar Consensus Protocol.
+  - This could be used for a comment system where the comments with the most upvotes / interactions are sorted higher in a specific index.
+- Quorum slices in the SC protocol will be made up of social friends or other trusted users. (which can be registered by applications using Dither in specific contexts i.e. close friends in Dither Chat could be designated as part of a core Quorum Slice)
 - Quorum Slices will be stored in the trusted user configuration
-- Ledger is not necessarily strait, all blocks do not necessarily have to be added, 
 - Small “Consensus Chains” can be publicly listed or privately created between specific users with special rules on how blocks are added
 
 ### WIP - Dither Weighted Voting
