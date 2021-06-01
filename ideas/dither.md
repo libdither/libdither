@@ -10,7 +10,7 @@
     - [Trait Typing](#trait-typing)
     - [Reverse Hash Lookup Versioned Binary Tree](#reverse-hash-lookup-versioned-binary-tree)
     - [Example Traits](#example-traits)
-  - [Gravity Tree Search](#gravity-tree-search)
+  - [Directional Trail Search (DTS)](#directional-trail-search-dts)
   - [User Management](#user-management)
   - [Custom Routing](#custom-routing)
     - [User Management](#user-management-1)
@@ -88,13 +88,16 @@ Traits can define literally any data structure and method of validation.
    - pederson_commitment: PedersonCommitment
    - signature: RingSignature
 
-## Gravity Tree Search
-Content needs to be able to be located on the network. Traditionally this is done through a DHT (Distributed Hash Table) that maps content hashes to peers on the network that host data corresponding to the hashes. In constrast, Gravity Tree Searching (GTS) creates something like a gravitational well, or "hole" in the network around the node hosting a given piece of data. The surrounding nodes will use a binary search tree to map hashes to relative directions with a certain "confidence level". The confidence level being how certain the node thinks there is a node hosting the desired data in the certain relative direction. Nodes close to the hoster will know exactly which direction to go while nodes farther away will be less certain. This constructs a "hole" by which traversing packets that travel near the hole will be drawn in by nodes changing the trajectory of the packet (like a gravitational well). Once the requesting packet reaches the hosting node it can be returned directly and a direct / traversed / routed session can be established to transfer the data.
+## Directional Trail Search (DTS)
+Content needs to be able to be located on the network. Traditionally this is done through a Distributed Hash Table (i.e. Kademlia)  that maps content hashes to peers on the network that host data corresponding to the hashes. In constrast, Directional Trail Searching (DTS) is inspired the Pheromone Trails left by Ants. Whenever a specific hash is requested, a broadcast of searcher packets is sent in all directions in the network. As they travel from node to node, each node checks the hash against a binary tree that stores the direction for the searching packet to travel in and the approximate distance. A node can either choose to adjust the trajectory of the packet or forward it onwards on it's existing trajectory. Eventually a searching packet will find a "Trail" or a "Hole" by chance and will be guided to the node hosting the hash's data.
+A Hole is formed around a node broadcasting itself to be hosting a given piece of data to nearby nodes.
+A Trail is formed by a searching packet configured to leave a trail on it's way back to the device who originally sent out the packet.
+Trail and Hole forming is optional and is at the discretion of the data hoster(s) and intermediate nodes.
 
-Nodes looking for specific data corresponding to a hash can broadcast a content request packet which traverses through the network until it either encounters a hole, or remote nodes think it is too far off course and return an error.
-If none of the packets traveling across the network fall into a hole (because there weren't enough packets or not enough holes) a traditional, slow DHT lookup can be performed. 
+Nodes looking for specific data corresponding to a hash can broadcast a content request packet which traverses through the network until it either encounters a hole, trail, or exceeds the search radius.
+If none of the packets traveling across the network fall into a hole or encounter a trail (because there weren't enough packets or not enough holes) a traditional DHT lookup can be performed if supported by hosters. 
 
-GTS is much faster and more effective than a DHT because DHT data hosting is distributed randomly across the network meaning that you might have to traverse back and forth across the internet to find someone hosting the data you need.
+DTS is much faster and more effective than a DHT because DHT data hosting is distributed randomly across the network meaning that you might have to traverse back and forth across the internet to find someone hosting the data you need.
 
 ## User Management
 - Permissioned Definitions
