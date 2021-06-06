@@ -2,18 +2,19 @@
 
 - [The Dither Project](#the-dither-project)
 - [What is it?](#what-is-it)
+- [Core Tenants](#core-tenants)
 - [Structure](#structure)
 - [Network Layer](#network-layer)
   - [Distance-Based Routing](#distance-based-routing)
 - [Core Layer](#core-layer)
   - [Data Structuring](#data-structuring)
     - [Trait Typing](#trait-typing)
-    - [Reverse Hash Lookup Versioned Binary Tree](#reverse-hash-lookup-versioned-binary-tree)
     - [Example Traits](#example-traits)
   - [Directional Trail Search (DTS)](#directional-trail-search-dts)
-  - [User Management](#user-management)
+  - [Reverse Hash Lookup (RHL)](#reverse-hash-lookup-rhl)
+  - [User Definitions](#user-definitions)
   - [Custom Routing](#custom-routing)
-    - [User Management](#user-management-1)
+    - [User Management](#user-management)
   - [Dither Chain References](#dither-chain-references)
   - [Dither Consensus Chains](#dither-consensus-chains)
   - [WIP - Dither Weighted Voting](#wip---dither-weighted-voting)
@@ -27,6 +28,20 @@ It is much inspired by and takes from various projects such as Rust, TOR, Bittor
 Potential Decentralized Applications that can be created with Dither:
 
 Chat/Communication Apps, Video Sharing, Social Media, Comment systems, File Syncronization, Encrypted Backup, Voting systems, Exchanges, Crowdfunding, VCS, Stores, Serverless Games, Remote Machine Control, etc.
+
+# Core Tenants
+These are the Core Tenants of Dither that the project will strive for.
+
+**Dither should be as modular as possible.**
+ - There should be no part of Dither that is hard to replace with a different implementation.
+
+**Dither protocols and formats should be able to interoperate with most other protocols and formats.**
+ - One example of this would be allowing someone to pull comments from Reddit / Youtube into Dithca and hosting them in a decentralized manner.
+ - Another example might be Dithca storing Reddit / Youtube credentials and being able to optionally interact with comment threads pulled from centralized websites.
+
+**Dither should rely on itself as much as possible for every aspect of development and usage.**
+ - Code Versioning, Storage, Building, Distribution, and Communication should all run through Dither as much as possible.
+
 
 # Structure
  - Network Layer (Provided by libp2p)
@@ -75,9 +90,6 @@ See the [Distance-Based Routing Notebook](https://github.com/zyansheep/routing-r
       3. List<String> (UTF-8 String encoding name for each field)
  - Trait Localizations are found through the Reverse Lookup Blockchain
 
-### Reverse Hash Lookup Versioned Binary Tree
- - This is a system by which one can find structures that link to a given hash implementing the reverse trait.
-
 ### Example Traits
 Traits can define literally any data structure and method of validation.
  - "Transaction" (With localization fields)
@@ -99,7 +111,13 @@ If none of the packets traveling across the network fall into a hole or encounte
 
 DTS is much faster and more effective than a DHT because DHT data hosting is distributed randomly across the network meaning that you might have to traverse back and forth across the internet to find someone hosting the data you need.
 
-## User Management
+## Reverse Hash Lookup (RHL)
+ - This solves the problem of having a hash and wanting to find pieces of data that link to that hash. This is super useful for comment systems and the like.
+ - 
+ - This is a system by which one can find structures that link to a given hash implementing the reverse trait.
+
+## User Definitions
+
 - Permissioned Definitions
 - A user will have multiple definitions of itself with varying levels of permission and transparency. This structure is used for setting user configuration
 - Public Definition - Defines a user to the world
