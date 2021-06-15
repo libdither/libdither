@@ -7,11 +7,12 @@
 - [Network Layer](#network-layer)
   - [Distance-Based Routing](#distance-based-routing)
 - [Core Layer](#core-layer)
-  - [Data Structuring](#data-structuring)
+  - [Data Structuring (Hashtraits)](#data-structuring-hashtraits)
     - [Trait Typing](#trait-typing)
+    - [Traits and External Data](#traits-and-external-data)
     - [Example Traits](#example-traits)
-  - [Directional Trail Search (DTS)](#directional-trail-search-dts)
-  - [Reverse Hash Lookup (RHL)](#reverse-hash-lookup-rhl)
+  - [Locating Data (Directional Trail Search)](#locating-data-directional-trail-search)
+  - [Finding Data Links (Reverse Hash Lookup)](#finding-data-links-reverse-hash-lookup)
   - [User Definitions](#user-definitions)
   - [Custom Routing](#custom-routing)
     - [User Management](#user-management)
@@ -58,13 +59,28 @@ These are the Core Tenants of Dither that the project will strive for.
 
 # Network Layer
 ## Distance-Based Routing
+
+The way data travels on Dither is through a comprehensive Routing Protocol called Distance-Based Routing (DBR). The goal of DBR is to provide methods to easily create custom routing paths that can be used for traffic obfuscation, while not compromising substantial speed like TOR. DBR allows users to use onion routing and garlic routing optionally based on predefined conditions. (e.g. direct connect with your friend with exposing your IP to them but using onion routing when connecting with unknown parties).
+
+To accomplish this DBR has many parts:
+
+ - Network Self-Organization
+ - Coordinate Calculation
+ - Data & Bandwidth Tracking
+ - Network Packet Traversal
+ - Configurable Secure Routing Protocol
+
+The first thing a Dither full node does when starting is to find it's closest nodes. It accomplishes this by recursively asking new nodes that it connects to for pings from their peers. Through this process a network can organize itself into local connections.
+
+![Network Structure for Dither Server](resources/self-organization.gif)
+
 Nodes are organized in euclidian space using their relative virtual distance to each other. Packets are then routed using these virtual coordinates to create shortest path through the network.
 
 See the [Distance-Based Routing Notebook](https://github.com/zyansheep/routing-research) for in-depth details
 
 # Core Layer
 
-## Data Structuring
+## Data Structuring (Hashtraits)
  - Dither data will work much like IPFS where data is content-addressed with a multihash
  - Application data structures must start with the multihash of a trait definition.
  - The trait tree defines layout of the data structure
@@ -90,6 +106,15 @@ See the [Distance-Based Routing Notebook](https://github.com/zyansheep/routing-r
       3. List<String> (UTF-8 String encoding name for each field)
  - Trait Localizations are found through the Reverse Lookup Blockchain
 
+### Traits and External Data
+In Dither, while pieces of data can be located and linked with multihashes, not all pieces of data contain multihashes. Any external hash-linked data structure that you want to host on Dither (i.e. blockchains) aren't going to be natively supported. Instead all the blocks of data must either be re-linked to form a multihash-supporting copy or the hash types have to be inferred by context. (The downside of the second option non-hashtrait blocks can't easily be inferred from non-specific programs interpreting hashtraits). The second option is what IPFS/IPLD is doing, reinterpreting hashed blocks of data of arbitrary format by defining a standard table of formats. Dither prefers the first option of wrapping the entire data structure with trait definitions that Dither can understand.
+
+What IPLD does is it uses an addition to Multihash called CID (Content Identifier). This CID contains both the multihash and a number for the Multiformats table that must be standardly designed.
+
+The problem with IPLD is that this [standard table of formats](https://github.com/multiformats/multicodec/blob/master/table.csv) is subject to change. Formats are not universal and if you want to identify custom formats not in the table, you are out of luck if you want to communicate your custom formats to existing IPFS applications
+
+With Dither, instead of having a hard standard list of formats, Formats of data are defined by the data itself using the hashtrait format. Data that is not trait-defined, will be either wrapped using a definition trait (i.e. a structure just containing a hash of the data and trait). Or it will be reinterpreted to be represented natively as a trait structure.
+
 ### Example Traits
 Traits can define literally any data structure and method of validation.
  - "Transaction" (With localization fields)
@@ -100,7 +125,7 @@ Traits can define literally any data structure and method of validation.
    - pederson_commitment: PedersonCommitment
    - signature: RingSignature
 
-## Directional Trail Search (DTS)
+## Locating Data (Directional Trail Search)
 Content needs to be able to be located on the network. Traditionally this is done through a Distributed Hash Table (i.e. Kademlia)  that maps content hashes to peers on the network that host data corresponding to the hashes. In constrast, Directional Trail Searching (DTS) is inspired the Pheromone Trails left by Ants. Whenever a specific hash is requested, a broadcast of searcher packets is sent in all directions in the network. As they travel from node to node, each node checks the hash against a binary tree that stores the direction for the searching packet to travel in and the approximate distance. A node can either choose to adjust the trajectory of the packet or forward it onwards on it's existing trajectory. Eventually a searching packet will find a "Trail" or a "Hole" by chance and will be guided to the node hosting the hash's data.
 A Hole is formed around a node broadcasting itself to be hosting a given piece of data to nearby nodes.
 A Trail is formed by a searching packet configured to leave a trail on it's way back to the device who originally sent out the packet.
@@ -111,10 +136,11 @@ If none of the packets traveling across the network fall into a hole or encounte
 
 DTS is much faster and more effective than a DHT because DHT data hosting is distributed randomly across the network meaning that you might have to traverse back and forth across the internet to find someone hosting the data you need.
 
-## Reverse Hash Lookup (RHL)
+## Finding Data Links (Reverse Hash Lookup)
  - This solves the problem of having a hash and wanting to find pieces of data that link to that hash. This is super useful for comment systems and the like.
- - 
  - This is a system by which one can find structures that link to a given hash implementing the reverse trait.
+ - If there is some pieces of data that links from or adds useful defintions to a given piece of data, this is the place for it. One example of this in practice might be having a comment thread. Each comment is its own Hashstruct that contains the hash of the post or a replying comment. In order for someone who has the post structure to find the comments, they would need find all the pieces of data linking to this piece of data (i.e. a Reverse Hash Lookup)
+ - To implement this system, there will be a partial binary tree represented by a DAG that can be traversed using the data of the target. (i.e. the post structure's hash). Then the tree can be traversed down using consecutive trail searches. Until a list of all known linked hashes is found. These structures must contain a specific trait called a RevHash to be able to be validated onto the distributed tree. The addition of new links to this tree is done through an implementation of Dither Chain Consensus (see the [#Dither Consensus Chains](#dither-consensus-chains) section).
 
 ## User Definitions
 
