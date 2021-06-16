@@ -6,6 +6,7 @@
 - [Structure](#structure)
 - [Network Layer](#network-layer)
   - [Distance-Based Routing](#distance-based-routing)
+    - [Custom Routing](#custom-routing)
 - [Core Layer](#core-layer)
   - [Data Structuring (Hashtraits)](#data-structuring-hashtraits)
     - [Trait Typing](#trait-typing)
@@ -14,8 +15,7 @@
   - [Locating Data (Directional Trail Search)](#locating-data-directional-trail-search)
   - [Finding Data Links (Reverse Hash Lookup)](#finding-data-links-reverse-hash-lookup)
   - [User Definitions](#user-definitions)
-  - [Custom Routing](#custom-routing)
-    - [User Management](#user-management)
+  - [User Management](#user-management)
   - [Dither Chain References](#dither-chain-references)
   - [Dither Consensus Chains](#dither-consensus-chains)
   - [WIP - Dither Weighted Voting](#wip---dither-weighted-voting)
@@ -77,6 +77,15 @@ The first thing a Dither full node does when starting is to find it's closest no
 Nodes are organized in euclidian space using their relative virtual distance to each other. Packets are then routed using these virtual coordinates to create shortest path through the network.
 
 See the [Distance-Based Routing Notebook](https://github.com/zyansheep/routing-research) for in-depth details
+
+### Custom Routing
+- “Router groups” - create a group of peers who forward incoming packets and outgoing packets through each other, making it difficult to know for sure if a packet is going to a specific user
+  - Different modes have different speed
+    - Speed - routes packets according to how fast they will leave the group
+    - 
+    - Random- connections are routed randomly to different peers.
+    - Periodic (most secure, least speed, lots of data sent) - all peers send packets of random data, size (optional) at set intervals (specifiable) to random (or all) other peers. If a peer has data to send, they will send the encrypted data instead of the random data.
+
 
 # Core Layer
 
@@ -154,34 +163,9 @@ DTS is much faster and more effective than a DHT because DHT data hosting is dis
 - Routing Ideas
 - Overlay network that routes through 2 peers on the way. (Need to form some kind of decentralized routing table) - Would create tor-likeness privacy. Depending on how it is implemented, it would be hard to trace packets
 
-## Custom Routing
-- “Router groups” - create a group of peers who forward incoming packets and outgoing packets through each other, making it difficult to know for sure if a packet is going to a specific user
-  - Different modes have different speed
-    - Speed - routes packets according to how fast they will leave the group
-    - 
-    - Random- connections are routed randomly to different peers.
-    - Periodic (most secure, least speed, lots of data sent) - all peers send packets of random data, size (optional) at set intervals (specifiable) to random (or all) other peers. If a peer has data to send, they will send the encrypted data instead of the random data.
+## User Management
 
-### User Management
-
-- `CreateUser()`
-  - Create new user (for permanent or temporary purposes)
-  - This will create a new user in this peer and give access to application that called this DitherAction
-- `Bootstrap(PeerID, MultiAddr)`
-  - Tell network layer to bootstrap to specific node (only used on startup)
-- `Discover(UserId)`
-  - Initiate a network tree request to discover info about a user. (e.g. hosting peers, public configuration)
-  - Depending on the queried user’s config information may or may not be returned.
-- `Authenticate(UserId, UserToken)` - Authenticate to user on dither network
-  - This will attempt to authenticate an application as a user on the network. 
-  - When a token is sent to the peer(s) with permission over the user’s private key, the type of authentication is predetermined by the permissions in the private user configuration. The Types of Authentication are:
-    - Hosting - the user’s private key is sent to the application and the application has full control over the user
-    - Proxy - all events are sent through peers with actual permission to sign messages
-  - Will attempt to authenticate as a known user with known hosting peer
-- `SendData(UserId, Data)`
-  - Send data to specific application of specific UserId
-  - Can potentially be a local application (such as dither-scp or dither-db)
-  - Or another dither service running on another peer
+See [User Api Document](./dither/user-api.md)
 
 ## Dither Chain References
 Ideas for Dither Consensus
