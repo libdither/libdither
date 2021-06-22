@@ -2,12 +2,27 @@
 Defining all of math programatically using set theory.
 
 ## Traits
+
+Defining the fundamental structures of math:
+
+ - Proposition
+   - Math Def: A true or false statement based on a system of propositions
+   - Structure Def: A boolean value corresponding to a predicate statement on a proposition system.
+   - Struct: { system: Multihash\<Proposition\>, struct: Multihash\<Predicate\>, value: bool }
+   - 
+   - E.g. 
  - Variable
-   - An variable who's type is defined by the Axiomatic System used by the proof. The variable Trait simply counts up from 0 for each variable used in a proof.
+   - Math Def: An variable in an axiomatic system
+   - Struct Def: Uniquely identify a variable in a system
+   - Struct: { id: Varint }
+ - Predicate
+   - Math Def: Proposition-Valued function of some variables
+   - Structure Def: List of variables representing a function that can be used in a Definition
+   - Struct: { List\<Variable\> }
+   - Usage: 
  - Operator
    - A function defined by a proof, Linked to by a symbol.
- - Proposition
-   - A series of quantizations and predicates
+   - Struct
  - Proof
    - A proof is just a list of propositions that results in prooving a proposition from some axioms.
    - A proposition can be an Axiom, a Tautology, or a derived proposition.
