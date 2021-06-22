@@ -24,11 +24,12 @@
 Dither is a modular application API built on top of [Libp2p](https://github.com/libp2p/rust-libp2p). It aims to provide buliding blocks for Consensus, Communication, Data Storage, Account Management, and more to replace most online services with a decentralized and private alternative. It aims to be compatible for extracting data from and interfacing with most existing decentralized and centralized systems such as IPFS, Github, Reddit, Youtube, Sci-Hub, Odysee & Discord.
 *The aim for Dither is to replace these applications with decentralized alternatives that are unified through their use of a singular, modular protocol.*
 
-It is much inspired by and takes from various projects such as Rust, TOR, Bittorrent, IPFS, Stellar, Ethereum, IOTA, Monero, zk-STARKS, and more.
+It is much inspired by and takes from various projects such as Rust, TOR, Bittorrent, IPFS, IPLD, Stellar, Ethereum, IOTA, Monero, zk-STARKS, and more.
 
 Potential Decentralized Applications that can be created with Dither:
 
 Chat/Communication Apps, Video Sharing, Social Media, Comment systems, File Syncronization, Encrypted Backup, Voting systems, Exchanges, Crowdfunding, VCS, Stores, Serverless Games, Remote Machine Control, etc.
+The goal of Dither is to be able to recreate any kind of application in a decentralized manner.
 
 # Core Tenants
 These are the Core Tenants of Dither that the project will strive for.
@@ -56,6 +57,7 @@ These are the Core Tenants of Dither that the project will strive for.
  - Application Layer
    - Uses some or all of Dither's features to create an application
    - May provide an API as a library or a full application.
+   - Guis may be built on top of the APIs
 
 # Network Layer
 ## Distance-Based Routing
