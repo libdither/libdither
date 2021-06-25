@@ -9,8 +9,8 @@
     - [Custom Routing](#custom-routing)
 - [Core Layer](#core-layer)
   - [Data Structuring (Hashtraits)](#data-structuring-hashtraits)
-    - [Trait Typing](#trait-typing)
-    - [Traits and External Data](#traits-and-external-data)
+    - [Self-Defining Structures](#self-defining-structures)
+    - [Defining External Structures](#defining-external-structures)
     - [Example Traits](#example-traits)
   - [Locating Data (Directional Trail Search)](#locating-data-directional-trail-search)
   - [Finding Data Links (Reverse Hash Lookup)](#finding-data-links-reverse-hash-lookup)
@@ -96,28 +96,15 @@ See the [Distance-Based Routing Notebook](https://github.com/zyansheep/routing-r
  - Application data structures must start with the multihash of a trait definition.
  - The trait tree defines layout of the data structure
 
-### Trait Typing
+### Self-Defining Structures
+ - Because Modularity and Future-proofing are important, Dither uses a system of self-defining structures where structures link to their own format and provide information on how they are to be used.
  - Traits are the type system for Dither. They prescibe meaning to data.
  - Trait definitions define how a data structure should be layed out and what requirements it has for validity.
  - An Example of a trait might be anything from being a "Video" to being a "Comment" or even a "Transaction".
- - This extensible trait system allows for any kind of representation of data and is a self-describing data structure such that no matter what structure someone has, it will be able to be parsed.
- - Traits can contain field requirements with subtrait bounds.
-   - For example, a "Video" trait may have a title field which must satisfy the "String" trait.
- - Trait definitions are themselves data structures which implement a "Trait" trait. (there should only be a few of these, one for each time Dither is upgraded)
- - Traits are referred to by a MultiHash
- - The "Trait" trait is formatted as follows:
-   1. MultiHash (Previous version of trait definition, Optional)
-   2. List\<MultiHash\> (Subtraits that make up a trait)
-   3. TraitLocalization (Default localization names, Optional)
- - Trait field names can be defined with a "TraitLocalization" trait
-   1. None (no previous version)
-   2. Trait List
-      1. Reverse\<MultiHash\> (Hash of Trait to define, using Reverse trait for lookup table)
-      2. String (Localized Name of Trait)
-      3. List<String> (UTF-8 String encoding name for each field)
- - Trait Localizations are found through the Reverse Lookup Blockchain
+ - This extensible trait system allows for any kind of representation of data and is a self-describing data structure such that no matter what structure someone has, it will be able to be parsed and validated.
+ - More Info in the [Self-Defining Structure Document](dither/self-defining-structures.md)
 
-### Traits and External Data
+### Defining External Structures
 In Dither, while pieces of data can be located and linked with multihashes, not all pieces of data contain multihashes. Any external hash-linked data structure that you want to host on Dither (i.e. blockchains) aren't going to be natively supported. Instead all the blocks of data must either be re-linked to form a multihash-supporting copy or the hash types have to be inferred by context. (The downside of the second option non-hashtrait blocks can't easily be inferred from non-specific programs interpreting hashtraits). The second option is what IPFS/IPLD is doing, reinterpreting hashed blocks of data of arbitrary format by defining a standard table of formats. Dither prefers the first option of wrapping the entire data structure with trait definitions that Dither can understand.
 
 What IPLD does is it uses an addition to Multihash called CID (Content Identifier). This CID contains both the multihash and a number for the Multiformats table that must be standardly designed.
@@ -127,14 +114,15 @@ The problem with IPLD is that this [standard table of formats](https://github.co
 With Dither, instead of having a hard standard list of formats, Formats of data are defined by the data itself using the hashtrait format. Data that is not trait-defined, will be either wrapped using a definition trait (i.e. a structure just containing a hash of the data and trait). Or it will be reinterpreted to be represented natively as a trait structure.
 
 ### Example Traits
-Traits can define literally any data structure and method of validation.
- - "Transaction" (With localization fields)
-   - previous_transaction: SelfRef
-   - definintion: Multihash (Default Trait Definition)
-   - source: List\<MultiKey\>
-   - destination: Multikey
-   - pederson_commitment: PedersonCommitment
-   - signature: RingSignature
+Traits can define any data structure and its state of being "Valid". 
+A Monero Transaction might look something like this after being structured in Dither.
+ - `"Transaction" (With localization fields)`
+   - `previous_transaction: SelfRef`
+   - `definintion: Multihash (Default Trait Definition)`
+   - `source: List<MultiKey>`
+   - `destination: Multikey`
+   - `pederson_commitment: PedersonCommitment`
+   - `signature: RingSignature`
 
 ## Locating Data (Directional Trail Search)
 Content needs to be able to be located on the network. Traditionally this is done through a Distributed Hash Table (i.e. Kademlia)  that maps content hashes to peers on the network that host data corresponding to the hashes. In constrast, Directional Trail Searching (DTS) is inspired the Pheromone Trails left by Ants. Whenever a specific hash is requested, a broadcast of searcher packets is sent in all directions in the network. As they travel from node to node, each node checks the hash against a binary tree that stores the direction for the searching packet to travel in and the approximate distance. A node can either choose to adjust the trajectory of the packet or forward it onwards on it's existing trajectory. Eventually a searching packet will find a "Trail" or a "Hole" by chance and will be guided to the node hosting the hash's data.
