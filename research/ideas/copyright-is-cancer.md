@@ -1,0 +1,9 @@
+# Why Copyright is Cancer
+
+Copyright is ineffective in the internet age. Any piece of content can be pirated on a massive scale with support of the original creator. The only thing copyright does is suppress future art and communication through centralized forums. See these videos on why [the current copyright system is broken](https://www.youtube.com/watch?v=1Jwo5qc78QU) and why it [makes no sense](https://www.youtube.com/watch?v=QVkeJI2feyQ). This document outlines an alternate system of funding creation that Dither aims to create.
+
+**Have a decentralized & democratized forum of communication and publication that no institution or individual can meaningfully obstruct.** Dither is a protocol for creating decentralized applications.
+
+**Provide a direct connection of support between the consumers and the creators allowing people to directly support creators for the content they produce** ([Paying for Production, not Distribution](https://www.youtube.com/watch?v=mnnYCJNhw7w)). Even huge projects like Marvel movies or video games can be supported through community fundraising. Each production raises the reputation of the artist(s), allowing them to raise more money from their fans for the next project.
+
+**Preventing artists from having control over their art allows all artists to use and adapt and *recreate* the work of other artists**. Imagine all the games and movies that were super hyped up but totally flopped. If anyone was allowed to make anyone else's work but better, artists have an incentive to make good stories so that they can raise money for their next project, instead of making something crappy and making all their money off of preorders. This would also prevent the fragmentation of distribution services as no one entity can have exclusive control over a piece of content.
