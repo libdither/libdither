@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>dither</title>
+  <style>
+    html {
+      line-height: 1.5;
+      font-family: Georgia, serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      word-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 1em;
+      }
+    }
+    @media print {
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
+      font-size: 85%;
+      margin: 0;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="the-dither-project">The Dither Project</h1>
+<ul>
+<li><a href="#the-dither-project">The Dither Project</a></li>
+<li><a href="#what-is-it">What is it?</a></li>
+<li><a href="#core-tenants">Core Tenants</a></li>
+<li><a href="#structure">Structure</a></li>
+<li><a href="#network-layer">Network Layer</a>
+<ul>
+<li><a href="#distance-based-routing">Distance-Based Routing</a>
+<ul>
+<li><a href="#custom-routing">Custom Routing</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#core-layer">Core Layer</a>
+<ul>
+<li><a href="#data-structuring-hashtraits">Data Structuring (Hashtraits)</a>
+<ul>
+<li><a href="#self-defining-structures">Self-Defining Structures</a></li>
+<li><a href="#defining-external-structures">Defining External Structures</a></li>
+<li><a href="#example-traits">Example Traits</a></li>
+</ul></li>
+<li><a href="#locating-data-directional-trail-search">Locating Data (Directional Trail Search)</a></li>
+<li><a href="#finding-data-links-reverse-hash-lookup">Finding Data Links (Reverse Hash Lookup)</a></li>
+<li><a href="#user-definitions">User Definitions</a></li>
+<li><a href="#user-management">User Management</a></li>
+<li><a href="#dither-chain-references">Dither Chain References</a></li>
+<li><a href="#dither-consensus-chains">Dither Consensus Chains</a></li>
+<li><a href="#wip---dither-weighted-voting">WIP - Dither Weighted Voting</a></li>
+</ul></li>
+</ul>
+<h1 id="what-is-it">What is it?</h1>
+<p>Dither is a modular application API built on top of <a href="https://github.com/libp2p/rust-libp2p">Libp2p</a>. It aims to provide buliding blocks for Consensus, Communication, Data Storage, Account Management, and more to replace most online services with a decentralized and private alternative. It aims to be compatible for extracting data from and interfacing with most existing decentralized and centralized systems such as IPFS, Github, Reddit, Youtube, Sci-Hub, Odysee &amp; Discord. <em>The aim for Dither is to replace these applications with decentralized alternatives that are unified through their use of a singular, modular protocol.</em></p>
+<p>It is much inspired by and takes from various projects such as Rust, TOR, Bittorrent, IPFS, IPLD, Stellar, Ethereum, IOTA, Monero, zk-STARKS, and more.</p>
+<p>Potential Decentralized Applications that can be created with Dither:</p>
+<p>Chat/Communication Apps, Video Sharing, Social Media, Comment systems, File Syncronization, Encrypted Backup, Voting systems, Exchanges, Crowdfunding, VCS, Stores, Serverless Games, Remote Machine Control, etc. The goal of Dither is to be able to recreate any kind of application in a decentralized manner.</p>
+<h1 id="core-tenants">Core Tenants</h1>
+<p>These are the Core Tenants of Dither that the project will strive for.</p>
+<p><strong>Dither should be as modular as possible.</strong> - There should be no part of Dither that is hard to replace with a different implementation.</p>
+<p><strong>Dither protocols and formats should be able to interoperate with most other protocols and formats.</strong> - One example of this would be allowing someone to pull comments from Reddit / Youtube into Dithca and hosting them in a decentralized manner. - Another example might be Dithca storing Reddit / Youtube credentials and being able to optionally interact with comment threads pulled from centralized websites.</p>
+<p><strong>Dither should rely on itself as much as possible for every aspect of development and usage.</strong> - Code Versioning, Storage, Building, Distribution, and Communication should all run through Dither as much as possible.</p>
+<h1 id="structure">Structure</h1>
+<ul>
+<li>Network Layer (Provided by libp2p)
+<ul>
+<li>Handles all the p2p details (NAT traversal, routing, and cryptography)</li>
+<li><a href="https://github.com/libdither/dbr-sim">Distaced-Based Routing protocol</a>: Custom onion routing protocol which allows for anonymity on the network and is faster and more flexible compared to random routing (like what TOR and I2P uses)</li>
+</ul></li>
+<li>Core Layer
+<ul>
+<li>Data Structuring (Traits, Self-Defining structs)</li>
+<li>Data Locating (Gravity Tree Search)</li>
+<li>Consensus Algorithms (Stellar Consensus Protocol + IOTA)</li>
+<li>User Management (User data storage &amp; syncronization)</li>
+</ul></li>
+<li>Application Layer
+<ul>
+<li>Uses some or all of Dither’s features to create an application</li>
+<li>May provide an API as a library or a full application.</li>
+<li>Guis may be built on top of the APIs</li>
+</ul></li>
+</ul>
+<h1 id="network-layer">Network Layer</h1>
+<h2 id="distance-based-routing">Distance-Based Routing</h2>
+<p>The way data travels on Dither is through a comprehensive Routing Protocol called Distance-Based Routing (DBR). The goal of DBR is to provide methods to easily create custom routing paths that can be used for traffic obfuscation, while not compromising substantial speed like TOR. DBR allows users to use onion routing and garlic routing optionally based on predefined conditions. (e.g. direct connect with your friend with exposing your IP to them but using onion routing when connecting with unknown parties).</p>
+<p>To accomplish this DBR has many parts:</p>
+<ul>
+<li>Network Self-Organization</li>
+<li>Coordinate Calculation</li>
+<li>Data &amp; Bandwidth Tracking</li>
+<li>Network Packet Traversal</li>
+<li>Configurable Secure Routing Protocol</li>
+</ul>
+<p>The first thing a Dither full node does when starting is to find it’s closest nodes. It accomplishes this by recursively asking new nodes that it connects to for pings from their peers. Through this process a network can organize itself into local connections.</p>
+<figure>
+<img src="resources/self-organization.gif" alt="Network Structure for Dither Server" /><figcaption aria-hidden="true">Network Structure for Dither Server</figcaption>
+</figure>
+<p>Nodes are organized in euclidian space using their relative virtual distance to each other. Packets are then routed using these virtual coordinates to create shortest path through the network.</p>
+<p>See the <a href="https://github.com/zyansheep/routing-research">Distance-Based Routing Notebook</a> for in-depth details</p>
+<h3 id="custom-routing">Custom Routing</h3>
+<ul>
+<li>“Router groups” - create a group of peers who forward incoming packets and outgoing packets through each other, making it difficult to know for sure if a packet is going to a specific user
+<ul>
+<li>Different modes have different speed
+<ul>
+<li>Speed - routes packets according to how fast they will leave the group</li>
+<li></li>
+<li>Random- connections are routed randomly to different peers.</li>
+<li>Periodic (most secure, least speed, lots of data sent) - all peers send packets of random data, size (optional) at set intervals (specifiable) to random (or all) other peers. If a peer has data to send, they will send the encrypted data instead of the random data.</li>
+</ul></li>
+</ul></li>
+</ul>
+<h1 id="core-layer">Core Layer</h1>
+<h2 id="data-structuring-hashtraits">Data Structuring (Hashtraits)</h2>
+<ul>
+<li>Dither data will work much like IPFS where data is content-addressed with a multihash</li>
+<li>Application data structures must start with the multihash of a trait definition.</li>
+<li>The trait tree defines layout of the data structure</li>
+</ul>
+<h3 id="self-defining-structures">Self-Defining Structures</h3>
+<ul>
+<li>Because Modularity and Future-proofing are important, Dither uses a system of self-defining structures where structures link to their own format and provide information on how they are to be used.</li>
+<li>Traits are the type system for Dither. They prescibe meaning to data.</li>
+<li>Trait definitions define how a data structure should be layed out and what requirements it has for validity.</li>
+<li>An Example of a trait might be anything from being a “Video” to being a “Comment” or even a “Transaction”.</li>
+<li>This extensible trait system allows for any kind of representation of data and is a self-describing data structure such that no matter what structure someone has, it will be able to be parsed and validated.</li>
+<li>More Info in the <a href="dither/self-defining-structures.md">Self-Defining Structure Document</a></li>
+</ul>
+<h3 id="defining-external-structures">Defining External Structures</h3>
+<p>In Dither, while pieces of data can be located and linked with multihashes, not all pieces of data contain multihashes. Any external hash-linked data structure that you want to host on Dither (i.e. blockchains) aren’t going to be natively supported. Instead all the blocks of data must either be re-linked to form a multihash-supporting copy or the hash types have to be inferred by context. (The downside of the second option non-hashtrait blocks can’t easily be inferred from non-specific programs interpreting hashtraits). The second option is what IPFS/IPLD is doing, reinterpreting hashed blocks of data of arbitrary format by defining a standard table of formats. Dither prefers the first option of wrapping the entire data structure with trait definitions that Dither can understand.</p>
+<p>What IPLD does is it uses an addition to Multihash called CID (Content Identifier). This CID contains both the multihash and a number for the Multiformats table that must be standardly designed.</p>
+<p>The problem with IPLD is that this <a href="https://github.com/multiformats/multicodec/blob/master/table.csv">standard table of formats</a> is subject to change. Formats are not universal and if you want to identify custom formats not in the table, you are out of luck if you want to communicate your custom formats to existing IPFS applications</p>
+<p>With Dither, instead of having a hard standard list of formats, Formats of data are defined by the data itself using the hashtrait format. Data that is not trait-defined, will be either wrapped using a definition trait (i.e. a structure just containing a hash of the data and trait). Or it will be reinterpreted to be represented natively as a trait structure.</p>
+<h3 id="example-traits">Example Traits</h3>
+<p>Traits can define any data structure and its state of being “Valid”. A Monero Transaction might look something like this after being structured in Dither. - <code>"Transaction" (With localization fields)</code> - <code>previous_transaction: SelfRef</code> - <code>definintion: Multihash (Default Trait Definition)</code> - <code>source: List&lt;MultiKey&gt;</code> - <code>destination: Multikey</code> - <code>pederson_commitment: PedersonCommitment</code> - <code>signature: RingSignature</code></p>
+<h2 id="locating-data-directional-trail-search">Locating Data (Directional Trail Search)</h2>
+<p>Content needs to be able to be located on the network. Traditionally this is done through a Distributed Hash Table (i.e. Kademlia) that maps content hashes to peers on the network that host data corresponding to the hashes. In constrast, Directional Trail Searching (DTS) is inspired the Pheromone Trails left by Ants. Whenever a specific hash is requested, a broadcast of searcher packets is sent in all directions in the network. As they travel from node to node, each node checks the hash against a binary tree that stores the direction for the searching packet to travel in and the approximate distance. A node can either choose to adjust the trajectory of the packet or forward it onwards on it’s existing trajectory. Eventually a searching packet will find a “Trail” or a “Hole” by chance and will be guided to the node hosting the hash’s data. A Hole is formed around a node broadcasting itself to be hosting a given piece of data to nearby nodes. A Trail is formed by a searching packet configured to leave a trail on it’s way back to the device who originally sent out the packet. Trail and Hole forming is optional and is at the discretion of the data hoster(s) and intermediate nodes.</p>
+<p>Nodes looking for specific data corresponding to a hash can broadcast a content request packet which traverses through the network until it either encounters a hole, trail, or exceeds the search radius. If none of the packets traveling across the network fall into a hole or encounter a trail (because there weren’t enough packets or not enough holes) a traditional DHT lookup can be performed if supported by hosters.</p>
+<p>DTS is much faster and more effective than a DHT because DHT data hosting is distributed randomly across the network meaning that you might have to traverse back and forth across the internet to find someone hosting the data you need.</p>
+<h2 id="finding-data-links-reverse-hash-lookup">Finding Data Links (Reverse Hash Lookup)</h2>
+<ul>
+<li>This solves the problem of having a hash and wanting to find pieces of data that link to that hash. This is super useful for comment systems and the like.</li>
+<li>This is a system by which one can find structures that link to a given hash implementing the reverse trait.</li>
+<li>If there is some pieces of data that links from or adds useful defintions to a given piece of data, this is the place for it. One example of this in practice might be having a comment thread. Each comment is its own Hashstruct that contains the hash of the post or a replying comment. In order for someone who has the post structure to find the comments, they would need find all the pieces of data linking to this piece of data (i.e. a Reverse Hash Lookup)</li>
+<li>To implement this system, there will be a partial binary tree represented by a DAG that can be traversed using the data of the target. (i.e. the post structure’s hash). Then the tree can be traversed down using consecutive trail searches. Until a list of all known linked hashes is found. These structures must contain a specific trait called a RevHash to be able to be validated onto the distributed tree. The addition of new links to this tree is done through an implementation of Dither Chain Consensus (see the <a href="#dither-consensus-chains">#Dither Consensus Chains</a> section).</li>
+</ul>
+<h2 id="user-definitions">User Definitions</h2>
+<ul>
+<li>Permissioned Definitions</li>
+<li>A user will have multiple definitions of itself with varying levels of permission and transparency. This structure is used for setting user configuration</li>
+<li>Public Definition - Defines a user to the world</li>
+<li>The hash of this object defines this user to the network. It can be requested from anyone on the network and defines multiple things:</li>
+<li>Previous Hash (Optional) - In case you need to update the public config (which is necessary to change your name or add new devices)</li>
+<li>Data - public information about this user including Name, website, and other information the user wants to be public.</li>
+<li>Trusted Definition - Information which is accessible on request</li>
+<li>Routing Ideas</li>
+<li>Overlay network that routes through 2 peers on the way. (Need to form some kind of decentralized routing table) - Would create tor-likeness privacy. Depending on how it is implemented, it would be hard to trace packets</li>
+</ul>
+<h2 id="user-management">User Management</h2>
+<p>See <a href="./dither/user-api.md">User Api Document</a></p>
+<h2 id="dither-chain-references">Dither Chain References</h2>
+<p>Ideas for Dither Consensus - IOTA Tangle - Stellar Consensus Protocol - zk-STARKS (for privacy) - Layered on top of Dither Gravity Tree Search for storage</p>
+<h2 id="dither-consensus-chains">Dither Consensus Chains</h2>
+<ul>
+<li>Regular Chains
+<ul>
+<li>A chain is created just by linking to one or more other Hashtraits (fundamental format of Dither objects)</li>
+<li>Regular Chains can be used to represent filesystems, linked data, pretty much anything.</li>
+</ul></li>
+<li>Consensus chains are different in that blocks linking to other blocks are weighted by how much they are linked to themselves. (Like the IOTA tangle)</li>
+<li>Blocks are added via “active consensus”, where new blocks are broadcast to computers actively participating in consensus and organized / verified using the Stellar Consensus Protocol.
+<ul>
+<li>This could be used for a comment system where the comments with the most upvotes / interactions are sorted higher in a specific index.</li>
+</ul></li>
+<li>Quorum slices in the SC protocol will be made up of social friends or other trusted users. (which can be registered by applications using Dither in specific contexts i.e. close friends in Dither Chat could be designated as part of a core Quorum Slice)</li>
+<li>Quorum Slices will be stored in the trusted user configuration</li>
+<li>Small “Consensus Chains” can be publicly listed or privately created between specific users with special rules on how blocks are added</li>
+</ul>
+<h2 id="wip---dither-weighted-voting">WIP - Dither Weighted Voting</h2>
+<ul>
+<li>Using Dither Consensus as a backend</li>
+<li>Creates Consensus Chains between users to vote on a specific <em>thing</em></li>
+<li>Can be used for copyright reporting, community information addition, data validation, etc.</li>
+<li>Structure:</li>
+<li>Main definition</li>
+<li>Who created it</li>
+</ul>
+</body>
+</html>
