@@ -6,136 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <title>applications</title>
   <style>
-    html {
-      line-height: 1.5;
-      font-family: Georgia, serif;
-      font-size: 20px;
-      color: #1a1a1a;
-      background-color: #fdfdfd;
-    }
-    body {
-      margin: 0 auto;
-      max-width: 36em;
-      padding-left: 50px;
-      padding-right: 50px;
-      padding-top: 50px;
-      padding-bottom: 50px;
-      hyphens: auto;
-      word-wrap: break-word;
-      text-rendering: optimizeLegibility;
-      font-kerning: normal;
-    }
-    @media (max-width: 600px) {
-      body {
-        font-size: 0.9em;
-        padding: 1em;
-      }
-    }
-    @media print {
-      body {
-        background-color: transparent;
-        color: black;
-        font-size: 12pt;
-      }
-      p, h2, h3 {
-        orphans: 3;
-        widows: 3;
-      }
-      h2, h3, h4 {
-        page-break-after: avoid;
-      }
-    }
-    p {
-      margin: 1em 0;
-    }
-    a {
-      color: #1a1a1a;
-    }
-    a:visited {
-      color: #1a1a1a;
-    }
-    img {
-      max-width: 100%;
-    }
-    h1, h2, h3, h4, h5, h6 {
-      margin-top: 1.4em;
-    }
-    h5, h6 {
-      font-size: 1em;
-      font-style: italic;
-    }
-    h6 {
-      font-weight: normal;
-    }
-    ol, ul {
-      padding-left: 1.7em;
-      margin-top: 1em;
-    }
-    li > ol, li > ul {
-      margin-top: 0;
-    }
-    blockquote {
-      margin: 1em 0 1em 1.7em;
-      padding-left: 1em;
-      border-left: 2px solid #e6e6e6;
-      color: #606060;
-    }
-    code {
-      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
-      font-size: 85%;
-      margin: 0;
-    }
-    pre {
-      margin: 1em 0;
-      overflow: auto;
-    }
-    pre code {
-      padding: 0;
-      overflow: visible;
-    }
-    .sourceCode {
-     background-color: transparent;
-     overflow: visible;
-    }
-    hr {
-      background-color: #1a1a1a;
-      border: none;
-      height: 1px;
-      margin: 1em 0;
-    }
-    table {
-      margin: 1em 0;
-      border-collapse: collapse;
-      width: 100%;
-      overflow-x: auto;
-      display: block;
-      font-variant-numeric: lining-nums tabular-nums;
-    }
-    table caption {
-      margin-bottom: 0.75em;
-    }
-    tbody {
-      margin-top: 0.5em;
-      border-top: 1px solid #1a1a1a;
-      border-bottom: 1px solid #1a1a1a;
-    }
-    th {
-      border-top: 1px solid #1a1a1a;
-      padding: 0.25em 0.5em 0.25em 0.5em;
-    }
-    td {
-      padding: 0.125em 0.5em 0.25em 0.5em;
-    }
-    header {
-      margin-bottom: 4em;
-      text-align: center;
-    }
-    #TOC li {
-      list-style: none;
-    }
-    #TOC a:not(:hover) {
-      text-decoration: none;
-    }
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
     span.underline{text-decoration: underline;}
@@ -144,6 +14,7 @@
     ul.task-list{list-style: none;}
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
+  <link rel="stylesheet" href="/static/style.css" />
   <!--[if lt IE 9]>
     <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
   <![endif]-->
@@ -151,17 +22,17 @@
 <body>
 <h1 id="dither-application-index">Dither Application Index</h1>
 <ul>
-<li><a href="applications/dither-chat.md">Dither Chat</a> - Community Chat application aiming to replace Discord. Provides e2ee encrypted DMs, voice chat, servers, voting, and integration with most other chat protocols.</li>
-<li><a href="applications/dithca.md">Dithca</a> - Comprehensive &amp; Versatile decentralized comment system where anyone can comment on any type of data structure on Dither. Can interface with most other centralized comment systems and deal with misinformation &amp; crediting using a comprehensive community flagging system.
+<li><a href="applications/dither-chat.html">Dither Chat</a> - Community Chat application aiming to replace Discord. Provides e2ee encrypted DMs, voice chat, servers, voting, and integration with most other chat protocols.</li>
+<li><a href="applications/dithca.html">Dithca</a> - Comprehensive &amp; Versatile decentralized comment system where anyone can comment on any type of data structure on Dither. Can interface with most other centralized comment systems and deal with misinformation &amp; crediting using a comprehensive community flagging system.
 <ul>
 <li>Can be used to create Reddit / Twitter Replacement. Can be integrated into other Dither applications or ported to web.</li>
 </ul></li>
-<li><a href="applications/dithgit.md">Dithgit</a> - Github on Dither</li>
-<li><a href="applications/dix.md">Dithix</a> - Nix over Dither (Replaced with Nomia)</li>
-<li><a href="applications/nomia.md">Nomia on Dither</a> - Nomia on Dither, Manage and cache any kind of resource. Composibly create and distribute resources managed by Nomia. (May replace Dithix)</li>
-<li><a href="applications/tree-of-math.md">Tree of Math</a> - Directed Acyclic Graph linking a standardized data structure for defintions and proofs together based on set theory creating a comprehensive tree of knowledge.</li>
-<li><a href="applications/dither-coin.md">Dither Coin</a> - Cryptocurrency that solves all the current problems and creates a complete digital replication of cash (being decentralized, anonymous, non-volatile, and difficult to trace).</li>
-<li><a href="applications/dither-dex.md">Dither DEX</a> - A all-faceted decentralized exchange to facilitate trade any kind of real or virtual asset. Supports meeting up in real life or exchanging other virtual assets anonymously and securely. Also supports moderation, karmic filtering</li>
+<li><a href="applications/dithgit.html">Dithgit</a> - Github on Dither</li>
+<li><a href="applications/dix.html">Dithix</a> - Nix over Dither (Replaced with Nomia)</li>
+<li><a href="applications/nomia.html">Nomia on Dither</a> - Nomia on Dither, Manage and cache any kind of resource. Composibly create and distribute resources managed by Nomia. (May replace Dithix)</li>
+<li><a href="applications/tree-of-math.html">Tree of Math</a> - Directed Acyclic Graph linking a standardized data structure for defintions and proofs together based on set theory creating a comprehensive tree of knowledge.</li>
+<li><a href="applications/dither-coin.html">Dither Coin</a> - Cryptocurrency that solves all the current problems and creates a complete digital replication of cash (being decentralized, anonymous, non-volatile, and difficult to trace).</li>
+<li><a href="applications/dither-dex.html">Dither DEX</a> - A all-faceted decentralized exchange to facilitate trade any kind of real or virtual asset. Supports meeting up in real life or exchanging other virtual assets anonymously and securely. Also supports moderation, karmic filtering</li>
 </ul>
 <h2 id="other-application-ideas">Other Application Ideas:</h2>
 <ul>

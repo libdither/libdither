@@ -16,14 +16,13 @@ EXPORTED_DOCS = $(patsubst libdither/ideas/%.md, static/ideas/%.html, $(SOURCE_D
 
 .PHONY: all clean
 
-all: $(EXPORTED_DOCS)
-	
+build: $(EXPORTED_DOCS)
 
 clean:
-	- rm -r static/ideas/*
+	rm $(EXPORTED_DOCS)
+	rmdir static/ideas/*/
 
 static/ideas/%.html : libdither/ideas/%.md
 	@mkdir -p "$(@D)"
-	@echo $< -> $@ 
-	pandoc -s -o $@ $<
+	pandoc -s -o $@ $< --lua-filter=links-to-html.lua --css="/static/style.css"
 

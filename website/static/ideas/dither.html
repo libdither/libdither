@@ -6,136 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <title>dither</title>
   <style>
-    html {
-      line-height: 1.5;
-      font-family: Georgia, serif;
-      font-size: 20px;
-      color: #1a1a1a;
-      background-color: #fdfdfd;
-    }
-    body {
-      margin: 0 auto;
-      max-width: 36em;
-      padding-left: 50px;
-      padding-right: 50px;
-      padding-top: 50px;
-      padding-bottom: 50px;
-      hyphens: auto;
-      word-wrap: break-word;
-      text-rendering: optimizeLegibility;
-      font-kerning: normal;
-    }
-    @media (max-width: 600px) {
-      body {
-        font-size: 0.9em;
-        padding: 1em;
-      }
-    }
-    @media print {
-      body {
-        background-color: transparent;
-        color: black;
-        font-size: 12pt;
-      }
-      p, h2, h3 {
-        orphans: 3;
-        widows: 3;
-      }
-      h2, h3, h4 {
-        page-break-after: avoid;
-      }
-    }
-    p {
-      margin: 1em 0;
-    }
-    a {
-      color: #1a1a1a;
-    }
-    a:visited {
-      color: #1a1a1a;
-    }
-    img {
-      max-width: 100%;
-    }
-    h1, h2, h3, h4, h5, h6 {
-      margin-top: 1.4em;
-    }
-    h5, h6 {
-      font-size: 1em;
-      font-style: italic;
-    }
-    h6 {
-      font-weight: normal;
-    }
-    ol, ul {
-      padding-left: 1.7em;
-      margin-top: 1em;
-    }
-    li > ol, li > ul {
-      margin-top: 0;
-    }
-    blockquote {
-      margin: 1em 0 1em 1.7em;
-      padding-left: 1em;
-      border-left: 2px solid #e6e6e6;
-      color: #606060;
-    }
-    code {
-      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
-      font-size: 85%;
-      margin: 0;
-    }
-    pre {
-      margin: 1em 0;
-      overflow: auto;
-    }
-    pre code {
-      padding: 0;
-      overflow: visible;
-    }
-    .sourceCode {
-     background-color: transparent;
-     overflow: visible;
-    }
-    hr {
-      background-color: #1a1a1a;
-      border: none;
-      height: 1px;
-      margin: 1em 0;
-    }
-    table {
-      margin: 1em 0;
-      border-collapse: collapse;
-      width: 100%;
-      overflow-x: auto;
-      display: block;
-      font-variant-numeric: lining-nums tabular-nums;
-    }
-    table caption {
-      margin-bottom: 0.75em;
-    }
-    tbody {
-      margin-top: 0.5em;
-      border-top: 1px solid #1a1a1a;
-      border-bottom: 1px solid #1a1a1a;
-    }
-    th {
-      border-top: 1px solid #1a1a1a;
-      padding: 0.25em 0.5em 0.25em 0.5em;
-    }
-    td {
-      padding: 0.125em 0.5em 0.25em 0.5em;
-    }
-    header {
-      margin-bottom: 4em;
-      text-align: center;
-    }
-    #TOC li {
-      list-style: none;
-    }
-    #TOC a:not(:hover) {
-      text-decoration: none;
-    }
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
     span.underline{text-decoration: underline;}
@@ -144,6 +14,7 @@
     ul.task-list{list-style: none;}
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
+  <link rel="stylesheet" href="/static/style.css" />
   <!--[if lt IE 9]>
     <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
   <![endif]-->
@@ -254,7 +125,7 @@
 <li>Trait definitions define how a data structure should be layed out and what requirements it has for validity.</li>
 <li>An Example of a trait might be anything from being a “Video” to being a “Comment” or even a “Transaction”.</li>
 <li>This extensible trait system allows for any kind of representation of data and is a self-describing data structure such that no matter what structure someone has, it will be able to be parsed and validated.</li>
-<li>More Info in the <a href="dither/self-defining-structures.md">Self-Defining Structure Document</a></li>
+<li>More Info in the <a href="dither/self-defining-structures.html">Self-Defining Structure Document</a></li>
 </ul>
 <h3 id="defining-external-structures">Defining External Structures</h3>
 <p>In Dither, while pieces of data can be located and linked with multihashes, not all pieces of data contain multihashes. Any external hash-linked data structure that you want to host on Dither (i.e. blockchains) aren’t going to be natively supported. Instead all the blocks of data must either be re-linked to form a multihash-supporting copy or the hash types have to be inferred by context. (The downside of the second option non-hashtrait blocks can’t easily be inferred from non-specific programs interpreting hashtraits). The second option is what IPFS/IPLD is doing, reinterpreting hashed blocks of data of arbitrary format by defining a standard table of formats. Dither prefers the first option of wrapping the entire data structure with trait definitions that Dither can understand.</p>
@@ -287,7 +158,7 @@
 <li>Overlay network that routes through 2 peers on the way. (Need to form some kind of decentralized routing table) - Would create tor-likeness privacy. Depending on how it is implemented, it would be hard to trace packets</li>
 </ul>
 <h2 id="user-management">User Management</h2>
-<p>See <a href="./dither/user-api.md">User Api Document</a></p>
+<p>See <a href="./dither/user-api.html">User Api Document</a></p>
 <h2 id="dither-chain-references">Dither Chain References</h2>
 <p>Ideas for Dither Consensus - IOTA Tangle - Stellar Consensus Protocol - zk-STARKS (for privacy) - Layered on top of Dither Gravity Tree Search for storage</p>
 <h2 id="dither-consensus-chains">Dither Consensus Chains</h2>
