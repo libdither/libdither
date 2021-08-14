@@ -24,5 +24,7 @@ clean:
 
 static/ideas/%.html : libdither/ideas/%.md
 	@mkdir -p "$(@D)"
-	pandoc -s -o $@ $< --lua-filter=links-to-html.lua --css="/static/style.css"
+	pandoc -s -o $@ $< --lua-filter=links-to-html.lua --css="/style.css"
 
+host:
+	ipfs add -r -w static/*
