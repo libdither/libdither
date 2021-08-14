@@ -4,11 +4,49 @@
 Self defining structures are pieces of data that link to their own format. The workings of this system are heavily dependent on [Directional Trail Search](directional-trail-search.md) and [Reverse Hash Lookup](reverse-hash-lookup.md).
 
 ## Structures
-Every structure is a piece of binary data that starts with a [Multihash](https://multiformats.io/multihash/). A structure is considered valid if the Multihash corresponds to a valid Trait definition and the trait definition correctly defines the structure.
+
+Every structure is a piece of binary data that starts with a [Multihash](https://multiformats.io/multihash/).
+A structure is considered correct if the format of the binary data corresponds with the Trait definition linked to via the Multihash.
 
 ## Traits
 
-The main idea behind self-defining structures is that structures contain a which is the hash of its format definition. A format for a self-defining structure is called a Trait and they can be made up of other Traits.
+Traits are what the formats of self-defining structures are called and they themselves are structures defined by their own trait. This allows the creation of any type of structure imaginable.
+
+## Markers
+
+Markers are the core primitive of adding functionality to structures. They mark the interface between the Hashtrait implementation and the data of a structure. They tell the implementation what operations a program can perform on a given structure as well as how the data should be interpreted at a base level.
+
+*Markers are recognized by the program as the sha256-variant multihash counting up from 0. They do not correspond to the hash of specific data.* (i.e. the base58 encoding of `TraitMarker` would be `QmNLei78zWmzUdbeRB3CiUfAizWUrbeeZh5K1rhAQKCh51` and `MultihashMarker` would be `QmNLei78zWmzUdbeRB3CiUfAizWUrbeeZh5K1rhAQKCh52`)
+
+Primitive Markers:
+ - `TraitMarker` - Marks a structure that acts as a trait. Also acts as a base trait implementation. Allows for implementation to interpret basic trait definitions as well as marking custom traits.
+ - `MultihashMarker` - Marks a multihash. Interpreted by implementation as a sha-256 multihash as defined by the multihash specification.
+ - `SizeMarker` - Allows the program to know beforehand the size of a structure.
+
+Advanced Markers: (WIP)
+ - `GenericMarker` - Marks generic arguments of a trait.
+ - `DynamicSizeMarker` - Marks a structure size calculation program. Allows for the implementation to derive the size of a specific structure.
+ - `ValidityMarker` - Marks a structure validation program. Allows for implementation to check if a structure is defined correctly as defined by its trait.
+
+## `TraitMarker` Implementation
+
+The TraitMarker trait is defined in implementation as a trait like this:
+
+ - `TraitMarker`
+   - `SizeMarker` - Represents the size of the defined structure
+   - `MultihashMarker` - 
+   - `MultihashMarker`
+
+## Primitive Trait Implementations
+
+Notice: These trait definitions will have named fields, in actuality, field names are defined through a [reverse-linked](./reverse-hash-lookup.md) trait called a `TraitLocalization` and can be defined in multiple languages.
+
+From Markers, primitive traits can be created. A simple trait could be defined as:
+
+`Trait: TraitMarker` (The "`:`" represents that the Trait structure is being defined in terms of the `TraitMarker` "structure")
+ - `fields: List<>`
+
+
 
 Traits can also be generic across other traits to apply some functionality (Such as the `Multihash`, `Option`, `List`, or `Collection` traits).
 
@@ -44,18 +82,23 @@ The concept of "Structure Validity" is important. An Enum object is just an inte
    - `fields: List<Multihash, L>(L)`
  - 
 
-#### Defined Traits
- - `Enum<L: VarUInt>: NamedTrait` - Defines a number that correspond to different states of the Enum. Number of Variants in Generic
-   - `variants: VarUInt`
- - 
+### Defined Traits
+ - `Enum<T: VarUInt, L: T>: NamedTrait` - Defines a number that correspond to different states of the Enum. Number of Variants in Generic
+   - `variant: T`
+   - `validity: Validity` - Enum is only valid if the type T is an unsigned type, it is large enough to fit L, and `variant` is less than T.
+ - `BitFlag<L: UInt8>: NamedTrait` - Defines a series of bitflags up to 
  - `Link<T>: VersionedTrait` - Multihash linking to structure with specific Trait T.
    - `hash: Multihash`
- - `LinkWeight: Enum`
- - `WeightedLink<T>` - Contains an enum with various "Weight" types.
-   - `link: Link<T>`
-   - `weight: LinkWeight`
+   - `link_type: LinkType`
+     - `LinkType: Bitflags<1>` - Provides metadata about the importance of the lined object. Governs whether or not linked data is garbage collected, sent to requesting devices with the original request, or stored in a specific way.
+       - `Embedded` - Linked object is absolutely needed by the original structure (should be relatively small).
+       - `Cached` - Linked object that is absolutely needed but the requesting device should already have (i.e. emojis, fonts, trait definitions, etc.).
+       - `Needed` - Linked object that should probably be sent back ASAP.
+       - `Relevent` - Linked object that is relevant to the structure but not necessarily needed ASAP (e.g. image or linked video file)
+       - `Irrelevant` - Linked object that is large or unecessary and should never be sent with original request.
  - `RevLink<T>` - Wraps a `Link<T>` and requires a Trait type specification. Registers the trait T in the Reverse Hash Lookup tree. Allows for lookup of trait containing `RevLink<T>` type from the hash linked to.
-   - `WeightedLink<T>`
+   - link: `Link<T>`
+   - validity: `Validation`
  - `Localization: Enum`
  - `TraitLocalization: NamedTrait` - Defines field names and overall name of RevLinked trait in different languages.
    - `name: String`
