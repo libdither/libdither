@@ -12,3 +12,28 @@ body {
 	font-size: small;
 	color: rgb(255, 0, 0);
 }
+
+.topnav {
+	a {
+		text-align: center;
+		padding: 14px 16px;
+		text-decoration: none;
+		font-size: 17px;
+	}
+	h1 {
+		display: inline;
+		margin: auto;
+	}
+	p {
+		
+	}
+}
+/* Change the color of links on hover */
+.topnav a:hover {
+	//color: black;
+}
+
+/* Add a color to the active/current link */
+.topnav a.active {
+	color: black;
+}

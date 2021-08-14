@@ -11,4 +11,20 @@ body {
 #warning {
   font-size: small;
   color: red;
+}
+
+.topnav a {
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+.topnav h1 {
+  display: inline;
+  margin: auto;
+}
+/* Change the color of links on hover */
+/* Add a color to the active/current link */
+.topnav a.active {
+  color: black;
 }/*# sourceMappingURL=style.css.map */
