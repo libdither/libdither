@@ -1,3 +1,5 @@
 {
-	"liveServer.settings.multiRootWorkspaceName": "dither.link"
+	"liveServer.settings.multiRootWorkspaceName": "dither.link",
+	"nixEnvSelector.suggestion": false,
+	"nixEnvSelector.nixFile": "${workspaceRoot}/shell.nix"
 }
