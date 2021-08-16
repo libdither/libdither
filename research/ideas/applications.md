@@ -1,5 +1,7 @@
 # Dither Application Index
 
+## List of application Ideas
+
  - [Dither Chat](applications/dither-chat.md) - Community Chat application aiming to replace Discord. Provides e2ee encrypted DMs, voice chat, servers, voting, and integration with most other chat protocols.
  - [Dithca](applications/dithca.md) - Comprehensive & Versatile decentralized comment system where anyone can comment on any type of data structure on Dither. Can interface with most other centralized comment systems and deal with misinformation & crediting using a comprehensive community flagging system.
    - Can be used to create Reddit / Twitter Replacement. Can be integrated into other Dither applications or ported to web.
