@@ -135,6 +135,8 @@ If none of the packets traveling across the network fall into a hole or encounte
 
 DTS is much faster and more effective than a DHT because DHT data hosting is distributed randomly across the network meaning that you might have to traverse back and forth across the internet to find someone hosting the data you need.
 
+More Info in the [Directional Trail Search](dither/directional-trail-search.md) Document.
+
 ## Finding Data Links (Reverse Hash Lookup)
  - This solves the problem of having a hash and wanting to find pieces of data that link to that hash. This is super useful for comment systems and the like.
  - This is a system by which one can find structures that link to a given hash implementing the reverse trait.

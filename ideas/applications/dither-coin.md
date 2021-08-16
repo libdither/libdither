@@ -3,7 +3,7 @@
 Dither's built-in cryptocurrency meant to solve all existing problems with crypto:
  - Scalability
    - Uses IOTA block structure combined with Federated Byzantine Voting for coordination.
-   - Most users won't store the entire network history, just the current state.
+   - Most users won't store the entire network history, just a slice of the current state relevent to performing transactions.
  - Speed
    - Using Stellar Consensus Protocol and IOTA will be helpful to speed.
    - Bad Idea?: Also, there will be establishment of Zones in the network that have their own sub-exchanging separate from the rest of the network for fast local transactions. Usage of zones will be faster than sending transactions to the global network, however, for security purposes, zones must report transactions

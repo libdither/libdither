@@ -1,5 +1,8 @@
 # Dither Consensus (WIP)
 
+## What is it
+Dither's consensus is a tool that allows for any configuration of *any possible consensus algorithm* that comes to an agreement from a predetermined set of computers.
+
 ## What does it do?
 
 Dither Consensus allows you to create linked data (blockchain or directed acyclic graphs) using the built-in validation system for [Self-defining structures](./self-defining-structures.md) and the consensus protocol that is preferred by the data structure.
