@@ -1,1 +1,1 @@
-ideas/resources/* filter=lfs diff=lfs merge=lfs -text
+resources/* filter=lfs diff=lfs merge=lfs -text
