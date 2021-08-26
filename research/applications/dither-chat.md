@@ -1,16 +1,16 @@
 # Dither Chat
 
 - [Dither Chat](#dither-chat)
-	- [What is it](#what-is-it)
-	- [Users & Sync](#users--sync)
-	- [Chat Events](#chat-events)
-	- [Event Storage - Storage of a sequence of events in memory or storage](#event-storage---storage-of-a-sequence-of-events-in-memory-or-storage)
-	- [Trusted Friends Application API](#trusted-friends-application-api)
-	- [Chat Interface](#chat-interface)
-	- [Direct Messaging](#direct-messaging)
-	- [Group messaging](#group-messaging)
-	- [Servers](#servers)
-		- [Roles, Tags & Colors](#roles-tags--colors)
+  - [What is it](#what-is-it)
+  - [Users & Sync](#users--sync)
+  - [Chat Events](#chat-events)
+  - [Event Storage - Storage of a sequence of events in memory or storage](#event-storage---storage-of-a-sequence-of-events-in-memory-or-storage)
+  - [Trusted Friends Application API](#trusted-friends-application-api)
+  - [Chat Interface](#chat-interface)
+  - [Direct Messaging](#direct-messaging)
+  - [Group messaging](#group-messaging)
+  - [Servers](#servers)
+    - [Roles, Tags & Colors](#roles-tags--colors)
 
 ## What is it
 Dither Chat is a decentralized communication application using the Dither protocol. Servers are communally hosted with local consensus. Bots and plugins will be supported and also communally hosted.
@@ -54,7 +54,7 @@ tl;dr Discord but decentralized and better.
 ## Servers
 - Servers are communially hosted by the moderator's computers. However, the owner has full control over the server and can choose who can assist
 - Red Nodes are hosting nodes, blue nodes are members. Blue node with yellow stroke is proxying it's connection to the server
-![Network Structure for Dither Server](resources/dither-chat-server.svg)
+![Network Structure for Dither Server](dither-chat/server-framework.svg)
 Image of a possible dither-chat server arrangement
 ### Roles, Tags & Colors
 - To distinguish people in a server, there are roles, name colors, and tags
