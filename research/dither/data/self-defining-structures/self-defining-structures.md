@@ -1,25 +1,32 @@
 # Self-Defining Structures
 (A.k.a. *Hashtraits*)
 
-Self defining structures are pieces of data that link to their own format. The workings of this system are heavily dependent on [Directional Trail Search](directional-trail-search.md) and [Reverse Hash Lookup](reverse-hash-lookup.md).
+Self defining structures are pieces of data that link to their own format, telling the program how they are structured and how to validate them. 
+
+The workings of this system are heavily dependent on [Directional Trail Search](directional-trail-search.md) and [Reverse Hash Lookup](reverse-hash-lookup.md).
+
+## Ideas To Add to this Doc
+ - Make structures' fields binary-ordered by default to increase the chances that developers will use and create the same structures. Delegate conceptual ordering to `TraitLocalization`.
+   - I.e. if two programs both need a File trait and a file is just some binary data and a creation date, the resulting `File` trait will be the same in both programs assuming the programmers use the same internal fields.
 
 ## Structures
 
-Every structure is a piece of binary data that starts with a [Multihash](https://multiformats.io/multihash/).
+A structure is a piece of binary data that starts with a [Multihash](https://multiformats.io/multihash/).
 A structure is considered correct if the format of the binary data corresponds with the Trait definition linked to via the Multihash.
 
 ## Traits
 
-Traits are what the formats of self-defining structures are called and they themselves are structures defined by their own trait. This allows the creation of any type of structure imaginable.
+Traits are what the formats of self-defining structures are called and are themselves structures defined by their own trait. This allows the creation of any type of structure imaginable.
 
 ## Markers
 
-Markers are the core primitive of adding functionality to structures. They mark the interface between the Hashtrait implementation and the data of a structure. They tell the implementation what operations a program can perform on a given structure as well as how the data should be interpreted at a base level.
+Markers are the core primitives for adding functionality to structures. They mark the interface between the Hashtrait implementation and the data of a structure. They tell the implementation what operations a program can perform on a given structure as well as how the data should be interpreted at a base level.
 
 *Markers are recognized by the program as the sha256-variant multihash counting up from 0. They do not correspond to the hash of specific data.* (i.e. the base58 encoding of `TraitMarker` would be `QmNLei78zWmzUdbeRB3CiUfAizWUrbeeZh5K1rhAQKCh51` and `MultihashMarker` would be `QmNLei78zWmzUdbeRB3CiUfAizWUrbeeZh5K1rhAQKCh52`)
 
 Primitive Markers:
  - `TraitMarker` - Marks a structure that acts as a trait. Also acts as a base trait implementation. Allows for implementation to interpret basic trait definitions as well as marking custom traits.
+   - Trait Format: `<0x000 hash><varint length><list of >`
  - `MultihashMarker` - Marks a multihash. Interpreted by implementation as a sha-256 multihash as defined by the multihash specification.
  - `SizeMarker` - Allows the program to know beforehand the size of a structure.
 

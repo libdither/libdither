@@ -6,5 +6,4 @@ Why? Information takes time to travel and sometimes you just want a local consen
 
 What if we could create a tiered layers of consensus that takes into account how fast information travels and can account for different items of consensus being needed at different scales.
 
-
 Consensus Networks act as peers themselves and establish 
