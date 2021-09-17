@@ -4,11 +4,19 @@ Allows for finding what structures link to a given structure.
 
 Example: Someone can find a comment that links to a post, just given the hash of the post.
 
+# IDEAS TO ADD
+Keep track of the number of child nodes for each node in the tree so you can merge reverse hash lookup trees easily in a peer-to-peer fashion which means consensus can be less rigourous.
+
 ## General Structure
 
-A Binary Tree stored on [DTS](./directional-trail-search.md) that maps binary data of a hash to object that contains a link to the hash. The top hash of the structure is agreed upon through Federated Byzantine Agreement.
+A Binary Hash-linked Tree stored in a decentralized fashion with [DTS](./directional-trail-search.md) that maps a given hash to object that contains that hash. Hashes are agreed upon in a decentralized manner, but direct consensus is assured, and a pubsub system helps speed up consensus for high-activity hashes.
 
 ## Specific Structure
+
+### Tree
+ - The goal for this tree is for nodes to contain as little information as possible so that large portions of the tree can be sent at once.
+ - A Binary Tree contains `Branch`es and `Node`s. For this structure, each one will be its own self-defining structure. Each node will contain
+ - Binary Tree, contains
 
 ### Traits
 
