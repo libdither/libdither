@@ -1,5 +1,5 @@
 # Self-Defining Structures
-(A.k.a. *Hashtraits*)
+(A.k.a. *Hashtypes*)
 
 Self defining structures are pieces of data that link to their own format, telling the program how they are structured and how to validate them. 
 
