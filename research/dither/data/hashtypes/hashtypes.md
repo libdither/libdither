@@ -12,10 +12,12 @@ All Types are all eventually defined by the core `Layout` type.
 The core `Layout` type is defined **in implementation** roughly as:
 
 `Layout`
- - num_fields: `VarUInt`
- - hash_length: `VarUInt`
+ - num_fields: `B8` - Binary 8-bit number
+ - num_traits: `B8`
+ - hash_length: `VarUInt` - Variable unsigned integer
  - hash_type: `VarUInt`
- - data: `Unknown`
+ - fields: `Unknown` - Variable length data
+ - traits: `Unknown`
  - `$FixedSize = undefined` - It doesn't matter what this is because `$Size` doesn't use it for this type.
  - `$Size: $FixedSize = (self) -> U64`
    - `num_fields.size() + hash_length.size() + hash_type.size() + num_fields.to_u64() * hash_length.to_u64()`
@@ -40,12 +42,15 @@ The `Unknown` type just refers to raw data that is defined via the `$Size` and `
 
 ## Traits
 
-Traits define programs or adjacent data on Traits. They are themselves Hashtypes linked via [externally linked data](../reverse-hash-lookup.md).
+Traits define programs or adjacent data on Types. They are themselves Hashtypes linked directly from the layout type or via [reverse linked data](../reverse-hash-lookup.md).
 
-`Trait` - A Trait is a type that defines
- - type: `Multihash`
+`Trait: Layout` - A Trait is a type that defines multiple functions
+ - 
  - `$Size: $FixedSize = (self) -> U64: type.size()`
  - `$Correct: $Size = (self, size) -> U64`
+
+`LinkedTrait` - Trait that is reverse-linked
+
 
 `Function` - A program is an input and an output
  - input: `Multihash`

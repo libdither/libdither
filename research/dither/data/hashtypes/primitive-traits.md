@@ -1,10 +1,15 @@
 # Common Primitives for Self-Defining Structures
 
-`Link<T: Trait>`: Contains multihash of a structure defined by Trait considered not valid if the object linked to does not match the generic parameter.
+These primitive types are defined by the implementation of Dither. They can be identified through hashes that count up from 0.
 
-`List<T: Trait>`: List of some object
+For more detailed explanations see the [hashtypes](hashtypes.md) document
 
-`Byte`:
- - Sized: 1
- - Valid: True
+`VarUInt` - Dynamically sized unsigned integer
 
+`Layout` - Layout for defining structures
+
+`Unknown` - Dynamically sized unknown data (defined by wrapper types with Traits)
+
+`Trait` - Reverse-Linked trait that defines inputs and outputs for a program implementation
+
+`Program`
