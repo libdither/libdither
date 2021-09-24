@@ -23,7 +23,12 @@
 <h1 id="the-dither-project">The Dither Project</h1>
 <ul>
 <li><a href="#the-dither-project">The Dither Project</a></li>
-<li><a href="#what-is-it">What is it?</a></li>
+<li><a href="#what-is-it">What is it?</a>
+<ul>
+<li><a href="#no-but-really-what-is-it">No, but really, What is it?</a></li>
+<li><a href="#whats-this-about-replacing-the-internet">What’s this about replacing the Internet?</a></li>
+<li><a href="#potential-applications">Potential Applications:</a></li>
+</ul></li>
 <li><a href="#core-tenants">Core Tenants</a></li>
 <li><a href="#structure">Structure</a></li>
 <li><a href="#network-layer">Network Layer</a>
@@ -48,37 +53,57 @@
 <li><a href="#dither-chain-references">Dither Chain References</a></li>
 <li><a href="#dither-consensus-chains">Dither Consensus Chains</a></li>
 <li><a href="#wip---dither-weighted-voting">WIP - Dither Weighted Voting</a></li>
+<li><a href="#inspiration">Inspiration</a></li>
 </ul></li>
 </ul>
 <h1 id="what-is-it">What is it?</h1>
-<p>Dither is a modular application API built on top of <a href="https://github.com/libp2p/rust-libp2p">Libp2p</a>. It aims to provide buliding blocks for Consensus, Communication, Data Storage, Account Management, and more to replace most online services with a decentralized and private alternative. It aims to be compatible for extracting data from and interfacing with most existing decentralized and centralized systems such as IPFS, Github, Reddit, Youtube, Sci-Hub, Odysee &amp; Discord. <em>The aim for Dither is to replace these applications with decentralized alternatives that are unified through their use of a singular, modular protocol.</em></p>
-<p>It is much inspired by and takes from various projects such as Rust, TOR, Bittorrent, IPFS, IPLD, Stellar, Ethereum, IOTA, Monero, zk-STARKS, and more.</p>
-<p>Potential Decentralized Applications that can be created with Dither:</p>
-<p>Chat/Communication Apps, Video Sharing, Social Media, Comment systems, File Syncronization, Encrypted Backup, Voting systems, Exchanges, Crowdfunding, VCS, Stores, Serverless Games, Remote Machine Control, etc. The goal of Dither is to be able to recreate any kind of application in a decentralized manner.</p>
+<p>Dither is a project that aims to decentralize the internet! It is a toolbox of various tools application developers can use to store data, manage accounts, and communicate across the internet in a private manner.</p>
+<h2 id="no-but-really-what-is-it">No, but really, What is it?</h2>
+<p>Dither is a modular application API built on top of <a href="https://github.com/libp2p/rust-libp2p">Libp2p</a>. It aims to provide buliding blocks for communication, data storage, account management, consensus and more to replace most online services with a decentralized and private alternatives.</p>
+<h2 id="whats-this-about-replacing-the-internet">What’s this about replacing the Internet?</h2>
+<p>Dither aims to replace most existing apps and services, however, some services are hard to replace without significant disruption because of their existing user and content base. To solve this, Dither will be able to act as a kind of interface with various services, pulling data from multiple sites and presenting it in a standardized way.</p>
+<p>It aims to be compatible for extracting data from and interfacing with most existing decentralized and centralized systems such as IPFS, Github, Reddit, Youtube, Sci-Hub, Odysee &amp; Discord. <em>The aim for Dither is to replace these applications with decentralized alternatives that are unified through their use of a singular, modular protocol.</em></p>
+<h2 id="potential-applications">Potential Applications:</h2>
+<p>Chat/Communication Apps, Video Sharing, Social Media, Comment systems, File Syncronization, Encrypted Backup, Voting systems, Exchanges, Crowdfunding, VCS, Stores, Serverless Games, Remote Machine Control, etc.</p>
+<p>The goal of Dither is to be able to recreate any kind of application in a decentralized manner.</p>
+<p>See the <a href="applications.html">application document</a> for Work In Progress ideas for various applications.</p>
 <h1 id="core-tenants">Core Tenants</h1>
-<p>These are the Core Tenants of Dither that the project will strive for.</p>
+<p>All projects need a direction, and these are the ones I’ve chosen. (As with everything, they are subject to change.)</p>
 <p><strong>Dither should be as modular as possible.</strong> - There should be no part of Dither that is hard to replace with a different implementation.</p>
-<p><strong>Dither protocols and formats should be able to interoperate with most other protocols and formats.</strong> - One example of this would be allowing someone to pull comments from Reddit / Youtube into Dithca and hosting them in a decentralized manner. - Another example might be Dithca storing Reddit / Youtube credentials and being able to optionally interact with comment threads pulled from centralized websites.</p>
+<p><strong>Dither protocols and formats should be able to interoperate with most other protocols and formats.</strong> - One example of this would be allowing someone to pull comments from Reddit / Youtube into <a href="applications/dithca.html">Dithca</a> and hosting them in a decentralized manner. - Another example might be <a href="applications/dithca.html">Dithca</a> storing Reddit credentials and being able to optionally interact with comment threads pulled from centralized websites.</p>
 <p><strong>Dither should rely on itself as much as possible for every aspect of development and usage.</strong> - Code Versioning, Storage, Building, Distribution, and Communication should all run through Dither as much as possible.</p>
 <h1 id="structure">Structure</h1>
+<p>Dither is structured in layers:</p>
 <ul>
 <li>Network Layer (Provided by libp2p)
 <ul>
-<li>Handles all the p2p details (NAT traversal, routing, and cryptography)</li>
-<li><a href="https://github.com/libdither/dbr-sim">Distaced-Based Routing protocol</a>: Custom onion routing protocol which allows for anonymity on the network and is faster and more flexible compared to random routing (like what TOR and I2P uses)</li>
+<li>Handles peer-to-peer connections (NAT Traversal, Muxing, MDNS Discovery). See <a href="https://libp2p.io">libp2p.io</a></li>
 </ul></li>
 <li>Core Layer
 <ul>
-<li>Data Structuring (Traits, Self-Defining structs)</li>
-<li>Data Locating (Gravity Tree Search)</li>
-<li>Consensus Algorithms (Stellar Consensus Protocol + IOTA)</li>
-<li>User Management (User data storage &amp; syncronization)</li>
+<li>Routing Module
+<ul>
+<li><a href="https://github.com/libdither/dbr-sim">Distaced-Based Routing</a>: Custom onion routing protocol which allows for anonymity on the network and is faster and more flexible compared to random routing (like what TOR and I2P uses)</li>
+</ul></li>
+<li>Encryption
+<ul>
+<li>Using <a href="dither/encryption/multikey.html">multikey</a> for asymmetric encryption or <a href="dither/encryption/decentralized-kerberos.html">decentralized kerberos</a> for solely symmetric encryption.</li>
+</ul></li>
+<li>Data Structuring &amp; Manipulation (<a href="data/../dither/data/hashtypes/hashtypes.html">Hashtypes</a>)</li>
+<li>Data Searching (<a href="dither/routing/directional-trail-search.html">Directional Trail Search</a>)</li>
+<li>Data Linking (<a href="dither/data/reverse-hash-lookup.html">Reverse Hash Lookup</a>)</li>
+<li>Consensus Algorithms (<a href="dither/consensus/distance-aware-consensus.html">Distance Aware Consensus</a>)</li>
+<li>User Sync &amp; Authentication (<a href="dither/data/user-management.html">User Management</a>)</li>
 </ul></li>
 <li>Application Layer
 <ul>
-<li>Uses some or all of Dither’s features to create an application</li>
-<li>May provide an API as a library or a full application.</li>
-<li>Guis may be built on top of the APIs</li>
+<li>Uses some or all of Dither’s features to create an application API</li>
+<li>There is a list of <a href="applications.html">potential applications</a> for dither and various work-in-progress API definitions.</li>
+</ul></li>
+<li>UI Layer
+<ul>
+<li>This is the actual UI and design portion of applications. It takes the functions provided by the Application Layer and implements them according to the creator’s desires.</li>
+<li>It is highly recommended to follow Dither’s <a href="dither/application-design-philosophy.html">application design philosophy</a> when designing UI apps.</li>
 </ul></li>
 </ul>
 <h1 id="network-layer">Network Layer</h1>
@@ -187,5 +212,7 @@
 <li>Main definition</li>
 <li>Who created it</li>
 </ul>
+<h2 id="inspiration">Inspiration</h2>
+<p>It is much inspired by and takes from various projects such as Rust, TOR, Bittorrent, IPFS, IPLD, Stellar, Ethereum, IOTA, Monero, zk-STARKS, and more.</p>
 </body>
 </html>
