@@ -1,0 +1,65 @@
+# Consensus Ideas
+
+List of various consensus algorithms' pros & cons that could be utilized by Dither for different applications
+
+ - Proof of Work
+   - Cons
+     - Very inefficient & slow (transactions take multiple minutes or more to verify)
+     - Uses a lot of energy
+     - Causes avenue of abuse for malware crypto miners
+     - Requires sufficient size of network to be trusted
+     - Large storage requirements for full node
+     - Miners congregate into centralized pools
+     - Slowness pushes to centralization
+   - Pros
+     - Simple to understand, easy to implement
+     - Easy
+ - Proof of Stake
+   - Cons
+     - Only works for cryptocurrencies (need staking incentive)
+     - Faster than proof of work
+     - Large storage requirements for full node
+   - Pros
+     - Faster and more energy efficient than proof of stake
+ - Stellar Consensus Protocol (Byzantine Federated Voting)
+   - Cons
+     - Large storage requirements for full node
+     - Uncertain consensus (health of network slices can't be judged)
+     - Tendency towards centralization
+     - Lots of packets
+   - Pros
+     - ~5 seconds / transaction, extremely low transaction fees
+     - Can be integrated with social media to reflect IRL social connections as quorum slices.
+ - Nano Consensus Protocol
+   - Cons
+     - More ways to compromise network, no reward for running nodes
+     - Potential DDOS vectors with transaction flooding.
+   - Pros
+     - Really fast (<1 second transactions if no conflict), no transaction fees.
+ - IOTA Consensus Protocol
+   - Cons
+     - Potential attacks due to adversaries with 33% of network hashing power
+     - Requires centralized coordination node until the network reaches a certain size
+     - Requires periodic counting of tangle to eliminate history.
+   - Pros
+     - Really fast, No transaction fees
+     - Very good scalability due to probabilistic consensus algorithm
+ - Hedera Hashgraph
+   - Cons
+     - Potentially large storage requirements
+     - Very centralized (nodes have to be registered with a central entity)
+     - 1/3 attack
+     - Consensus depends on network knowing the number of total nodes
+     - Doesn't scale very well
+   - Pros
+     - Pretty fast (as fast as Stellar Consensus Protocol)
+     - Hashgraph is interesting concept
+ - [Dither Distance-Aware Consensus](distance-aware-consensus.md) (WIP)
+   - Pros
+     - Transaction speed is faster the closer the wallets are to each other in the network. (Sub second times for close nodes)
+     - Negligent storage & computational requirements for full node
+     - Localized Transactions (i.e. someone on the other side of the world doesn't have a record of your transaction).
+     - Network 
+   - Cons
+     - Potential loss of ownership of funds if enough nodes in a certain area go down (mitigated by distributing funds or slower, backup consensus algorithm)
+     - Its a work in progress.
