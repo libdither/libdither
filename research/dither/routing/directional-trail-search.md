@@ -14,3 +14,12 @@ For data that is not very popular and can't be find found with a reasonable numb
 
 Every node in Dither will have a binary tree structure that maps hashes to a relative routing direction or a direct peer (TBD).
 
+## Downsides
+
+While Directional Trail Search is much faster and more efficient than DHTs, it is not as good when considering rare data. With a DHT, as long as there is at least one node hosting the data, it will be found eventually. With DTS, there is no guarantee that a piece of data will be found.
+
+There are multiple potential solutions in order of feasibility:
+ - Use a DHT in addition to DTS by default
+ - Figure out how to get DTS to support rare files natively, perhaps by making nodes send out traversal packets pointing to themselves along the network to create artificial paths.
+ - Store routing coordinates / routing areas on the Reverse Hash Lookup.
+ - Implement a Network Coordination feature that tells all nodes in the network to notify a node when they find the requested data. (induces denial of service vector, probably a bad idea)

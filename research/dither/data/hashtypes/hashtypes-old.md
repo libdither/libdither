@@ -123,3 +123,25 @@ List of Traits that extend the core `Trait` type.
 ### Link Strengths
 
 Being able to specify how vital a linked piece of data is to the "owning" piece of data is desireable when requesting data so that too much or too little is sent and either data has to be disgarded or more data has to be requested. For example, if a structure is defined to format a piece of data that is not self-defining, it is desirable to be able to specify to fetch only the structure itself, or the structure together with the embedded data. To accomplish this, 
+
+# From Dither.md
+
+### Defining External Structures
+In Dither, while pieces of data can be located and linked with multihashes, not all pieces of data contain multihashes. Any external hash-linked data structure that you want to host on Dither (i.e. blockchains) aren't going to be natively supported. Instead all the blocks of data must either be re-linked to form a multihash-supporting copy or the hash types have to be inferred by context. (The downside of the second option non-hashtrait blocks can't easily be inferred from non-specific programs interpreting hashtraits). The second option is what IPFS/IPLD is doing, reinterpreting hashed blocks of data of arbitrary format by defining a standard table of formats. Dither prefers the first option of wrapping the entire data structure with trait definitions that Dither can understand.
+
+What IPLD does is it uses an addition to Multihash called CID (Content Identifier). This CID contains both the multihash and a number for the Multiformats table that must be standardly designed.
+
+The problem with IPLD is that this [standard table of formats](https://github.com/multiformats/multicodec/blob/master/table.csv) is subject to change. Formats are not universal and if you want to identify custom formats not in the table, you are out of luck if you want to communicate your custom formats to existing IPFS applications
+
+With Dither, instead of having a hard standard list of formats, Formats of data are defined by the data itself using the hashtrait format. Data that is not trait-defined, will be either wrapped using a definition trait (i.e. a structure just containing a hash of the data and trait). Or it will be reinterpreted to be represented natively as a trait structure.
+
+### Example Traits
+Traits can define any data structure and its state of being "Valid". 
+A Monero Transaction might look something like this after being structured in Dither.
+ - `"Transaction" (With localization fields)`
+   - `previous_transaction: SelfRef`
+   - `definintion: Multihash (Default Trait Definition)`
+   - `source: List<MultiKey>`
+   - `destination: Multikey`
+   - `pederson_commitment: PedersonCommitment`
+   - `signature: RingSignature`
