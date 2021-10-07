@@ -21,6 +21,8 @@ List of various consensus algorithms' pros & cons that could be utilized by Dith
      - Large storage requirements for full node
    - Pros
      - Faster and more energy efficient than proof of stake
+ - Proof of Weight
+   - General term to describe systems that work similarly to Proof of Stake, where there is some shared value that determines how 
  - Stellar Consensus Protocol (Byzantine Federated Voting)
    - Cons
      - Large storage requirements for full node
@@ -34,6 +36,7 @@ List of various consensus algorithms' pros & cons that could be utilized by Dith
    - Cons
      - More ways to compromise network, no reward for running nodes
      - Potential DDOS vectors with transaction flooding.
+     - Low scalability for representatives (can't support millions of representatives voting at the same time)
    - Pros
      - Really fast (<1 second transactions if no conflict), no transaction fees.
  - IOTA Consensus Protocol
@@ -62,4 +65,4 @@ List of various consensus algorithms' pros & cons that could be utilized by Dith
      - Network 
    - Cons
      - Potential loss of ownership of funds if enough nodes in a certain area go down (mitigated by distributing funds or slower, backup consensus algorithm)
-     - Its a work in progress.
+     - It's a work in progress.
