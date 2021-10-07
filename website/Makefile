@@ -12,7 +12,7 @@
 # Convert all files in this directory that have a .md suffix
 SOURCE_DOCS := $(shell find dither-spec/ -type f -name '*.md')
 
-EXPORTED_DOCS = $(patsubst dither-spec/%.md, static/ideas/%.html, $(SOURCE_DOCS))
+EXPORTED_DOCS = $(patsubst dither-spec/%.md, static/spec/%.html, $(SOURCE_DOCS))
 
 .PHONY: build clean
 
@@ -22,7 +22,7 @@ clean:
 	rm $(EXPORTED_DOCS)
 	rmdir static/ideas/*/
 
-static/ideas/%.html : dither-spec/%.md
+static/spec/%.html : dither-spec/%.md
 	@mkdir -p "$(@D)"
 	pandoc -s -o $@ $< --lua-filter=links-to-html.lua --css="/style.css"
 

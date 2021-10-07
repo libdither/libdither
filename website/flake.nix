@@ -25,7 +25,6 @@
     				cp -r static $out/
 				'';
 			};
-			devShell = channels.nixpkgs.mkShell { name = "devShell"; };
 		};
 	};
 }
