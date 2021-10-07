@@ -14,7 +14,7 @@ SOURCE_DOCS := $(shell find dither-spec/ -type f -name '*.md')
 
 EXPORTED_DOCS = $(patsubst dither-spec/%.md, static/ideas/%.html, $(SOURCE_DOCS))
 
-.PHONY: all clean
+.PHONY: build clean
 
 build: $(EXPORTED_DOCS)
 

@@ -14,12 +14,18 @@
 
 		supportedSystems = [ "x86_64-linux" ];
 
-		channels.nixpkgs.input = nixpkgs;
+		#channels.nixpkgs.input = nixpkgs;
 		
-		outputsBuilder = channels: rec {
-			devShell = channels.nixpkgs.mkShell {
+		outputsBuilder = channels: {
+			defaultPackage = channels.nixpkgs.stdenv.mkDerivation rec {
+				name = "foo";
+				src = ./.;
 				nativeBuildInputs = with pkgs; [ pandoc ];
+				installPhase = ''
+    				cp -r static $out/
+				'';
 			};
+			devShell = channels.nixpkgs.mkShell { name = "devShell"; };
 		};
 	};
 }
