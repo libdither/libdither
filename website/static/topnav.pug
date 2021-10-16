@@ -1,0 +1,8 @@
+mixin topnav(current_page)
+	.topnav
+		h1 Dither
+		a(class=(current_page === "about") ? 'active' : '', href='/') About
+		a(class=(current_page === "ideas") ? 'active' : '', href='/ideas') Ideas
+		a(class=(current_page === "n/a") ? 'active' : '', href='https://github.com/libdither/libdither') Git
+		a(class=(current_page === "inspiration") ? 'active' : '', href='/inspiration') Inspiration
+		p Mission: Decentralize the Internet

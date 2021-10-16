@@ -20,7 +20,10 @@
 			defaultPackage = channels.nixpkgs.stdenv.mkDerivation rec {
 				name = "foo";
 				src = ./.;
-				nativeBuildInputs = with pkgs; [ pandoc ];
+				nativeBuildInputs = with pkgs; [ pandoc ] ++ pdsite;
+				buildPhase = ''
+					pdsite init
+				'';
 				installPhase = ''
     				cp -r static $out/
 				'';

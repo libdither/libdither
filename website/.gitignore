@@ -1,2 +1,5 @@
 static/spec
 result
+node_modules
+static/**/*.html
+static/*.html
