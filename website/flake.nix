@@ -18,11 +18,11 @@
 		
 		outputsBuilder = channels: {
 			defaultPackage = channels.nixpkgs.stdenv.mkDerivation rec {
-				name = "foo";
+				name = "dither-link";
 				src = ./.;
-				nativeBuildInputs = with pkgs; [ pandoc ] ++ pdsite;
+				nativeBuildInputs = with pkgs; [ pandoc ];
 				buildPhase = ''
-					pdsite init
+					bash pdsite init
 				'';
 				installPhase = ''
     				cp -r static $out/
