@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>eventual-consensus</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/style.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="eventual-consensus">Eventual Consensus</h1>
+<h2 id="what">What?</h2>
+<p>Eventual Consensus is not quite what it sounds like. It is consensus in a network that is lazy. This is useful for public information spreading where not everyone has to have the information in a timely fasion.</p>
+<h2 id="why">Why?</h2>
+<p>For consensus applications that don’t have a timeline (blockchains and directed acyclic graphs) this method of consensus is useful because it lets nodes kinda do their own thing if they aren’t interested in what is being spread around the network in a given moment. For example if you have a public message board, you need only to notify users that care about the message board and want to see new messages. Those users can propagate the new messages around to other requesters if needed.</p>
+<h2 id="but-why-is-this-useful-in-dither">But why is this useful in Dither?</h2>
+<p>The <a href="../data/reverse-hash-lookup.html">Reverse Hash Lookup</a> system will benefit immensely from this kind of consensus. Reverse hash lookup</p>
+<h2 id="general-structure">General Structure</h2>
+<p>Its pretty much just a pubsub algorithm that aggregates posts into lookup trees like Reverse hash lookup’s object tree.</p>
+</body>
+</html>

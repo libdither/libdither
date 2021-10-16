@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>dither-versioning</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/style.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="dither-versioning-dv">Dither Versioning (dv)</h1>
+<p>This is a versioning system for versioning any kind of tree structure. It is meant to function as a replacement for git.</p>
+<h1 id="general-structure">General Structure</h1>
+<p><code>ObjectDelta</code>: - Generates an Object with a change - object: <code>Link&lt;Object&gt;(link_type: Relevent)</code> - base_object: <code>Link&lt;Object, Linked&gt;</code></p>
+<p><code>Object</code>: - Compressed Object, Binary or Text - base_object: <code>Option&lt;ObjectDelta&gt;</code> - compresed data: <code>List&lt;Byte&gt;</code></p>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>tree-of-math</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/style.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="tree-of-math">Tree of Math</h1>
+<p>Defining all of math programatically using set theory.</p>
+<h2 id="traits">Traits</h2>
+<p>Defining the fundamental structures of math:</p>
+<ul>
+<li>Variable
+<ul>
+<li>Math Def: An variable in an axiomatic system</li>
+<li>Struct Def: Uniquely identify a variable in a system</li>
+<li>Struct: { id: Varint }</li>
+</ul></li>
+<li>Proposition
+<ul>
+<li>Math Def: A true or false statement based on a system of propositions</li>
+<li>Structure Def: A boolean value corresponding to a predicate statement on a proposition system.</li>
+<li>Struct: <code>{ system: Link&lt;Proposition&gt;, struct: Link&lt;Predicate&gt;, value: bool }</code></li>
+<li></li>
+<li>E.g.</li>
+</ul></li>
+<li>Predicate
+<ul>
+<li>Math Def: Proposition-Valued function of some variables</li>
+<li>Structure Def: List of variables representing a function that can be used in a Definition</li>
+<li>Struct: { List&lt;Variable&gt; }</li>
+<li>Usage:</li>
+</ul></li>
+<li>Operation
+<ul>
+<li>Math Def: A predicate constrained by various propositional statements to define a function in some Domain.</li>
+<li>Struct Def: Predicate and a proposition</li>
+</ul></li>
+<li>Symbol
+<ul>
+<li>Struct Def: A Unicode symbol pertaining to some or various Operations.</li>
+</ul></li>
+<li>Proof
+<ul>
+<li>A proof is just a list of propositions that results in prooving a proposition from some axioms.</li>
+<li>A proposition can be an Axiom, a Tautology, or a derived proposition.</li>
+<li>Valid Proofs that use Valid Axioms in Dither can themselves be treated as Axioms because they link directly to other proofs. Full Proofs can be compiled by traversing the Tree of Math (much like compiling C++ into assembly)</li>
+</ul></li>
+</ul>
+<h2 id="roots">Roots</h2>
+<p>The roots of Math</p>
+</body>
+</html>

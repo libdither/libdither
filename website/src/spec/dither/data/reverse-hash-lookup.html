@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>reverse-hash-lookup</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/style.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="reverse-hash-lookup-wip">Reverse Hash Lookup (WIP)</h1>
+<p>Allows for finding what structures link to a given structure.</p>
+<p>Example: Someone can find a comment that links to a post, just given the hash of the post.</p>
+<h1 id="ideas-to-add">IDEAS TO ADD</h1>
+<p>Keep track of the number of child nodes for each node in the tree so you can merge reverse hash lookup trees easily in a peer-to-peer fashion which means consensus can be less rigourous.</p>
+<h2 id="general-structure">General Structure</h2>
+<p>A Binary Hash-linked Tree stored in a decentralized fashion with <a href="./directional-trail-search.html">DTS</a> that maps a given hash to object that contains that hash. Hashes are agreed upon in a decentralized manner, but direct consensus is assured, and a pubsub system helps speed up consensus for high-activity hashes.</p>
+<h2 id="specific-structure">Specific Structure</h2>
+<h3 id="tree">Tree</h3>
+<ul>
+<li>The goal for this tree is for nodes to contain as little information as possible so that large portions of the tree can be sent at once.</li>
+<li>A Binary Tree contains <code>Branch</code>es and <code>Node</code>s. For this structure, each one will be its own self-defining structure. Each node will contain</li>
+<li>Binary Tree, contains</li>
+</ul>
+<h3 id="traits">Traits</h3>
+<ul>
+<li><p><code>Node&lt;T, L&gt;</code> - Nodes of the tree</p>
+<ul>
+<li><code>subnodes: List&lt;T, L&gt;</code> - subnodes of this node</li>
+</ul></li>
+<li><p><code>Leaf</code> -</p></li>
+<li><p>This is a system by which one can find structures that link to a given hash implementing the reverse trait.</p></li>
+<li><p>If there is some pieces of data that links from or adds useful defintions to a given piece of data, this is the place for it. One example of this in practice might be having a comment thread. Each comment is its own Hashstruct that contains the hash of the post or a replying comment. In order for someone who has the post structure to find the comments, they would need find all the pieces of data linking to this piece of data (i.e. a Reverse Hash Lookup)</p></li>
+<li><p>To implement this system, there will be a partial binary tree represented by a DAG that can be traversed using the data of the target. (i.e. the post structure’s hash). Then the tree can be traversed down using consecutive trail searches. Until a list of all known linked hashes is found. These structures must contain a specific trait called a RevHash to be able to be validated onto the distributed tree. The addition of new links to this tree is done through an implementation of Dither Chain Consensus (see the <a href="#dither-consensus-chains">#Dither Consensus Chains</a> section).</p></li>
+</ul>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>directional-trail-search</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/style.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="directional-trail-search">Directional Trail Search</h1>
+<p>Allows for a computer to fetch a piece of data from another computer based on the multihash of that piece of data, as long as at least one computer has the data.</p>
+<h2 id="general-structure">General Structure</h2>
+<p>Directional Trail Search takes inspiration for how ants find food: scent and pheromone trails. In Dither, these take form as “holes” and “trails”. Holes form when nodes broadcast to nearby nodes (nearby in terms of routing coordinates) that they have the data behind a given hash. Those nearby nodes will then note down the hash and which direction the broadcast came from. Then, when another node wants to find the data of that hash, it will send out many wandering packets [link needed] that will, when encountering a node that has the desired hash, will be routed by that node towards the node that actually has the data that generates the hash.</p>
+<p>The other form is “trails”. These form once a wandering packet has finally reached the node with the data it was looking for (the data the matches the hash). This destination node then sends a special traversal packet back to the sending node that tells each node on the way to take note of what direction the traversal packet came from. This forms a kind of trail in the network that other wandering packets can come across and follow to the desired node. This system also creates an effect where the more popular a given piece of data is, the faster a node hosting it will be found.</p>
+<p>For data that is not very popular and can’t be find found with a reasonable number of wandering packets, a simple DHT can be used to map hashes to route coordinates.</p>
+<h2 id="specific-structure">Specific Structure</h2>
+<p>Every node in Dither will have a binary tree structure that maps hashes to a relative routing direction or a direct peer (TBD).</p>
+</body>
+</html>

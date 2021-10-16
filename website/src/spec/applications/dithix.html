@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>dithix</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/style.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="dithix">Dithix</h1>
+<p>Solves the packaging problem</p>
+<p>Takes ideas from: Nix</p>
+<p>Features of a good package manager: - Download packages - Run packages - Update packages - Hack on packages - Deploy packages - Reproducibly configure packages across many different systems - Package storage &amp; versioning + deduplication</p>
+<p>Package trait is valid if the output is built from the derivation</p>
+<h2 id="downloading-packages">Downloading Packages</h2>
+<p>This is handled by Dither. Package name is mapped to a release hash tree w/summary and the desired version is selected.</p>
+<h2 id="the-dependency-network">The dependency network</h2>
+<p>All package managers need to manage dependency downloading and configuration. They need to be able to manage multiple versions of the same library. Dynamically linked executables are very much desired in Dithix for efficiency so packages are preferred to split compilation into multiple linked derivations instead of one single one.</p>
+<p>It works exactly like a hash tree. All packages contain the hash of their inputs and compiled packages can be looked up on the network with unique names.</p>
+<h2 id="packages-on-dither">Packages on Dither</h2>
+<p>Package definitions are created using a functional configuration language (i.e. <a href="https://github.com/tweag/nickel">tweag/nickel</a>).</p>
+<ul>
+<li>Trait “Script”
+<ul>
+<li>parser: Nickel / Nix / Whatever functionnal configuration language</li>
+<li>file: File</li>
+</ul></li>
+<li>Trait “Derivation”
+<ul>
+<li>builder: Package <em>// Package that builds the output</em></li>
+<li>inputs: List&lt;Package&gt; <em>// Input Packages</em></li>
+</ul></li>
+<li>Trait “Package” <em>// Is valid if output is reproducibly producted from derivation which is reproducibly produced from definition</em>
+<ul>
+<li>definition: Script <em>// Parsed into a the derivation</em></li>
+<li>derivation: Derivation <em>// Compiled into an output</em></li>
+<li>output: Multihash <em>// Contains everything needed to run a program</em></li>
+</ul></li>
+</ul>
+</body>
+</html>

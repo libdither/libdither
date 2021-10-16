@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>modular-consensus</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/style.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="modular-consensus-wip">Modular Consensus (WIP)</h1>
+<h2 id="what-is-it">What is it</h2>
+<p>Modular Consensus is a tool that creates a framework for creating any configuration of common consensus algorithms for specific applications.</p>
+<h2 id="what-does-it-do">What does it do?</h2>
+<p>Modular Consensus allows you to create custom consensus configurations using linked blockchain or directed acyclic graphs with most(?) kinds of proof algorithm (Proof of Work, Proof of Stake, Etc.).</p>
+<h2 id="how-does-it-specifically-work">How does it specifically work?</h2>
+<p>Modular consensus uses a specific hashtype to define the main characteritics and configuration of a consensus algorithm (onboarding method, consensus algorithm, data to be agreed upon).</p>
+<p>Consensus algorithms can make use of the built-in validation system for <a href="../data/hashtypes/hashtypes.html">hashtypes</a> to verify blocks.</p>
+<h2 id="implementation">Implementation</h2>
+<p>A type must extend the, <code>ConsensusPoint</code> type which will become valid as the starting point for consensus. The <code>ConsensusPoint</code> type defines many things:</p>
+<p>[This Section is Work-In-Progress]</p>
+<p><code>ConsensusPoint</code>: - <code>consensus_type</code>: <code>ConsensusType</code> - <code>object</code>: <code>Link&lt;Trait&gt;</code> - Object to be agreed upon - ``</p>
+</body>
+</html>

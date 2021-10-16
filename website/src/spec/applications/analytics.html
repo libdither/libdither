@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>analytics</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/style.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="anonymous-analytics">Anonymous Analytics</h1>
+<p>Analytic collection is usually non-respecting of privacy, but it should be possible to create a system of analytics that reveals as little identifying information as possible using information theory and the decentralized nature of Dither.</p>
+<h2 id="rough-idea">Rough Idea</h2>
+<p>Author specifies what kind of analytics they want and how specific they want. <em>Analytics must be proportions or averages</em>. Users manually (or automatically based on settings) pick which fields they want to divulge. Peers that use a specific application are identified and an agreed upon field is set to be exchanged and averaged by each peer. Each peer checks the other’s proof of humanity (see <a href="../dither/zero-knowledge-proofs.html">zero-knowledge-proofs</a>) and create a new zero-knowledge proof combining the ones of each peer.</p>
+<p>This part needs more thought:</p>
+<p>This field combination is done with many different peers until all of a given peer’s fields have been combined. Then more averages are produced and a tree of proofs is gradually built. until the top of the tree for each field contains the desired average or proportion which is publically viewable for all users to see.</p>
+</body>
+</html>

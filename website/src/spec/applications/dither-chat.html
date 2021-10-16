@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>dither-chat</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/style.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="dither-chat">Dither Chat</h1>
+<ul>
+<li><a href="#dither-chat">Dither Chat</a>
+<ul>
+<li><a href="#what-is-it">What is it</a></li>
+<li><a href="#users--sync">Users &amp; Sync</a></li>
+<li><a href="#chat-events">Chat Events</a></li>
+<li><a href="#event-storage---storage-of-a-sequence-of-events-in-memory-or-storage">Event Storage - Storage of a sequence of events in memory or storage</a></li>
+<li><a href="#trusted-friends-application-api">Trusted Friends Application API</a></li>
+<li><a href="#chat-interface">Chat Interface</a></li>
+<li><a href="#direct-messaging">Direct Messaging</a></li>
+<li><a href="#group-messaging">Group messaging</a></li>
+<li><a href="#servers">Servers</a>
+<ul>
+<li><a href="#roles-tags--colors">Roles, Tags &amp; Colors</a></li>
+</ul></li>
+</ul></li>
+</ul>
+<h2 id="what-is-it">What is it</h2>
+<p>Dither Chat is a decentralized communication application using the Dither protocol. Servers are communally hosted with local consensus. Bots and plugins will be supported and also communally hosted. tl;dr Discord but decentralized and better.</p>
+<h2 id="users-sync">Users &amp; Sync</h2>
+<ul>
+<li>Each user may have multiple Peers (devices that Dither is installed on)</li>
+<li>Chat Event history can be optionally synced across Peers.</li>
+<li>A peer may host multiple users</li>
+<li>Each UserId must have at least 1 peer that hosts it.</li>
+</ul>
+<h2 id="chat-events">Chat Events</h2>
+<ul>
+<li>All Events are signed with the private key of the person who sent it (these will be verified with a config option to let through or ignore unsigned or incorrectly signed events)</li>
+<li>Chat Message structure
+<ul>
+<li>Date sent, last edited, markdown data / embed json, UserID mentions, emoji reactions</li>
+</ul></li>
+<li>Rich Presence (updating custom statuses and online/offline status)
+<ul>
+<li>Optional storage - can store presence update history (off by default)</li>
+<li>Optional sending, extracts information about what you are currently doing and updates your friends. (on by default)</li>
+<li>Customization options to only share with certain friends ## Event Storage - Storage of a sequence of events in memory or storage</li>
+<li>Stored as hash-linked local blocktree that messages are added to and new blocks are created when a certain amount of time elapses between the last message sent or max block size exceeded. Block size can be set to 1 to prevent messages being ordered out-of-order.</li>
+<li>Indexing can be done on a by-block level (TODO: more customization options needed)</li>
+<li>Block structure can allow for thread branching &amp; thread conversation movement across users. (e.g. create a group dm on top of an ongoing conversation)</li>
+</ul></li>
+</ul>
+<h2 id="trusted-friends-application-api">Trusted Friends Application API</h2>
+<ul>
+<li>Option to rank friends manually or by how much you chat with them</li>
+<li>Can mark friends as “Trusted, Neutral or Untrusted”</li>
+<li>Friend rank can be used by other applications</li>
+<li>e.g. for Stellar Consensus Protocol quorum selection ## Chat Interface</li>
+<li>Built-in markdown formatting + advanced chat box (similar to discord)</li>
+<li>Link Displaying</li>
+<li>Metadata can be sent so receiver doesn’t have to send request to web pages</li>
+<li>TODO: Do we need to worry about invalid metadata being sent, tricking the user? Perhaps just scanning for suspicious domains is enough.</li>
+<li>Receivers can choose if they want to fetch link data, only fetch commonly used sites (e.g. youtube, twitter, soundcloud etc.) or not fetch anything at all and only display sent link metadata ## Direct Messaging</li>
+<li>Simply sending JSON-encoded message/other events to UserID on Dither ## Group messaging</li>
+<li>Messages are broadcast over gossipsub and conflicting blocks are ordered by time. ## Servers</li>
+<li>Servers are communially hosted by the moderator’s computers. However, the owner has full control over the server and can choose who can assist</li>
+<li>Red Nodes are hosting nodes, blue nodes are members. Blue node with yellow stroke is proxying it’s connection to the server <img src="dither-chat/server-framework.svg" alt="Network Structure for Dither Server" /> Image of a possible dither-chat server arrangement ### Roles, Tags &amp; Colors</li>
+<li>To distinguish people in a server, there are roles, name colors, and tags</li>
+<li>Tags are shown next to tagowner’s name as a small icon (like in Discord)
+<ul>
+<li>By default there is only 1 tag enabled for a server: the <em>Owner</em> tag.</li>
+<li>There are other tag presets such as <em>Donator</em>, <em>Moderator</em> &amp; <em>Member</em></li>
+<li>Custom tags can be created and be attached to a specific role.</li>
+<li>Tags should be displayed in order of importance</li>
+</ul></li>
+<li>Roles can be made for anyone and can have permissions attached to them
+<ul>
+<li>Roles and can also be organized into hierarchies where users can be ranked-up to posses a higher role (usually with more permissions)</li>
+</ul></li>
+<li>Each role has a color and color priority assigned
+<ul>
+<li>This is used to determine what color a user’s username should be assigned</li>
+</ul></li>
+</ul>
+</body>
+</html>
