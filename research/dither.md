@@ -5,7 +5,7 @@
   - [No, but really, What is it?](#no-but-really-what-is-it)
   - [What's this about replacing the Internet?](#whats-this-about-replacing-the-internet)
   - [Potential Applications:](#potential-applications)
-- [Core Tenants](#core-tenants)
+- [Core Tenets](#core-tenets)
 - [Structure](#structure)
 - [Network Layer](#network-layer)
   - [Distance-Based Routing](#distance-based-routing)
@@ -46,7 +46,7 @@ The goal of Dither is to be able to recreate any kind of application in a decent
 
 See the [application document](applications.md) for Work In Progress ideas for various applications.
 
-# Core Tenants
+# Core Tenets
 All projects need a direction, and these are the ones I've chosen. (As with everything, they are subject to change.)
 
 **Dither should be as modular as possible.**
