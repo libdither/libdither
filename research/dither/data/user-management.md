@@ -3,7 +3,8 @@
 # Dither's User API
 
 ## Purpose
-Dither is aiming to replace the internet, so it needs a standard method of accounting. This includes storing user data publicly and privately, identifying users, and authenticating users. These accounts need to be able work across devices and should have varying levels of authentification for varying levels of storage of information.
+Dither is aiming to replace the internet, so it needs a standard method of accounting. This includes storing user data publicly and privately, identifying users, and authenticating users. These accounts need to be able work across devices and should have varying levels of authentication for varying levels of storage of information.
+Dither accounts should also be able to prove qualities about themselves to external parties using zero-knowledge proofs.
 
 ## Goals
 
@@ -20,6 +21,17 @@ A user is just a Public / Private key pair with encrypted and unencrypted data s
 There are two parts to this datastructure, a public versioned structure and a private encrypted structure. The public key is stored in the public structure, the private key is stored in the private structure. 
 
 Any interaction between an application and a user on Dither is done through the Dither API. Applications can create users, authenticate as a user and discover the public data of other users through the User API.
+
+## User Definitions
+
+These public and private structures can have various definitions that define various qualities about the user. Definitions are just permissioned data that is stored by a user. Definitions can be publicly available, publicly writable or conditionally available, and writable with specific permissions.
+
+### Examples of Definitions
+
+ - Public
+   - Username
+   - Autobiography
+ - Private
 
 ## User API
 Application 
