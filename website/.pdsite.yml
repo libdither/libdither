@@ -2,10 +2,11 @@
 
 theme: default
 inputextension: .md
-outputfolder: .html
+inputfolder: src/
+outputfolder: static/spec/
 
 # Site-wide template variables
 
-sitename: "Dither"
+sitename: "Dither Spec"
 pagetitle-suffix: ""
-# footer: "Dither"
+# footer: "My pdsite footer"

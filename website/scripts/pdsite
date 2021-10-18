@@ -9,13 +9,13 @@ function init(){
 }
 
 function build(){
-
     # Load config variables from file
     if [ -f ./.pdsite.yml ]; then
 	configfile=$(pwd)'/.pdsite.yml'
 	theme=$(cat $configfile | grep '^theme:' | sed 's|^theme:\s*\(.*\)$|\1|')
 	inputextension=$(cat $configfile | grep '^inputextension:' | sed 's|^inputextension:\s*\(.*\)$|\1|')
 	outputfolder=$(cat $configfile | grep '^outputfolder:' | sed 's|^outputfolder:\s*\(.*\)$|\1|')
+    inputfolder=$(cat $configfile | grep '^inputfolder:' | sed 's|^inputfolder:\s*\(.*\)$|\1|')
 	[ "$theme" ] && [ "$inputextension" ] && [ "$outputfolder" ] || {
 	    echo "ERROR: Missing config variables in .pdsite.yml" 1>&2
 	    exit 1
@@ -143,7 +143,7 @@ case $1 in
     "build") build;;
     "serve") serve;;
     *)
-	echo "Unknown command $1"
+	echo "Unknown command $1. Valid commands: init, build, serve"
 	exit 1
 	;;
 esac
