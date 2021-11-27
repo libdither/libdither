@@ -9,7 +9,7 @@ Keep track of the number of child nodes for each node in the tree so you can mer
 
 ## General Structure
 
-A Binary Hash-linked Tree stored in a decentralized fashion with [DTS](./directional-trail-search.md) that maps a given hash to object that contains that hash. Hashes are agreed upon in a decentralized manner, but direct consensus is assured, and a pubsub system helps speed up consensus for high-activity hashes.
+A binary hash-linked search tree stored in a decentralized fashion with [DTS](./directional-trail-search.md) that maps a given hash to object that contains that hash. Hashes are agreed upon in a decentralized manner, but direct consensus is assured, and a pubsub system helps speed up consensus for high-activity hashes.
 
 ## Specific Structure
 
