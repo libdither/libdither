@@ -1,147 +1,68 @@
-# Self-Defining Structures
-(A.k.a. *Hashtypes*)
+# Idea Document for Hashtypes
 
-Self defining structures are pieces of data that link to their own format, telling the program how they are structured and how to validate them. 
+## What is a Hashtype
+Generally, A hashtype is a piece of data, prepended by a Multihash. The multihash can be resolved using [directional-trail-search](../../routing/directional-trail-search.md) to some data that defines the layout of the hashtype.
 
-The workings of this system are heavily dependent on [Directional Trail Search](directional-trail-search.md) and [Reverse Hash Lookup](reverse-hash-lookup.md).
+A type definition (seen below) contains a type name, multiple fields, and a type for each field. The most primitive type definition (`Layout`) allows for the creation of dependent types.
 
-## Ideas To Add to this Doc
- - Make structures' fields binary-ordered by default to increase the chances that developers will use and create the same structures. Delegate conceptual ordering to `TraitLocalization`.
-   - I.e. if two programs both need a File trait and a file is just some binary data and a creation date, the resulting `File` trait will be the same in both programs assuming the programmers use the same internal fields.
+## What constitutes a Layout?
 
-## Structures
+All Types are all eventually defined by the core `Layout` type.
 
-A structure is a piece of binary data that starts with a [Multihash](https://multiformats.io/multihash/).
-A structure is considered correct if the format of the binary data corresponds with the Trait definition linked to via the Multihash.
+The core `Layout` type is defined **in implementation** roughly as:
+
+`Layout`
+ - num_fields: `B8` - Binary 8-bit number
+ - num_traits: `B8`
+ - hash_length: `VarUInt` - Variable unsigned integer
+ - hash_type: `VarUInt`
+ - fields: `Unknown` - Variable length data
+ - traits: `Unknown`
+ - `$FixedSize = undefined` - It doesn't matter what this is because `$Size` doesn't use it for this type.
+ - `$Size: $FixedSize = (self) -> U64`
+   - `num_fields.size() + hash_length.size() + hash_type.size() + num_fields.to_u64() * hash_length.to_u64()`
+   - Defined as function that takes a reference to the beginning of a buffer containing a value of type Layout and returns 64-bit integer.
+   - Depends on `$FixedSize`. Fixed-size types return `$FixedSize`. Variable-length types calculate size dynamically.
+ - `$Correct: $Size = (self, size) -> bool`
+   - `(size == $Size(self)) & num_fields.correct() & hash_length.correct() & hash_type.correct()`
+   - Dependent Trait, relies on `$Size`. Returns true if `Unknown` data field is correct size and the `VarUInt`s are also correctly formatted.
+ - `$Valid: $Correct = (self, size) -> bool`
+   - `{ $Correct(self, size) & num_fields.valid() & hash_length.valid() & hash_type.valid() & [logic to verify hash-linked objects validity contained in data field] }`
+
+See [Traits](#traits) for an explanation of `$` notation.
+
+This also infers the interpretation of `VarUInt` and `Unknown`.
+
+`VarUInt` - A VarUInt is just a Variable Unsigned Integer
+ - data: `Unknown`
+ - `$Size: $FixedSize = (self) -> U64: [varint size algorithm]`
+ - `$Correct: $Size = (self, size) -> bool`
+
+The `Unknown` type just refers to raw data that is defined via the `$Size` and `$Correct` Traits.
 
 ## Traits
 
-Traits are what the formats of self-defining structures are called and are themselves structures defined by their own trait. This allows the creation of any type of structure imaginable.
+Traits define programs or adjacent data on Types. They are themselves Hashtypes linked directly from the layout type or via [reverse linked data](../reverse-hash-lookup.md).
 
-## Markers
-
-Markers are the core primitives for adding functionality to structures. They mark the interface between the Hashtrait implementation and the data of a structure. They tell the implementation what operations a program can perform on a given structure as well as how the data should be interpreted at a base level.
-
-*Markers are recognized by the program as the sha256-variant multihash counting up from 0. They do not correspond to the hash of specific data.* (i.e. the base58 encoding of `TraitMarker` would be `QmNLei78zWmzUdbeRB3CiUfAizWUrbeeZh5K1rhAQKCh51` and `MultihashMarker` would be `QmNLei78zWmzUdbeRB3CiUfAizWUrbeeZh5K1rhAQKCh52`)
-
-Primitive Markers:
- - `TraitMarker` - Marks a structure that acts as a trait. Also acts as a base trait implementation. Allows for implementation to interpret basic trait definitions as well as marking custom traits.
-   - Trait Format: `<0x000 hash><varint length><list of >`
- - `MultihashMarker` - Marks a multihash. Interpreted by implementation as a sha-256 multihash as defined by the multihash specification.
- - `SizeMarker` - Allows the program to know beforehand the size of a structure.
-
-Advanced Markers: (WIP)
- - `GenericMarker` - Marks generic arguments of a trait.
- - `DynamicSizeMarker` - Marks a structure size calculation program. Allows for the implementation to derive the size of a specific structure.
- - `ValidityMarker` - Marks a structure validation program. Allows for implementation to check if a structure is defined correctly as defined by its trait.
-
-## `TraitMarker` Implementation
-
-The TraitMarker trait is defined in implementation as a trait like this:
-
- - `TraitMarker`
-   - `SizeMarker` - Represents the size of the defined structure
-   - `MultihashMarker` - 
-   - `MultihashMarker`
-
-## Primitive Trait Implementations
-
-Notice: These trait definitions will have named fields, in actuality, field names are defined through a [reverse-linked](./reverse-hash-lookup.md) trait called a `TraitLocalization` and can be defined in multiple languages.
-
-From Markers, primitive traits can be created. A simple trait could be defined as:
-
-`Trait: TraitMarker` (The "`:`" represents that the Trait structure is being defined in terms of the `TraitMarker` "structure")
- - `fields: List<>`
-
-
-
-Traits can also be generic across other traits to apply some functionality (Such as the `Multihash`, `Option`, `List`, or `Collection` traits).
-
-Each trait is itself a structure and also starts with a multihash and has it's own format.
-
-A typical trait will use the `Trait` type as it's format which is defined as the following:
- - `extension: Option<Multihash<ext Trait>>` (Optionally specify trait that is being extended)
- -  (List of Multihashes that link to objects which extend `Trait`)
-
-The `Trait` type as well as all other built-in types are identified by a multihash of their name. i.e. "Trait".
-
-This leads to the second feature of traits which is extension. Traits that extend other traits simply add fields to the resulting structure that is defined.
-
-### Common Trait Types
-#### Built-in
-These are the minimum viable Traits needed to define all other Traits. Some of these traits will be redefined to support various features and to ensure future-proofing.
-
- - `VarUInt` - Multiformat's [Variable-Length Integer](https://github.com/multiformats/unsigned-varint)
- - `Multihash` - Formatted via the [Multihash format](https://multiformats.io/multihash/), defines a hash generated by a built-in table.
- - `Byte` - 8-bit piece of data.
- - `List<T, L: VarUInt>(L)` - Create lists of a certain type, length must be of Trait VarInt
- - `CoreTrait` - Core definition of a trait. It is defined in the implementation, but is essentially a `List` of `Multihash`s.
-
-### Core (Re)Defined Traits
-The core traits are needed to compose all other traits. But all the features of self-defining structures don't arise from them directly.
-
-The concept of "Structure Validity" is important. An Enum object is just an integer, but it shouldn't be larger than the number of Enumerations. A Enum structure that contains a value larger than its definition is considered invalid, even though it may be interpretated correctly.
-
- - `String: CoreTrait`
-   - `bytes: List<Byte>(L)`
- - `Trait: CoreTrait`
-   - `name: String`
-   - `fields: List<Multihash, L>(L)`
+`Trait: Layout` - A Trait is a type that defines multiple functions
  - 
+ - `$Size: $FixedSize = (self) -> U64: type.size()`
+ - `$Correct: $Size = (self, size) -> U64`
 
-### Defined Traits
- - `Enum<T: VarUInt, L: T>: NamedTrait` - Defines a number that correspond to different states of the Enum. Number of Variants in Generic
-   - `variant: T`
-   - `validity: Validity` - Enum is only valid if the type T is an unsigned type, it is large enough to fit L, and `variant` is less than T.
- - `BitFlag<L: UInt8>: NamedTrait` - Defines a series of bitflags up to 
- - `Link<T>: VersionedTrait` - Multihash linking to structure with specific Trait T.
-   - `hash: Multihash`
-   - `link_type: LinkType`
-     - `LinkType: Bitflags<1>` - Provides metadata about the importance of the lined object. Governs whether or not linked data is garbage collected, sent to requesting devices with the original request, or stored in a specific way.
-       - `Embedded` - Linked object is absolutely needed by the original structure (should be relatively small).
-       - `Cached` - Linked object that is absolutely needed but the requesting device should already have (i.e. emojis, fonts, trait definitions, etc.).
-       - `Needed` - Linked object that should probably be sent back ASAP.
-       - `Relevent` - Linked object that is relevant to the structure but not necessarily needed ASAP (e.g. image or linked video file)
-       - `Irrelevant` - Linked object that is large or unecessary and should never be sent with original request.
- - `RevLink<T>` - Wraps a `Link<T>` and requires a Trait type specification. Registers the trait T in the Reverse Hash Lookup tree. Allows for lookup of trait containing `RevLink<T>` type from the hash linked to.
-   - link: `Link<T>`
-   - validity: `Validation`
- - `Localization: Enum`
- - `TraitLocalization: NamedTrait` - Defines field names and overall name of RevLinked trait in different languages.
-   - `name: String`
-   - `fields: List<String>`
-   - 
+`LinkedTrait` - Trait that is reverse-linked
 
 
-### Trait Variants
+`Function` - A program is an input and an output
+ - input: `Multihash`
+ - output: `Multihash`
 
-List of Traits that extend the core `Trait` type.
- - `NamedTrait: Trait` type which contains a `String` for the English name of the Trait.
- - `VersionedTrait: NamedTrait` - adds `Option<RevLink<ext VersionedTrait>>>`. This is useful for backwards-compatability and future-proofing.
+`Implementation` - Implementation of a program
+ - program: `Multihash` - Program Layout Multihash
+ - type: `VarUInt` - Program Type (CPU Arch)
+ - impl: `Unknown` - Program Data (Machine Code)
 
+All types should have the `$Correct` trait definitions (This implies `$Size` and `$FixedSize`)
 
-### Link Strengths
+`$Size` is described as a `U64` or `Reference -> U64`.
 
-Being able to specify how vital a linked piece of data is to the "owning" piece of data is desireable when requesting data so that too much or too little is sent and either data has to be disgarded or more data has to be requested. For example, if a structure is defined to format a piece of data that is not self-defining, it is desirable to be able to specify to fetch only the structure itself, or the structure together with the embedded data. To accomplish this, 
-
-# From Dither.md
-
-### Defining External Structures
-In Dither, while pieces of data can be located and linked with multihashes, not all pieces of data contain multihashes. Any external hash-linked data structure that you want to host on Dither (i.e. blockchains) aren't going to be natively supported. Instead all the blocks of data must either be re-linked to form a multihash-supporting copy or the hash types have to be inferred by context. (The downside of the second option non-hashtrait blocks can't easily be inferred from non-specific programs interpreting hashtraits). The second option is what IPFS/IPLD is doing, reinterpreting hashed blocks of data of arbitrary format by defining a standard table of formats. Dither prefers the first option of wrapping the entire data structure with trait definitions that Dither can understand.
-
-What IPLD does is it uses an addition to Multihash called CID (Content Identifier). This CID contains both the multihash and a number for the Multiformats table that must be standardly designed.
-
-The problem with IPLD is that this [standard table of formats](https://github.com/multiformats/multicodec/blob/master/table.csv) is subject to change. Formats are not universal and if you want to identify custom formats not in the table, you are out of luck if you want to communicate your custom formats to existing IPFS applications
-
-With Dither, instead of having a hard standard list of formats, Formats of data are defined by the data itself using the hashtrait format. Data that is not trait-defined, will be either wrapped using a definition trait (i.e. a structure just containing a hash of the data and trait). Or it will be reinterpreted to be represented natively as a trait structure.
-
-### Example Traits
-Traits can define any data structure and its state of being "Valid". 
-A Monero Transaction might look something like this after being structured in Dither.
- - `"Transaction" (With localization fields)`
-   - `previous_transaction: SelfRef`
-   - `definintion: Multihash (Default Trait Definition)`
-   - `source: List<MultiKey>`
-   - `destination: Multikey`
-   - `pederson_commitment: PedersonCommitment`
-   - `signature: RingSignature`
+`$Correct` takes a reference to a point in memory where a Typed value is and returns true if the 

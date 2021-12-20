@@ -1,11 +1,14 @@
 # Disp (Dither-Lisp) (WIP)
 
-What are computers if not pieces of data interpreted by silicon that manipulate other pieces of data? Disp is a programming language that takes this concept to its logical conclusion where programs are simply from tree data structures manipulated into list data structures.
+Everything is data. 
+Programs are interpreted data that manipulates other pieces of data.
+
+Disp is a programming language that takes this concept to its logical conclusion with some functional programming and type theory sprinkled in where programs are composed functions and functions are data.
 
 ## Goals
  - Extremely fast compile times
  - Extremely fast execution time
- - Support for any possible computer
+ - Support for any possible cpu or interpreter
  - Maximum re-use of code (data)
  - Interface for defining hashtypes and hashtraits.
 
@@ -18,8 +21,8 @@ What are computers if not pieces of data interpreted by silicon that manipulate 
  - Running object files requires a uniquely setup syscall kernel API that can deal with interrupts
 
 ## General Architecture
+- `Function`s are the core of Disp. There is no compiler, there are just collections of macros (i.e. functions that transform functions). See the [function spec](functions.md)
 
-- The language is designed as a layer on top of machinecode, and at the simplest layer with no abstractions, the simplest programs are just lists of assembly instructions.
 - All language types are themselves self-defining structures, including the final bytecode file.
 - The language files are not stored as text files, they are instead stored as self-defining structures of groups of commands.
 
