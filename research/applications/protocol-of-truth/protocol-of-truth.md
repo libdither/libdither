@@ -24,3 +24,10 @@ Undecided
 
 Correct
 Opinion
+
+## Ideas
+
+Idea: Instead of people upvoting and downvoting a given flag, they flag the flag and provide more supporting details. All this back and forth flagging results in a kind of "tree of flags" from which what is true, what is false, and what is ambiguous can be extracted.
+
+Scene: Someone posts a video, there is an error in the video, someone posts a correction in the comment with a relevant tag. 
+
