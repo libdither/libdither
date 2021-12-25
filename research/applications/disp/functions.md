@@ -1,10 +1,22 @@
 # Functions
 
-The end goal of a compilation process is to generate data that can be interpreted by a cpu or another program. This might be machine code, or another language, or bytecode to be run in a virtual machine. 
+The end goal of a compilation process is to generate data that can be interpreted by a cpu or an interpreter. This is typically called "bytecode" or "intermediate language". 
 
-These end-goal targets are presumed to be turing-complete with useful absractions for common programming.
+Everything in disp is represented by lambda calculus. The compilation process is simply figuring out how to map lambda function hashes to pieces of output data.
 
-Functions continually abstract up to the highest level, but at the lowest level, they just wrap their underlying operations in a functional programming design.
+Say there is a lambda expression that when applied to two 8-long pair of type either true or false, it reduces to a single 8-long pair. This would represent an 8-bit "add" operation when this lambda expression is encountered in compilation, it will be marked as having a valid "target representation".
+
+As long as the whole of the lambda program can be marked with analagous operations in the target language, post processing will be done to connect all the operations with necessary glue code (like designating registers and memory allocation).
+
+
+
+
+
+
+
+
+
+
 
 ## Example of Abstraction
 Imagine the simplest program: "Hello World" written for Linux.
