@@ -1,8 +1,0 @@
-{
-  "name": "pug",
-  "version": "1.0.0",
-  "dependencies": {
-    "pug-cli": "^1.0.0-alpha6"
-  },
-  "bin": "node_modules/.bin/pug"
-}
