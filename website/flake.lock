@@ -31,6 +31,19 @@
         "type": "github"
       }
     },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1643247693,
+        "narHash": "sha256-rmShxIuNjYBz4l83J0J++sug+MURUY1koPCzX4F8hfo=",
+        "path": "/nix/store/hdfjrcysq8zprj161jpffrf24yd77r3y-source",
+        "rev": "6c4b9f1a2fd761e2d384ef86cff0d208ca27fdca",
+        "type": "path"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "type": "indirect"
+      }
+    },
     "npm-buildpackage": {
       "locked": {
         "lastModified": 1624358188,
@@ -46,10 +59,29 @@
         "type": "github"
       }
     },
+    "pdsite": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_2"
+      },
+      "locked": {
+        "lastModified": 1644015310,
+        "narHash": "sha256-ZyK+OCQ0vmFd1SPGtHt+jAwKZpJu3FPFaBBRflUbAck=",
+        "owner": "zyansheep",
+        "repo": "pdsite",
+        "rev": "2d46927e3988ad4a4f6563cccb94637bedbca281",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zyansheep",
+        "repo": "pdsite",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "nixpkgs": "nixpkgs",
         "npm-buildpackage": "npm-buildpackage",
+        "pdsite": "pdsite",
         "utils": "utils"
       }
     },

@@ -5,6 +5,7 @@
 		npm-buildpackage.url = "github:serokell/nix-npm-buildpackage";
 		/* pug-src.url = github:pugjs/pug;
 		pug-src.flake = false; */
+		pdsite.url = "github:zyansheep/pdsite";
   	};
 
   	outputs = { self, nixpkgs, utils, npm-buildpackage, ... } @inputs:
@@ -17,18 +18,9 @@
 			src = ./.;
 			yarnBuild = "yarn build";
 		};
-		pdsite = pkgs.stdenv.mkDerivation {
-			name = "pdsite";
-			src = ./scripts;
-			buildInputs = with pkgs; [ pandoc tree ];
-			installPhase = ''
-				mkdir -p $out/bin
-				cp $src/pdsite $out/bin
-			'';
-		};
 
 		buildInputs = [
-			pkgs.nodejs pug pdsite
+			pkgs.nodejs pug inputs.pdsite
 		];
 	in utils.lib.mkFlake {
 		inherit self inputs;
@@ -38,8 +30,8 @@
 		#channels.nixpkgs.input = nixpkgs;
 		
 		outputsBuilder = channels: {
-			packages.pug = pug;
-			packages.pdsite = pdsite;
+			# packages.pug = pug;
+			# packages.pdsite = pdsite;
 			defaultPackage = channels.nixpkgs.stdenv.mkDerivation rec {
 				name = "dither-link";
 				src = ./.;
