@@ -1,6 +1,9 @@
 ---
-menu: 'main'
+
 title: 'Inspiration'
+menu:
+  main:
+    weight: 3
 ---
 
 As fundamental freedoms are continually encroached upon, having a decentralized and democratic internet is more important than ever before. Unfortunately, the current state of progress for internet decentralization is a big fragmented mess of different projects trying to do different things, but not effectively enough. Not enough ideas are shared, not enough people are talking. The biggest usage of peer-to-peer tech is Bittorrent, which has been around for 2 decades. Other parts of internet decentralization have been mostly re-centralized by necessity for ease of use (such as LBRY or Ethereum). This fragmented ecosystem is in desperate need of one project that can replace all the necessary parts of the internet so that reliance on centralized services is not needed anymore.

@@ -8,6 +8,12 @@ theme = "book"
   identifier = 'docs'
   name = 'Docs'
   url = '/docs/'
+  weight = 2
+[[menu.main]]
+  identifier = 'git'
+  name = 'Git'
+  url = 'https://github.com/libdither'
+  weight = 4
 
 [markup.goldmark.parser.attribute]
 block = true
