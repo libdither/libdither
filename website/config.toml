@@ -3,26 +3,14 @@ languageCode = "en-us"
 title = "Dither Link"
 theme = "book"
 
-[markup]
-  [markup.goldmark]
-    [markup.goldmark.extensions]
-      definitionList = true
-      footnote = true
-      linkify = true
-      strikethrough = true
-      table = true
-      taskList = true
-      typographer = true
-    [markup.goldmark.parser]
-      autoHeadingID = true
-      autoHeadingIDType = 'github'
-      [markup.goldmark.parser.attribute]
-        block = false
-        title = true
-    [markup.goldmark.renderer]
-      hardWraps = false
-      unsafe = false
-      xhtml = false
+[menu]
+[[menu.main]]
+  identifier = 'docs'
+  name = 'Docs'
+  url = '/docs/'
+
+[markup.goldmark.parser.attribute]
+block = true
 
 [params]
   BookTheme = 'auto'

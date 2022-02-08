@@ -1,6 +1,11 @@
+---
+menu: 'main'
+title: 'About'
+---
+
 
 > Warning: If you see `www.dither.link` in the address bar, you may be on the centralized site. To browse in a decentralized manner, get the [IPFS Companion](https://github.com/ipfs/ipfs-companion) extension for your browser 
-{.warning}
+{#warning}
 
 ## What Is Dither
 Dither is a toolbox to create privacy-respecting decentralized applications capable enough to replace most services on the Internet. This means services with no centralized servers, no single organization control, no censorship, and no surveilance by companies or governments.

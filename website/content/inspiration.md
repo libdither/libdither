@@ -1,5 +1,10 @@
+---
+menu: 'main'
+title: 'Inspiration'
+---
+
 As fundamental freedoms are continually encroached upon, having a decentralized and democratic internet is more important than ever before. Unfortunately, the current state of progress for internet decentralization is a big fragmented mess of different projects trying to do different things, but not effectively enough. Not enough ideas are shared, not enough people are talking. The biggest usage of peer-to-peer tech is Bittorrent, which has been around for 2 decades. Other parts of internet decentralization have been mostly re-centralized by necessity for ease of use (such as LBRY or Ethereum). This fragmented ecosystem is in desperate need of one project that can replace all the necessary parts of the internet so that reliance on centralized services is not needed anymore.
-## Projects that have inspired Dither
+### Projects that have inspired Dither
 [Multiformats](https://multiformats.io/')
  - Multiformats aims to fix the problem of future-proofing systems into future ages of computing. Dither will use a few of the multiformats, such as multihash, to future-proof and to be compatible with IPFS.
 
@@ -17,4 +22,10 @@ DNS - The Domain Name System is structurally decentralized, but it is centrally 
 [TOR](https://www.torproject.org/) & [I2P](https://geti2p.net/en/)
  - These "Hidden Networks" are very important for obfuscating connections between people on the internet. However, they are *very slow* due to their nature of randomly routing connections through different nodes. Dither will improve on this with [Distance-Based Routing](docs/spec/dither/routing/distance-based-routing.html), a routing protocol that takes latency and throughput into account when routing packets, allowing for the user to choose between better privacy or faster connection. Dither may also implement a anonymous routing technology called [HORNET](https://arxiv.org/pdf/1507.05724v3.pdf) to allow for additional efficiency when establishing obfuscated connections.
 
-Other projects that are inspiring dither are: [Nomia](https://github.com/scarf-sh/nomia), [IPLD](https://ipld.io/), [IOTA](https://www.youtube.com/watch?v=CZxH1V_zoug), [Solidity](https://soliditylang.org/), [Unison](https://www.unisonweb.org/), zk-STARKS, and more.
+Other projects that are inspiring dither are:
+[Nomia](https://github.com/scarf-sh/nomia),
+[IPLD](https://ipld.io/),
+[IOTA](https://www.youtube.com/watch?v=CZxH1V_zoug),
+[Solidity](https://soliditylang.org/),
+[Unison](https://www.unisonweb.org/),
+zk-STARKS, and more.
