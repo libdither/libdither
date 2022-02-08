@@ -1,5 +1,5 @@
 {
-  	inputs = {
+	inputs = {
 		nixpkgs.url = "github:NixOS/nixpkgs/nixos-21.05";
 		utils.url = "github:gytis-ivaskevicius/flake-utils-plus";
   	};
@@ -16,8 +16,20 @@
 	in utils.lib.mkFlake {
 		inherit self inputs;
 		supportedSystems = [ "x86_64-linux" ];
-		
+		channels.nixpkgs.input = nixpkgs;
+
 		outputsBuilder = channels: {
+			defaultPackage = channels.nixpkgs.stdenv.mkDerivation rec {
+				name = "dither-link";
+				src = ./.;
+				nativeBuildInputs = buildInputs;
+				buildPhase = ''
+					hugo
+				'';
+				installPhase = ''
+					cp -r public $out
+				'';
+			};
 			devShell = pkgs.mkShell {
 				inherit buildInputs;
 			};
