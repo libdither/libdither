@@ -71,7 +71,7 @@ Dither is structured in layers:
    - This is the actual UI and design portion of applications. It takes the functions provided by the Application Layer and implements them according to the creator's desires.
    - It is highly recommended to follow Dither's [application design philosophy](dither/application-design-philosophy.md) when designing UI apps.
 
-More Info in the [Directional Trail Search](dither/directional-trail-search.md) Document.
+More Info in the [Directional Trail Search](dither/routing/directional-trail-search.md) Document.
 
 ## Finding Data Links (Reverse Hash Lookup)
  - This solves the problem of having a hash and wanting to find pieces of data that link to that hash. This is super useful for comment systems and the like.
@@ -79,7 +79,7 @@ More Info in the [Directional Trail Search](dither/directional-trail-search.md) 
  - If there is some pieces of data that links from or adds useful definitions to a given piece of data, this is the place for it. One example of this in practice might be having a comment thread. Each comment is its own Hashtype that contains the hash of the post or a replying comment. In order for someone who has the post structure to find the comments, they would need find all the pieces of data linking to this piece of data (i.e. a Reverse Hash Lookup)
  - To implement this system, there will be a partial binary tree represented by a DAG that can be traversed using the data of the target. (i.e. the post structure's hash). Then the tree can be traversed down using consecutive trail searches. Until a list of all known linked hashes is found. These structures must contain a specific trait called a RevHash to be able to be validated onto the distributed tree. The addition of new links to this tree is done through an implementation of Dither Chain Consensus (see the [#Dither Consensus Chains](#dither-consensus-chains) section).
 
-See [User Api Document](./dither/user-api.md)
+See [User Api Document](dither/data/user-management.md)
 
 ## Dither Chain References
 Ideas for Dither Consensus
