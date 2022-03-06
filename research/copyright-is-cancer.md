@@ -1,6 +1,6 @@
 # Why Copyright is Cancer
 
-Copyright is ineffective in the internet age. Any piece of content can be pirated on a massive scale with support of the original creator. The only thing copyright does is suppress future art and communication through centralized forums. See these videos on why [the current copyright system is broken](https://www.youtube.com/watch?v=1Jwo5qc78QU) and why it [makes no sense](https://www.youtube.com/watch?v=QVkeJI2feyQ). This document outlines an alternate system of funding creation that Dither aims to create.
+Copyright is ineffective in the internet age. Any piece of content can be pirated on a massive scale without the original creator even knowing. The only thing copyright does is suppress derivative creation on forums with strict copyright adherence. See these videos on why [the current copyright system is broken](https://www.youtube.com/watch?v=1Jwo5qc78QU) and why it [makes no sense](https://www.youtube.com/watch?v=QVkeJI2feyQ). This document outlines an alternate system of funding creation that Dither aims to create.
 
 **Have a decentralized & democratized forum of communication and publication that no institution or individual can meaningfully obstruct.** Dither is a protocol for creating decentralized applications.
 

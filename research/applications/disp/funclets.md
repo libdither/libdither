@@ -2,7 +2,7 @@
 
 Funclets are types in disp that together form a functional abstraction over the stateful nature of CPU instructions. They are the basic building blocks of every `Function` in disp and can be easily combined, customized, and compiled to specific target platforms.
 
-Each funclet is a [unique identifier](need_link) that links to code that can turn it into cpu-specific procedures via [reverse hash lookup](../../dither/data/reverse-hash-lookup.md).
+Each funclet is a unique identifier that links to code that can turn it into cpu-specific procedures via [reverse hash lookup](../../dither/data/reverse-hash-lookup.md).
 
 ## An example
 

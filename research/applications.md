@@ -5,9 +5,9 @@
  - [Dither Chat](applications/dither-chat.md) - Community Chat application aiming to replace Discord. Provides e2ee encrypted DMs, voice chat, servers, voting, and integration with most other chat protocols.
  - [Dithca](applications/dithca.md) - Comprehensive & Versatile decentralized comment system where anyone can comment on any type of data structure on Dither. Can interface with most other centralized comment systems and deal with misinformation & crediting using a comprehensive community flagging system.
    - Can be used to create Reddit / Twitter Replacement. Can be integrated into other Dither applications or ported to web.
- - [Dithgit](applications/dithgit.md) - Github on Dither
- - [Dithix](applications/dix.md) - Nix over Dither (Replaced with Nomia)
- - [Nomia on Dither](applications/nomia.md) - Nomia on Dither, Manage and cache any kind of resource. Composibly create and distribute resources managed by Nomia. (May replace Dithix)
+ - [Dithgit](applications/dither-git.md) - Github on Dither
+ - [Dithix](applications/dithix.md) - Dither Resource Manager: Manage and cache any kind of resource, interface between the Merkle Tree and the Filesystem.
+ - [Nomia on Dither](applications/nomia.md) - Nomia on Dither, 
  - [Tree of Math](applications/tree-of-math.md) - Directed Acyclic Graph linking a standardized data structure for defintions and proofs together based on set theory creating a comprehensive tree of knowledge.
  - [Dither Coin](applications/dither-coin.md) - Cryptocurrency that solves all the current problems and creates a complete digital replication of cash (being decentralized, anonymous, non-volatile, and difficult to trace).
  - [Dither DEX](applications/dither-dex.md) - A all-faceted decentralized exchange to facilitate trade any kind of real or virtual asset. Supports meeting up in real life or exchanging other virtual assets anonymously and securely. Also supports moderation, karmic filtering

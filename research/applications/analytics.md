@@ -5,7 +5,7 @@ Analytic collection is usually non-respecting of privacy, but it should be possi
 ## Rough Idea
 
 Author specifies what kind of analytics they want and how specific they want. *Analytics must be proportions or averages*. Users manually (or automatically based on settings) pick which fields they want to divulge.
-Peers that use a specific application are identified and an agreed upon field is set to be exchanged and averaged by each peer. Each peer checks the other's proof of humanity (see [zero-knowledge-proofs](../dither/zero-knowledge-proofs.md)) and create a new zero-knowledge proof combining the ones of each peer.
+Peers that use a specific application are identified and an agreed upon field is set to be exchanged and averaged by each peer. Each peer checks the other's proof of humanity (see [zero-knowledge-proofs](../dither/data/zero-knowledge-proofs.md)) and create a new zero-knowledge proof combining the ones of each peer.
 
 This part needs more thought: 
 

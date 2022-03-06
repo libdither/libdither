@@ -3,7 +3,7 @@
 
 Self defining structures are pieces of data that link to their own format, telling the program how they are structured and how to validate them. 
 
-The workings of this system are heavily dependent on [Directional Trail Search](directional-trail-search.md) and [Reverse Hash Lookup](reverse-hash-lookup.md).
+The workings of this system are heavily dependent on [Directional Trail Search](../../routing/directional-trail-search.md) and [Reverse Hash Lookup](../reverse-hash-lookup.md).
 
 ## Ideas To Add to this Doc
  - Make structures' fields binary-ordered by default to increase the chances that developers will use and create the same structures. Delegate conceptual ordering to `TraitLocalization`.
@@ -46,7 +46,7 @@ The TraitMarker trait is defined in implementation as a trait like this:
 
 ## Primitive Trait Implementations
 
-Notice: These trait definitions will have named fields, in actuality, field names are defined through a [reverse-linked](./reverse-hash-lookup.md) trait called a `TraitLocalization` and can be defined in multiple languages.
+Notice: These trait definitions will have named fields, in actuality, field names are defined through a [reverse-linked](../reverse-hash-lookup.md) trait called a `TraitLocalization` and can be defined in multiple languages.
 
 From Markers, primitive traits can be created. A simple trait could be defined as:
 
