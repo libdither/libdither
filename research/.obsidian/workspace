@@ -9,7 +9,7 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "applications/disp/lambda-trees.md",
+            "file": "disp/lambda-trees.md",
             "mode": "source",
             "backlinks": true,
             "source": false
@@ -70,7 +70,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "applications/disp/lambda-trees.md",
+                "file": "disp/lambda-trees.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -90,8 +90,8 @@
   },
   "active": "d4ccb7a4ae69531c",
   "lastOpenFiles": [
-    "applications/disp/lambda-trees.md",
-    "applications/disp/examples/assembly/hello-world.md",
+    "disp/lambda-trees.md",
+    "disp/examples/assembly/hello-world.md",
     "dither.md"
   ]
 }
