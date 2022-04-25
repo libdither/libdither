@@ -1,4 +1,6 @@
-# Lambda Trees: A deduplication-friendly lambda-calculus construction
+# Lambda Trees: A deduplication friendly alternative to De Brujin Indicies.
+
+Used in [Disp]
 
 The current most well known way of representing the lambda calculus is [De Brujin Indicies](https://en.wikipedia.org/wiki/De_Bruijn_index).
 

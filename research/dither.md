@@ -52,14 +52,16 @@ All projects need a direction, and these are the ones I've chosen. (As with ever
 
 Dither is structured in layers:
 
- - Network Layer (Provided by libp2p)
-   - Handles peer-to-peer connections (NAT Traversal, Muxing, MDNS Discovery). See [libp2p.io](https://libp2p.io)
+ - Network Layer (Provider Agnostic)
+   - Handles peer-to-peer connections (NAT Traversal, Muxing, MDNS Discovery).
+	   - See [libp2p.io](https://libp2p.io) for an example of the types of features this will have
+	   - Real implementation still WIP
  - Core Layer
    - Routing Module
      - [Distance-Based Routing](https://github.com/libdither/dbr-sim): Custom onion routing protocol which allows for anonymity on the network and is faster and more flexible compared to random routing (like what TOR and I2P uses)
    - Encryption
      - Using [multikey](dither/encryption/multikey.md) for asymmetric encryption or [decentralized kerberos](dither/encryption/decentralized-kerberos.md) for solely symmetric encryption.
-   - Data Structuring & Manipulation ([Hashtypes](data/../dither/data/hashtypes/hashtypes.md))
+   - Data Structuring & Manipulation ([Hashtypes](dither/data/hashtypes/hashtypes.md))
    - Data Searching ([Directional Trail Search](dither/routing/directional-trail-search.md))
    - Data Linking ([Reverse Hash Lookup](dither/data/reverse-hash-lookup.md))
    - Consensus Algorithms ([Distance Aware Consensus](dither/consensus/distance-aware-consensus.md))
