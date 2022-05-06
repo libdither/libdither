@@ -1,7 +1,38 @@
 # Syntax
 
-Disp's default syntax is similar to lisp with some Rust naming conventions sprinkled in.
-However, since disp files are stored as binary objects, disp code can be displayed in any way preferred by the programmer (javascript-like rust-like go-like etc.)
+Since Disp source code is stored as its syntax tree, disp does not require one set syntax, however, it will have a default syntax that will be shown at first encounter.
+
+Disp's default syntax is still a work-in-progress, however I think I want something similar to lisp with various Rust conventions sprinkled in.
+
+```
+// By itself, this is a comment
+// It doubles as documentation when paired with an object
+
+// This is an object, its type in inferred.
+set Unit ();
+
+// The function type is a function that takes two types A and B and returns a dependent product type where B is *not* dependent on a term of A.
+set -> λ[A B] Π[_:A] B
+set /\ λ[A B] Π[C:Type] (A -> B -> C) -> C
+set id_type Π[A: Type] A -> A
+set id λ[t] λ[x] x : id_type
+
+// Pair constructor
+set pair_type Π[A: Type, B: Type] A -> B -> C
+set pair λ[x y f] f x y
+
+set Bool Π[A: Type] A -> A -> A {
+	true: λ[x y] x
+	false: λ[x y] y
+}
+
+
+
+
+
+
+
+```
 
 ## Examples
 ```

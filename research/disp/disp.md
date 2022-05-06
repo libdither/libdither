@@ -1,18 +1,28 @@
-# Disp (Dither-Lisp) (WIP)
+# Disp (Decentralized Lisp)
 
-Everything is data. 
-Programs are interpreted data that manipulates other pieces of data.
+*What is a program? What is data? Why, they are one of the same.*
 
-Disp is a programming language that takes this concept to its logical conclusion with some functional programming and type theory sprinkled in where programs are composed functions and functions are data.
+Inspired by:
+ - Lisp for its flexibility
+ - Idris & Coq for the infinite expressiveness of dependent types
+ - Rust for its speed
+ - IPFS for deduplication
 
 ## Goals
- - Extremely fast compile times
- - Extremely fast execution time
+ - Fastest compile times
+ - Fastest execution time
  - Support for any possible cpu or interpreter
- - Maximum re-use of code (data)
- - Interface for defining hashtypes and hashtraits.
+ - Relatively easy transpilation from other languages
+ - Maximum re-use of code
+ - Seemless integration into Dither
+ - Abstraction of Execution Environment
 
 ## Ideas
+ - Objects are stored in self-defining data structures, i.e. they link to data that describes the format of the object (whether that be structurally, in-memory, or symbolically).
+	 - An object can be defined by its computation -> Compilation can be as incremental as you want.
+	 - 
+ - High level programs are provably compiled into arbitrary lower-level representations with minimal programmer input.
+	 - An inductive datatype like `Nat` could be provably compiled into something like `BigInt` and be much more efficient. In tern, as long as you either ignore the possibility or proove it never happens, `BigInt` could be transformed into a  `U64` or something similar.
  - Goal of compilation is cpu-specific object file complete with
    - data pre-loaded into memory
    - list of cpu-specific instructions.
@@ -21,7 +31,8 @@ Disp is a programming language that takes this concept to its logical conclusion
  - Running object files requires a uniquely setup syscall kernel API that can deal with interrupts
 
 ## General Architecture
-- `Function`s are the core of Disp. There is no compiler, there are just collections of macros (i.e. functions that transform functions). See the [function spec](functions.md)
+- There are two structures that are core to disp: `Expr`, and `Judgement`. `Expr` is an inductive structure that represents all the terms and types of the language. `Judgement` is the structure that matches `Expr`s together to create a typing judgement (i.e. saying some term is of some type or `a : A`). See [[expr]] for more details.
+- All structures of the language are defined through [[hashtypes]] 
 
 - All language types are themselves self-defining structures, including the final bytecode file.
 - The language files are not stored as text files, they are instead stored as self-defining structures of groups of commands.

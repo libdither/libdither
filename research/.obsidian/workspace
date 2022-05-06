@@ -9,7 +9,7 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "disp/lambda-trees.md",
+            "file": "disp/extending-the-type-hierarchy.md",
             "mode": "source",
             "backlinks": true,
             "source": false
@@ -70,7 +70,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "disp/lambda-trees.md",
+                "file": "disp/extending-the-type-hierarchy.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -90,8 +90,15 @@
   },
   "active": "d4ccb7a4ae69531c",
   "lastOpenFiles": [
+    "disp/extending-the-type-hierarchy.md",
     "disp/lambda-trees.md",
-    "disp/examples/assembly/hello-world.md",
-    "dither.md"
+    "disp/syntax.md",
+    "disp/old-ideas/types-old.md",
+    "disp/live-rollbacks.md",
+    "disp/functions.md",
+    "disp/old-ideas/compilation.md",
+    "disp/old-ideas/funclets.md",
+    "disp/expr.md",
+    "dither/data/hashtypes/hashtypes.md"
   ]
 }
