@@ -41,7 +41,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "section:#Core",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -50,11 +50,12 @@
               }
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 207
   },
   "right": {
     "id": "cefd0b5c37070312",
@@ -91,6 +92,7 @@
   "active": "d4ccb7a4ae69531c",
   "lastOpenFiles": [
     "disp/extending-the-type-hierarchy.md",
+    "dither.md",
     "disp/lambda-trees.md",
     "disp/syntax.md",
     "disp/old-ideas/types-old.md",
@@ -98,7 +100,6 @@
     "disp/functions.md",
     "disp/old-ideas/compilation.md",
     "disp/old-ideas/funclets.md",
-    "disp/expr.md",
-    "dither/data/hashtypes/hashtypes.md"
+    "disp/expr.md"
   ]
 }
