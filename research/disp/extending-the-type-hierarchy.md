@@ -26,7 +26,8 @@ So we want to give `[A] [A] A` a type. How would we do this in a typical type th
 
 This means we can take our bool type (`[A] [A] A`) and assign expressions like this:
 
-`set true [x] [y] x : [T] [T] T : [T] [T] T `set false [x] [y] y : [T] [T] T : [T] [T] T
+`set true  [x] [y] x : [T] [T] T : [T] [T] T`
+`set false [x] [y] y : [T] [T] T : [T] [T] T`
 
 Lets try stuff to apply this.
 
@@ -69,7 +70,7 @@ A neet thing to note here is that `Bool` is just the type of binary expressions.
 Thus:
 `set BinaryExpr [x x] x`
 
-### Example: Pairs
+### Example: Pairs (Products)
 
 Pairs are typically defined through a function like this: `[x y f] f x y`. Where you apply two elements to "pair them" and then can use a function like `[x y] x` or `[x y] y` to extract one or the other from the pair.
 
@@ -96,13 +97,26 @@ C is unbounded and thus can be anything. Including a function that resolves to A
 
 Same reasoning works for `set second [x y] y`
 
+### Example: Tagged Unions (Coproducts)
+A coproduct is just a tag with a finite set of states, paired with 
+
+WIP
+
 ### Example: Nats
 
 The type of nats is describes many terms. Typically these terms are formed through two functions: `succ` and `zero`.
 
-`set zero [x y] y : Nat`
-`set succ [n f x] f (n f x): [.] Nat` (This type describes a function where the input must be the same type as the output, which in this case is `Nat`)
+```
+zero : Nat
+succ: Nat -> Nat
+```
 
+`set zero [x y] y : Nat`
+`set succ [n] [f x] f (n f x): [.] Nat` (This type describes a function where the input must be the same type as the output, which in this case is `Nat`)
+
+There are many different representations of natural numbers in the lambda calculus.
+
+The church encoding encodes it like this: `{ A: T } { _: {A} A }`
 Nat is traditionally defined as `{ A: T } {_ : {A} A } ({A} A)`. This can be read as "the type of all functions that take unary function and return a unary function".
 
 The type of unary functions in our type system is: `[A] A`. We can extend this to represent a function that takes and returns this using a lambda binding `[.]`.
@@ -112,7 +126,7 @@ What is the type of `Nat`?
 `[A] A`'s type is itself and the type of a subexpression binding is itself a subexpression binding. Thus `[.] [A] A : [.] [A] A`
 
 Does this typecheck?
-`zero -> [x] [y] y : Nat -> [.] ([A] A)`
+`zero` -> `[x] [y] y : Nat` -> `[.] ([A] A)`
 Since anything can be passed as `x`, including a unary operation, the first `[.]` is satisfied. Whats left is `[y] y : [A] A` which is trivially deduced.
 
 Does this typecheck?
@@ -134,6 +148,15 @@ Assume `x : A`
 if `f : ([A] A)` and  `x: A` then `(f x) : A` thus `[x] f x : [A] A`
 
 `[f x] f x ` is of type ` [.] [A] A` Qed
+
+Lets try an alternative encoding like the Scott encoding
+`set zero [z s] z`
+`set succ [n z s] s n`
+
+`zero : [.] ([A] A)`
+`[z s] z : [.] ([A] A)`
+Anything can be passed in as `z`, including `z : ([A] A)`
+`[s] [x] x : [A] A` (Doesn't typecheck) Why?
 
 ##### Example: Nat operations
 
@@ -160,27 +183,24 @@ set List<T> {
 set List<T> (A -> List -> List) -> List -> List
 ```
 
-The simplest Church encoding of a lists is:
+Lets use a System F typable implementation of `List`
 `set nil false`
-`set cons pair`
-A simple list of bools i.e. `[true, false, true]` might look like: `pair true (pair false (pair false false))`
+`set cons [h t c n] c h (t c n)`
+A simple list of bools i.e. `[true, false, true]` might look like: `cons true (cons false (cons false nil))`
 
-We can see that the definitions for `pair` and `false`  typecheck to the types of `cons` and `set cons [x y f] f x y : Bool -> List -> List`
+We can see that the definitions for `pair` and `false`  typecheck to the types of `cons` and `set cons [h t c n] c h (t c n) : Bool -> List -> List`
 `set nil [x y] y : List`
 
 Assume `List = List<Bool>`
-`[x y] y : (Bool -> List -> List) -> List -> List`
-x can `(Bool -> List -> List)`, y can be `List`,  `[x y] y` always returns `y`. Thus `[x y] y` always returns `List`.
+`[c n] n : (Bool -> List -> List) -> List -> List`
+x can `(Bool -> List -> List)`, y can be `List`,  `[c n] n` always returns `y`. Thus `[c n] n` always returns `List`.
 
-`([x y f] f x y) true nil` -> `[f] f true nil` 
-`[f] f true nil : (Bool -> List -> List) -> List -> List`
-f is a term of type `(Bool -> List -> List)` and is applied to `true : Bool` and `nil : List` and returns a `List`. 
+`([h t c n] c h (t c n)) true nil` -> `[c n] c true (nil c n)` 
+`[c n] c true (nil c n) : (Bool -> List -> List) -> List -> List`
+`[c]` expects a term of type `(Bool -> List -> List)` and `[n]` expects a term of type `List`. 
+`c true (nil c n) : List` -> `c true n : List`
 
-
-
-``
-
-
+This typechecks.
 
 ### Example: Proofs
 
@@ -230,13 +250,25 @@ That seemed somewhat straitforward (lots of notation...) Or was it?
 
 Aren't function types a specialization of dependent types? How do we represent the coolest feature in type theory? (and by cool I mean its so cool that it stands by itself in many type theories as the only type constructor)
 
-Dependent functions are type constructors that allow types to depend upon the terms of another type. i.e. `[a] b : { a : A } (B a)`
+Dependent function types are type constructors that allow types to depend upon the terms of another type. i.e. `[a] b : { a : A } (B a)`
 
 What does this mean? What is `B` here?
 Well conventionally: `B : A -> Type` B is a function that takes an `a : A` and reduces to some `B : Type`
 But the definition of `B` itself is kinda weird... Lets look at an example of an untyped dependent function in the lambda calculus.
 
-`set DependentFunction [>.] ([_] y) x`
+This represents a constructor for some function from `T -> Type`
+`set TypeFunction [T] [>.] ([_] T) x`
+`TypeFunction Bool : Function`
+
+Lets test this depend type out with a common application: A finite-length list.
+
+`finlist : pair Nat List`
+
+`vec : -> Type (TypeFunction Nat)` (A function that takes an element and length and creates a list of )
+
+`set vec [n d] n (pair d)`
+
+WIP
 
 #### Conjunction
 Conjuction with propositions is typically represented with some kind of weird expression:
@@ -284,3 +316,4 @@ But what about propositional equality? A proof of propositional equality can be 
 Lets try and represent this.
 `set Eq [a] [b] and (DefEq g (f a)) (DefEq f (g b))`
 
+WIP
