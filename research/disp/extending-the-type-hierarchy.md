@@ -2,6 +2,17 @@
 
 There is a thing in the calculus of construction, where terms are types and types are terms. This means you can express stuff like: `Pair Nat Nat = Nat x Nat` representing two natural numbers or `ConstList Nat 4` representing the type of lists of exactly 4 numbers. The type of these statements are themselves types and the so-called "type constructors" are functions.
 
+#### Current Typing Rules:
+Note: This section is constantly changing and may conflict with certain older sections.
+
+ - The type of `x` (Variable)can be anything because `x` can be anything if by itself. If `x` is apart of a binding, all `x`s of that binding must be the same type.
+ - The type of `[x] e` is `[X] E` where `x` must have the same type everywhere in `e` and the type of `e` is `E`.
+	 - Example: `[x] y : [>.] ([_] Y) X`, x appears once in `E`, thus has the same type everywhere in `E`. 
+	 - Another typing could be `[x] y : [_] Y` or simply `[x] y : T`
+ - The type of `(x y)` is `(X Y)` where `X` is the type of `x` and `Y` is the type of `y`. Any beta-reductions that take place must preserve all other typing rules. Otherwise the type is not well-formed.
+
+
+
 ### Example: Booleans
 
 The type of booleans `A -> A -> A` in inhabited by `[x y] x`, and `[x y] y`
