@@ -9,9 +9,8 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "disp/extending-the-type-hierarchy.md",
+            "file": "disp/provable-hardware-modeling.md",
             "mode": "source",
-            "backlinks": true,
             "source": false
           }
         }
@@ -41,7 +40,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "section:#Core",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -50,12 +49,11 @@
               }
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
-    "width": 207
+    "width": 289
   },
   "right": {
     "id": "cefd0b5c37070312",
@@ -71,7 +69,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "disp/extending-the-type-hierarchy.md",
+                "file": "disp/provable-hardware-modeling.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -91,15 +89,15 @@
   },
   "active": "d4ccb7a4ae69531c",
   "lastOpenFiles": [
-    "disp/extending-the-type-hierarchy.md",
-    "dither.md",
-    "disp/lambda-trees.md",
-    "disp/syntax.md",
-    "disp/old-ideas/types-old.md",
+    "disp/provable-hardware-modeling.md",
     "disp/live-rollbacks.md",
+    "disp/lambda-trees.md",
     "disp/functions.md",
-    "disp/old-ideas/compilation.md",
-    "disp/old-ideas/funclets.md",
-    "disp/expr.md"
+    "disp/extending-the-type-hierarchy.md",
+    "disp/expr.md",
+    "disp/avoid-bikeshedding.md",
+    "applications/defipedia.md",
+    "the-problems-of-communication.md",
+    "dither/application-design-philosophy.md"
   ]
 }
