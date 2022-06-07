@@ -19,8 +19,13 @@ Model specifications & options
  - Simple models could be hand-crafted using published characteristics from documents like the [Instruction Tables](https://www.agner.org/optimize/#manual_instr_tab)
  - More sophisticated models could be made for open source CPU architectures by using the logic gate layout of the CPU. (This may be possible for architectures like RISC-V)
 
-Benefits to this approach include
+Benefits to this approach include:
  - **No more annoying benchmarks** Faster algorithms can be provably faster for a given model.
 	 - Note: Benchmarks still need to be used to compare different models of a hardware system, however these benchmarks can be much more sophisticated and take into account more confounding factors.
- - **Faster algorithm adoption** Compilers can substitute old algorithms for new, faster, algorithms without delay using a public distributed database of algorithms.
-	 - Think: Bob has a new algorithm, Bob proves it is faster for a well-trusted model of x86_64 CPUs, Bob broadcasts algorithm to everyone, everyone checks the proof that it is faster -> everyone uses new algorithm.
+ - **Faster optimization adoption** Compilers can substitute old optimizations for faster ones without delay using a public distributed database of optimization.
+	 - Scenario
+		 - Bob has a new optimization for a certain pattern of functional expressions.
+		 - Bob proves it is faster for a well-trusted model of x86_64 CPUs
+		 - Bob broadcasts optimization to everyone
+		 - Everyone checks the proof that it is faster
+		 - Everyone uses new optimization, programs are faster
