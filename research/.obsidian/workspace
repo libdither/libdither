@@ -9,7 +9,7 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "applications/dither-git.md",
+            "file": "disp/provable-hardware-modeling.md",
             "mode": "source",
             "source": false
           }
@@ -69,7 +69,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "applications/dither-git.md",
+                "file": "disp/provable-hardware-modeling.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -89,6 +89,8 @@
   },
   "active": "d4ccb7a4ae69531c",
   "lastOpenFiles": [
+    "disp/provable-hardware-modeling.md",
+    "disp/examples/hardware-models/intel-x86.md",
     "applications/dither-git.md",
     "applications/dither-dex.md",
     "applications/analytics.md",
@@ -96,8 +98,6 @@
     "the-problems-of-communication.md",
     "applications/dithca.md",
     "applications/tree-of-math-old.md",
-    "applications/predictive-keyboard.md",
-    "applications/dither-chat.md",
-    "applications/dither-coin.md"
+    "applications/predictive-keyboard.md"
   ]
 }
