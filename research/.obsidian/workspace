@@ -9,7 +9,7 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "disp/provable-hardware-modeling.md",
+            "file": "disp/examples/hardware-models/intel-x86.md",
             "mode": "source",
             "source": false
           }
@@ -69,7 +69,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "disp/provable-hardware-modeling.md",
+                "file": "disp/examples/hardware-models/intel-x86.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -89,8 +89,8 @@
   },
   "active": "d4ccb7a4ae69531c",
   "lastOpenFiles": [
-    "disp/provable-hardware-modeling.md",
     "disp/examples/hardware-models/intel-x86.md",
+    "disp/provable-hardware-modeling.md",
     "applications/dither-git.md",
     "applications/dither-dex.md",
     "applications/analytics.md",
