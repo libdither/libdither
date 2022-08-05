@@ -1,0 +1,31 @@
+[package]
+name = "libdither"
+version = "0.1.0"
+authors = ["zyansheep <zyansheep@github.com>"]
+edition = "2021"
+description = "Wraps Node API with platform-specific features"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.58"
+futures = "0.3.21"
+log = "0.4.17"
+
+node = { path = "node" }
+serde = { version = "1.0.139", features = ["derive"] }
+async-std = { version = "1.12.0", features = [ "attributes" ] }
+rkyv = { version = "0.7.39", features = ["validation"] }
+thiserror = "1.0.31"
+rustyline-async = "0.2.6"
+simplelog = "0.12.0"
+
+[lib]
+name = "libdither"
+path = "src/lib.rs"
+
+[[bin]]
+name = "dither"
+path = "src/bin.rs"
+
+[features]

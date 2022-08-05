@@ -1,0 +1,43 @@
+[package]
+name = "node"
+version = "0.1.0"
+edition = "2021"
+description = "Describes Node API for Dither"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Async
+async-std = "1.12.0"
+futures = "0.3.21"
+
+# Data
+log = "0.4.17"
+derivative = "2.2.0"
+nalgebra = { version = "0.31.0", features = ["serde-serialize", "rkyv-serialize"] }
+petgraph = { version = "0.6.2", features = ["graphmap", "serde-1"] }
+slotmap = { version = "1.0.6", features = ["serde"] }
+smallvec = { version = "1.9.0", features = ["serde"] }
+bimap = { version = "0.6.2", features = ["serde"] }
+vpsearch = "2.0.1"
+thiserror = "1.0.31"
+anyhow = "1.0.58"
+
+# Packet Serialization
+rkyv = { version = "0.7.39", features = ["validation"] } # Zero-Copy Serialization
+bytecheck = "0.6.8"
+
+rand = "0.8.5"
+futures-core = "0.3.21"
+serde = { version = "1.0.139", features = ["derive"] }
+hashdb = { git = "https://github.com/libdither/disp" }
+unsigned-varint = "0.7.1"
+rkyv_codec = "0.3.0"
+replace_with = "0.1.7"
+cupchan = "0.1.2"
+
+[lib]
+name = "node"
+path = "src/lib.rs"
+
+[features]
