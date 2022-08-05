@@ -29,3 +29,18 @@ name = "dither"
 path = "src/bin.rs"
 
 [features]
+
+[patch.crates-io]
+num-complex = { git = "https://github.com/zyansheep/num-complex" }
+
+[workspace.metadata.nix]
+nativeBuildInputs = [
+	"cargo-edit", "rust-analyzer"
+]
+buildInputs = []
+toolchain = "nightly"
+devshell = {name = "rust-dev-shell" }
+
+[package.metadata.nix]
+app = true
+build = true
