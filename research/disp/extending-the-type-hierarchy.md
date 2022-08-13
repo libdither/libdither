@@ -6,8 +6,11 @@ There is a thing in the calculus of construction, where terms are types and type
 Note: This section is constantly changing and may conflict with certain older sections.
 
  - The type of `x` (Variable)can be anything because `x` can be anything if by itself. If `x` is apart of a binding, all `x`s of that binding must be the same type.
- - The type of `[x] e` is `[X] E` where `x` must have the same type everywhere in `e` and the type of `e` is `E`.
-	 - Example: `[x] y : [>.] ([_] Y) X`, x appears once in `E`, thus has the same type everywhere in `E`. 
+ - The type of `[x] e` is `[X] E` if `e : E` and if `[x]` binds in `e`, 
+	 - Example: `[x] y : [>.] ([_] Y) X`. `E` in this case would be `([_] Y) X`. The binding `[x]` doesn't bind anything in `e` (i.e. `y`). So it typechecks with 
+	 - `[.] [y] y : [T] [T] T`  
+		 - `e : E`? yes: `[y] y : [T] T`
+		 - `[.]` binds in `e`? yes
 	 - Another typing could be `[x] y : [_] Y` or simply `[x] y : T`
  - The type of `(x y)` is `(X Y)` where `X` is the type of `x` and `Y` is the type of `y`. Any beta-reductions that take place must preserve all other typing rules. Otherwise the type is not well-formed.
 
@@ -52,7 +55,7 @@ set false [x y] y : Bool
 (true false) : (Bool Bool) : (Bool Bool)
 
 ( ([x y] x) ([x y] y) ) -> ( [y1] [x y] y )
-// `[.]` represents an binding that binds a subexpression. This is a unique modification of the lambda calculus, It will only reduce if the argument it is passed reduces to an exact match of the bound subexpression
+// `[.]` represents a binding that binds a subexpression. This is a unique modification of the lambda calculus, It will only reduce if the argument it is passed reduces to an exact match of the bound subexpression
 ( ([T T] T) ([T T] T) ) -> ( [.] [T T] T )
 
 // This represents the state of being of true applied to false. Now watch it be applied to another value
@@ -66,7 +69,7 @@ set false [x y] y : Bool
 [x y] y : [T T] T
 ```
 
-Things to take away are that definitional equality checking is built-in to the system as a biproduct of arbitrary expression binding. A boolean term applied to two different items won't typecheck because `Bool` applied to two different types only resolves if those types are exactly the same.
+Things to take away are that definitional equality checking is built-in to the system as a byproduct of arbitrary expression binding. A boolean term applied to two different items won't typecheck because `Bool` applied to two different types only resolves if those types are exactly the same.
 
 ```
 // ((true false) id) : ???
@@ -77,7 +80,7 @@ Things to take away are that definitional equality checking is built-in to the s
 [x y] y : ([.] [T T] T) ([T] T)
 ```
 
-A neet thing to note here is that `Bool` is just the type of binary expressions. Functions that take two of some type and return another of term of the same type.
+A neat thing to note here is that `Bool` is just the type of binary expressions. Functions that take two of some type and return another of term of the same type.
 Thus:
 `set BinaryExpr [x x] x`
 
