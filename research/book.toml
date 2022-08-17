@@ -1,0 +1,7 @@
+[book]
+authors = ["zyansheep"]
+language = "en"
+multilingual = false
+create-missing = false
+src = "."
+title = "Dither Ideas"
