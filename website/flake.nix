@@ -12,6 +12,7 @@
 
 		buildInputs = with pkgs; [
 			hugo
+			mdbook
 		];
 	in utils.lib.mkFlake {
 		inherit self inputs;
@@ -24,7 +25,7 @@
 				src = ./.;
 				nativeBuildInputs = buildInputs;
 				buildPhase = ''
-					hugo
+					hugoix 
 				'';
 				installPhase = ''
 					cp -r public $out
