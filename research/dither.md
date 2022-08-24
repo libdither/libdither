@@ -2,7 +2,6 @@
 
 - [The Dither Project](#the-dither-project)
 - [What is it?](#what-is-it)
-  - [No, but really, What is it?](#no-but-really-what-is-it)
   - [What's this about replacing the Internet?](#whats-this-about-replacing-the-internet)
   - [Potential Applications:](#potential-applications)
 - [Core Tenets](#core-tenets)
@@ -15,13 +14,11 @@
 
 # What is it?
 
-Dither is a project that aims to decentralize the internet! It is a toolbox of various tools application developers can use to store data, manage accounts, and communicate across the internet in a private manner.
-
-## No, but really, What is it?
-Dither is a modular application API built on top of [Libp2p](https://github.com/libp2p/rust-libp2p). It aims to provide buliding blocks for communication, data storage, account management, consensus and more to replace most online services with a decentralized and private alternatives.
+Dither is a project that aims to decentralize the internet! It is a toolbox of various tools application developers can use to store data, manage accounts, and communicate across the internet in a private manner. It is currently being developed by ([@Zyansheep](https://github.com/zyansheep))
 
 ## What's this about replacing the Internet?
 
+A major goal of Dither is to replace existing apps and services
 Dither aims to replace most existing apps and services, however, some services are hard to replace without significant disruption because of their existing user and content base. To solve this, Dither will be able to act as a kind of interface with various services, pulling data from multiple sites and presenting it in a standardized way.
 
 It aims to be compatible for extracting data from and interfacing with most existing decentralized and centralized systems such as IPFS, Github, Reddit, Youtube, Sci-Hub, Odysee & Discord.
