@@ -1,111 +1,80 @@
 # The Dither Project
 
 - [The Dither Project](#the-dither-project)
-- [What is it?](#what-is-it)
-  - [What's this about replacing the Internet?](#whats-this-about-replacing-the-internet)
-  - [Potential Applications:](#potential-applications)
+  - [What is it?](#what-is-it)
+  - [A Plan for the Future of the Internet](#a-plan-for-the-future-of-the-internet)
 - [Core Tenets](#core-tenets)
 - [Structure](#structure)
-  - [Finding Data Links (Reverse Hash Lookup)](#finding-data-links-reverse-hash-lookup)
-  - [Dither Chain References](#dither-chain-references)
-  - [Dither Consensus Chains](#dither-consensus-chains)
-  - [WIP - Dither Weighted Voting](#wip---dither-weighted-voting)
-  - [Inspiration](#inspiration)
+  - [Transport Layer](#transport-layer)
+  - [Service Layer](#service-layer)
+  - [Application Layer](#application-layer)
+  - [Interface Layer](#interface-layer)
+- [Other Links](#other-links)
+    - [Inspirations for Dither](#inspirations-for-dither)
 
-# What is it?
+## What is it?
 
-Dither is a project that aims to decentralize the internet! It is a toolbox of various tools application developers can use to store data, manage accounts, and communicate across the internet in a private manner. It is currently being developed by ([@Zyansheep](https://github.com/zyansheep))
+Dither is a project with the goal of decentralizing the internet. It is a toolbox of various tools application developers can use to communicate privately, host data, manage accounts much more. It is currently being developed by [@Zyansheep](https://github.com/zyansheep) and temporarily hosted via GitHub under the [libdither](https://github.com/libdither) organization.
 
-## What's this about replacing the Internet?
+## A Plan for the Future of the Internet
 
-A major goal of Dither is to replace existing apps and services
-Dither aims to replace most existing apps and services, however, some services are hard to replace without significant disruption because of their existing user and content base. To solve this, Dither will be able to act as a kind of interface with various services, pulling data from multiple sites and presenting it in a standardized way.
+The plan behind Dither is to create an modern internet unencumbered by any kind of central control. To accomplish this, Dither must somehow replace existing apps and services *by outcompeting them*. This is an incredibly monumental task, but there are some things that may help in Dither's favor.
 
-It aims to be compatible for extracting data from and interfacing with most existing decentralized and centralized systems such as IPFS, Github, Reddit, Youtube, Sci-Hub, Odysee & Discord.
-*The aim for Dither is to replace these applications with decentralized alternatives that are unified through their use of a singular, modular protocol.*
+ - **No Hosting Costs** — Being decentralized means the users host everything. If we can create a system to make it as painless as possible to host data, that would be ideal.
+ - **Redesigning Everything is Sometimes Good** — If applications using Dither are fundamentally better designed than the alternative and it is easy to switch, users will be more likely to use them.
+ - **No Intellectual Property** — Intellectual property protections do not apply to the core of Dither since it is a peer-to-peer network. This means that new platforms can be immediately populated with any existing content people might want to watch. Note: Precautions should be taken to make sure creators have a say in if they want their content to be shown on mainstream applications using the protocol to prevent public backlash.
+ - **Standardization** — Dither's ecosystem of APIs will all be compatible with each other which will infinitely improve the experience of the user. (Imagine being able to use a Discord-like chat room or a Reddit-like comment system underneath a YouTube video, or really any kind of system you want. It's all modular!).
+ - **Natural Incentives** — Similar to Brave browser's tipping system, If applications built on Dither have good incentive systems for content creation that extends to existing content, then creators whose content is uploaded to the network will automatically accrue income that will then be an incentive for them to claim their money and create an account. Unlike Brave, there won't be any KYC requirements :).
 
-## Potential Applications:
+*The aim for Dither is to replace existing centralized applications with decentralized alternatives that are unified through their use of a singular, modular protocol.*
 
-Chat/Communication Apps, Video Sharing, Social Media, Comment systems, File Synchronization, Encrypted Backup, Voting systems, Exchanges, Crowdfunding, VCS, Stores, Serverless Games, Remote Machine Control, etc.
-
-The goal of Dither is to be able to recreate any kind of application in a decentralized manner.
-
-See the [application document](applications.md) for Work In Progress ideas for various applications.
+See the [application document](applications.md) for outlines of various applications that could be built using Dither.
 
 # Core Tenets
-All projects need a direction, and these are the ones I've chosen. (As with everything, they are subject to change.)
+It seems necessary for projects to have guidelines so that everyone may be on the same page. These are the ones I've chosen for now, as with everything, they are subject to change.
 
 **Dither should be as modular as possible.**
- - There should be no part of Dither that is hard to replace with a different implementation.
+ - Reasoning: There should be no part of Dither that is difficult to replace with a different implementation and people should be able to pick and choose which parts they want.
 
-**Dither protocols and formats should be able to interoperate with most other protocols and formats.**
+**Dither protocols, formats, and communities should be as interoperable as possible with existing protocols, formats, and communities**
+ - Reasoning: To grow Dither's userbase, It should be as easy as possible to transition to Dither from other services.
  - One example of this would be allowing someone to pull comments from Reddit / Youtube into [Dithca](applications/dithca.md) and hosting them in a decentralized manner.
  - Another example might be [Dithca](applications/dithca.md) storing Reddit credentials and being able to optionally interact with comment threads pulled from centralized websites.
 
 **Dither should rely on itself as much as possible for every aspect of development and usage.**
- - Code Versioning, Storage, Building, Distribution, and Communication should all run through Dither as much as possible.
+ - Reasoning: It feels natural for a program to use itself if possible. Rust is written in itself, GitLabs is hosted using GitLabs, etc.
+ - Code Versioning, Storage, Building, Distribution, and Social communication should all run through Dither applications if it won't compromise development too much.
 
 # Structure
 
-Dither is structured in layers:
+Following the first tenet of Dither, in the future the lines between these layers will blur and everything will be a module. However, the design of current operating systems don't easily allow for shared code and data, requiring a more formal structure. In the future this layered structure will be replaced with a more [flexible system](dither/structure.md).
 
- - Network Layer (Provider Agnostic)
-   - Handles peer-to-peer connections (NAT Traversal, Muxing, MDNS Discovery).
-	   - See [libp2p.io](https://libp2p.io) for an example of the types of features this will have
-	   - Real implementation still WIP
- - Core Layer
-   - Routing Module
-     - [Distance-Based Routing](https://github.com/libdither/dbr-sim): Custom onion routing protocol which allows for anonymity on the network and is faster and more flexible compared to random routing (like what TOR and I2P uses)
-   - Encryption
-     - Using [multikey](dither/encryption/multikey.md) for asymmetric encryption or [decentralized kerberos](dither/encryption/decentralized-kerberos.md) for solely symmetric encryption.
-   - Data Structuring & Manipulation ([Hashtypes](dither/data/hashtypes/hashtypes.md))
-   - Data Searching ([Directional Trail Search](dither/routing/directional-trail-search.md))
-   - Data Linking ([Reverse Hash Lookup](dither/data/reverse-hash-lookup.md))
-   - Consensus Algorithms ([Distance Aware Consensus](dither/consensus/distance-aware-consensus.md))
-   - User Sync & Authentication ([User Management](dither/data/user-management.md))
- - Application Layer
-   - Uses some or all of Dither's features to create an application API
-   - There is a list of [potential applications](applications.md) for dither and various work-in-progress API definitions.
- - UI Layer
-   - This is the actual UI and design portion of applications. It takes the functions provided by the Application Layer and implements them according to the creator's desires.
-   - It is highly recommended to follow Dither's [application design philosophy](dither/application-design-philosophy.md) when designing UI apps.
+## Transport Layer
+The transport layer is the part of Dither that deals with creating peer-to-peer connections with other computers running Dither.
+Currenly in the dither-sim program, this is implemented via a simple TCP stream. In the future this layer will be implemented using existing libraries such as [libp2p transports](https://libp2p.io/implementations/#transports), [Pluggable Transports](https://www.pluggabletransports.info/transports/), something else, or some amalgamation of all three. The idea behind this layer is to provide as many methods of communication as feasibly possible.
 
-More Info in the [Directional Trail Search](dither/routing/directional-trail-search.md) Document.
+## Service Layer
 
-## Finding Data Links (Reverse Hash Lookup)
- - This solves the problem of having a hash and wanting to find pieces of data that link to that hash. This is super useful for comment systems and the like.
- - This is a system by which one can find structures that link to a given hash implementing the reverse trait.
- - If there is some pieces of data that links from or adds useful definitions to a given piece of data, this is the place for it. One example of this in practice might be having a comment thread. Each comment is its own Hashtype that contains the hash of the post or a replying comment. In order for someone who has the post structure to find the comments, they would need find all the pieces of data linking to this piece of data (i.e. a Reverse Hash Lookup)
- - To implement this system, there will be a partial binary tree represented by a DAG that can be traversed using the data of the target. (i.e. the post structure's hash). Then the tree can be traversed down using consecutive trail searches. Until a list of all known linked hashes is found. These structures must contain a specific trait called a RevHash to be able to be validated onto the distributed tree. The addition of new links to this tree is done through an implementation of Dither Chain Consensus (see the [#Dither Consensus Chains](#dither-consensus-chains) section).
+The service layer provides all functionality related to [routing](dither/routing/distance-based-routing.md), encryption, [data storage](dither/routing/directional-trail-search.md), [user management](dither/data/user-management.md) and everything else. Each of these services are split up into separate modules each of which runs its own processes and communicates with other services through inter-process communication. 
 
-See [User Api Document](dither/data/user-management.md)
+All these processes are managed as child processes under one "main process". The main process contains the Transport Layer implementation, the routing protocol API and APIs for managing the child services as well as managing inter-process communication between child processes.
 
-## Dither Chain References
-Ideas for Dither Consensus
- - IOTA Tangle
- - Stellar Consensus Protocol
- - zk-STARKS (for privacy)
- - Layered on top of Dither Gravity Tree Search for storage
+## Application Layer
 
-## Dither Consensus Chains
-- Regular Chains
-  - A chain is created just by linking to one or more other Hashtypes (fundamental format of Dither objects)
-  - Regular Chains can be used to represent filesystems, linked data, pretty much anything.
-- Consensus chains are different in that blocks linking to other blocks are weighted by how much they are linked to themselves. (Like the IOTA tangle)
-- Blocks are added via "active consensus", where new blocks are broadcast to computers actively participating in consensus and organized / verified using the Stellar Consensus Protocol.
-  - This could be used for a comment system where the comments with the most upvotes / interactions are sorted higher in a specific index.
-- Quorum slices in the SC protocol will be made up of social friends or other trusted users. (which can be registered by applications using Dither in specific contexts i.e. close friends in Dither Chat could be designated as part of a core Quorum Slice)
-- Quorum Slices will be stored in the trusted user configuration
-- Small “Consensus Chains” can be publicly listed or privately created between specific users with special rules on how blocks are added
+The application layer contains services just like the service layer that are registered under the main process. These registered service's APIs can be used by other applications. 
 
-## WIP - Dither Weighted Voting
-- Using Dither Consensus as a backend
-- Creates Consensus Chains between users to vote on a specific *thing*
-- Can be used for copyright reporting, community information addition, data validation, etc.
-- Structure:
-- Main definition
-- Who created it
+The application layer also refers to the application's core API, which is used by the interface layer. This "core application API" can be built into the applicaiton's executable, or it can run as a service under the main process and used by multiple interfaces. This is left up to the application developers. Applications with multiple interfaces should prefer to register application APIs under the main process.
 
-## Inspiration
+Existing planned applications may be found [here](applications.md).
 
-It is much inspired by and takes from various projects such as Rust, TOR, Bittorrent, IPFS, IPLD, Stellar, Ethereum, IOTA, Monero, zk-STARKS, and more.
+## Interface Layer
+
+The final layer is the interface layer. This just refers to standalone applications that provide some kind of interface to the user using the services running under Dither.
+
+These interfaces can be implemented however, but it is recommended for them to follow Dither's [application design philosophy](dither/application-design-philosophy.md) for some level of standardization.
+
+# Other Links
+
+### [Inspirations for Dither](dither/inspirations.md)
+
+Dither as with any creative endeavor takes inspiration from many other projects. This is a list of what parts of Dither have been inspired from other projects.
