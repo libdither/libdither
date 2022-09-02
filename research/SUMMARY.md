@@ -24,5 +24,5 @@
   - [Not your typical Cryptocurrency - Dither Coin](applications/dither-coin.md)
   - [Browser Alternative - D Framework](./applications/d-framework/d-framework.md)
 - [Future Vision of Dither](./future-vision.md)
-  - [Articles]()
+- [Articles]()
   - [Copyright is Cancer](./copyright-is-cancer.md)
