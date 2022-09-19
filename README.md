@@ -1,6 +1,5 @@
-# Dither Client
-Basically like Discord, except everyone stores their own stuff. No Central Servers, Bootstrap nodes can be publicly hosted or just your friend's IP.
+# Dither
 
-# TODO:
-* Implement Basic DM Functionality
-* Create simple UI
+*A toolbox for creating privacy-respecting decentralized applications powerful enough to replace the centralized Internet.*
+
+See [**The Dither Spec**](https://dither.link/docs/dither.html) for more information.
