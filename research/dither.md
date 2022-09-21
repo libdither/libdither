@@ -5,9 +5,9 @@
   - [A Plan for the Future of the Internet](#a-plan-for-the-future-of-the-internet)
 - [Core Tenets](#core-tenets)
 - [Structure](#structure)
-  - [Transport Layer](#transport-layer)
-  - [Service Layer](#service-layer)
-  - [Application Layer](#application-layer)
+  - [Core Process](#core-process)
+  - [Service Swarm](#service-swarm)
+  - [User Interface](#user-interface)
   - [Interface Layer](#interface-layer)
 - [Other Links](#other-links)
     - [Inspirations for Dither](#inspirations-for-dither)
@@ -49,17 +49,22 @@ It seems necessary for projects to have guidelines so that everyone may be on th
 
 Following the first tenet of Dither, in the future the lines between these layers will blur and everything will be a module. However, the design of current operating systems don't easily allow for shared code and data, requiring a more formal structure. In the future this layered structure will be replaced with a more [flexible system](dither/structure.md).
 
-## Transport Layer
-The transport layer is the part of Dither that deals with creating peer-to-peer connections with other computers running Dither.
+## Core Process
+
+The Core Dither Process is the part that deals with all operating system-facing operations such as data storage, establishing peer-to-peer connections with other computers, in addition to managing all Dither services and connections between them.
+
+This "Core Process" provides a few core APIs that only certain services running in the "Service Swarm" are allowed to use for security purposes. The idea behind a "Core Process" is to create a sandboxed environment for services to run in a safe manner.
+
+peer-to-peer connections with other computers running Dither.
 Currenly in the dither-sim program, this is implemented via a simple TCP stream. In the future this layer will be implemented using existing libraries such as [libp2p transports](https://libp2p.io/implementations/#transports), [Pluggable Transports](https://www.pluggabletransports.info/transports/), something else, or some amalgamation of all three. The idea behind this layer is to provide as many methods of communication as feasibly possible.
 
-## Service Layer
+## Service Swarm
 
 The service layer provides all functionality related to [routing](dither/routing/distance-based-routing.md), encryption, [data storage](dither/routing/directional-trail-search.md), [user management](dither/data/user-management.md) and everything else. Each of these services are split up into separate modules each of which runs its own processes and communicates with other services through inter-process communication. 
 
 All these processes are managed as child processes under one "main process". The main process contains the Transport Layer implementation, the routing protocol API and APIs for managing the child services as well as managing inter-process communication between child processes.
 
-## Application Layer
+## User Interface
 
 The application layer contains services just like the service layer that are registered under the main process. These registered service's APIs can be used by other applications. 
 
