@@ -35,11 +35,14 @@ num-complex = { git = "https://github.com/zyansheep/num-complex" }
 
 [workspace.metadata.nix]
 nativeBuildInputs = [
-	"cargo-edit", "rust-analyzer"
+	"cargo-edit",
+	"rust-analyzer",
+	"gdb",
 ]
 buildInputs = []
 toolchain = "nightly"
-devshell = {name = "rust-dev-shell" }
+systems = [ "x86_64-linux" ]
+devshell = { name = "rust-dev-shell" }
 
 [package.metadata.nix]
 app = true

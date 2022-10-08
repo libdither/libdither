@@ -2,7 +2,6 @@
 //! It provides a simple API to the internet module containing it.
 #![feature(try_blocks)]
 #![feature(arbitrary_self_types)]
-#![feature(generic_associated_types)]
 #![feature(associated_type_bounds)]
 #![feature(map_first_last)]
 
