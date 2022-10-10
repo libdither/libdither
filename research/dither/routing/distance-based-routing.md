@@ -53,21 +53,25 @@ It is possible, (although unlikely) for two or more incompatible latency topolog
 A system built on synchronization might work by which as the two networks start to grow close and share nodes that can't resolve an accurate routing coordinate between the two conflicting spaces, it sets off a chain reaction through which the conflicted nodes "poison" other nodes to recalculate their coordinate spaces which creates a new coordinate space merging the two old ones (or one gets subsumed into the other).
 
 ## Bandwidth Trading
-Routing protocols that rely on the goodwill of peers to allow others to use their bandwidth to route packets typically have only a small number of willing peers to route packets (i.e.: TOR). This is why protocols like BitTorrent, I2P and IPFS have systems in place that incentivize peers to play fair and contribute back to the network.
+Routing protocols that rely solely on people voluntarily hosting nodes typically only have a relatively small number of peers willing to route packets through themselves (i.e.: TOR). This is why protocols like BitTorrent, I2P and IPFS have systems in place that incentivize peers who use the network to contribute back for the benefit of all.
 
-To accomplish this behavior for DBR there needs to be some kind of way to limit packets going through nodes that either don't use the network that much or don't have a lot of bandwidth capacity. Also to take into consideration are the management of nodes that have inconsistent uptime or inconsistent routing.
+To accomplish this behavior for DBR there must to be some way to limit packets going through nodes that either don't use the network that much or don't have a lot of bandwidth capacity. Also to take into consideration are the management of nodes that have inconsistent uptime or inconsistent routing.
 
-Lets analyze the situation:
+When talking about incentives, we are talking about game theory. So lets analyze the game theoretical situation at the level of an individual node.
 
- - Each node is a pipe and a water pump.
- - The pipe is sometimes closed and has a set max amount of water that can flow. The pipe also doesn't want to be overused.
- - The pump sometimes pumps water down various other pipes. This water should always reach its end destination taking various twists and turns throughout the network of pipes.
+Constraints:
+ - Each node is directly connected to a fixed number of other nodes at a varying distances.
+ - Each node wants to send traffic through other nodes.
+ - Each node wants to establish onion proxies with other nodes.
+ - Each node has set of parameters that may change over time:
+   - Percentage of the time it will immediately respond and route a packet.
+   - Amount of traffic per unit time it is willing to route on average.
+   - Max amount of traffic per unit time it can route.
 
-The goal:
- - Each node wants as little water as possible to flow through their pipe, but as much water as possible to flow out of their pump through other people's pipes, and nodes want a diverse selection of pipes (for anonymity).
+The goal is to allow for unrelated nodes to route and establish proxies through each other in proportion to how much each node contributes in some way to the network.
 
 Ideas:
- - Each node keeps track of the amount of water (bytes) flowing through its pipe from nearby pumps.
- - Each node's pump only sends water through pipes it knows it has received water from.
+ - Each node keeps track of the amount of traffic (bytes) flowing through its itself from directly connected nodes.
+ - Each node only sends traffic through direct nodes it knows it has received traffic from.
  - There is more to theorize about here for future research :)
 
