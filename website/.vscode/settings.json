@@ -1,5 +1,10 @@
 {
 	"liveServer.settings.multiRootWorkspaceName": "dither.link",
 	"nixEnvSelector.suggestion": false,
-	"nixEnvSelector.nixFile": "${workspaceRoot}/shell.nix"
+	"nixEnvSelector.nixFile": "${workspaceRoot}/shell.nix",
+	"cSpell.words": [
+		"deallocated",
+		"Disp",
+		"Substructural"
+	]
 }
