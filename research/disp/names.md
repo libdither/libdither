@@ -18,6 +18,29 @@ How: Have one big global context containing every name and every definition that
 
 ## Contexts
 
-A context simply some 
+TBD
 
-By all names and definitions are stored in a "global context". This includes 
+# Structure
+
+Names and programs in Disp are separate, this is so that alpha-equivalence is preserved and so that the same program may be able to named differently by different people.
+
+A program is represented by an [`Expr`](expr.md). A Named program is represented by a `NamedExpr`
+
+```rust
+enum Expr {
+	Abs { binding: Binding, expr: Expr },
+	App { func: Expr, args: Expr }
+	Var,
+}
+struct NamedExpr {
+	name: String,
+	expr: NameTree,
+}
+enum NameTree {
+	Abs { bind_name: String, expr: NameTree }, // For Abs and Pi binding
+	App { left: NameTree, right: NameTree } // For App
+	Name(NamedExpr)
+	End,
+}
+```
+
