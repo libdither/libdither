@@ -1,4 +1,4 @@
-# Provable Hardware Modeling
+# Hardware Modeling
 
 #### How do we generate fast code?
  - Currently, Optimizing Compilers generate fast code through intermediate representations and various techniques to figure out what code is needed and what code is not.

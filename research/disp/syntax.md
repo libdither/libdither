@@ -1,6 +1,6 @@
 # Syntax
 
-Since Disp source code is stored as its syntax tree, disp does not require one set syntax, however, it will have a default syntax that will be shown at first encounter.
+Since Disp has [Syntax Agnosticism](syntax-agnosticism.md), it does not require one set syntax. For consistency and branding purposes however, Disp will have its own succinct and readable default syntax. This 
 
 Disp's default syntax is still a work-in-progress, however I think I want something similar to lisp with various Rust conventions sprinkled in.
 

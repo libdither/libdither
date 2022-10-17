@@ -9,13 +9,24 @@ Inspired by:
  - IPFS for deduplication
 
 ## Goals
- - Fastest compile times
- - Fastest execution time
- - Support for any possible cpu or interpreter
- - Relatively easy transpilation from other languages
- - Maximum re-use of code
- - Seemless integration into Dither
- - Abstraction of Execution Environment
+
+A general outline of the (very lofty) goals of Disp.
+
+ - Most efficient language to run
+ - Support for any cpu or interpreter
+ - Most efficient language to write
+   - Projectional Editing
+     - Localization-agnostic naming
+   - Mixable syntax
+     - Transpilation from any other language
+ - Seamless integration into Dither
+
+## Core Ideas
+
+ - [Universal System of Types](universal-system-of-types.md)
+ - [Binding Trees]
+
+
 
 ## Ideas
  - Objects are stored in self-defining data structures, i.e. they link to data that describes the format of the object (whether that be structurally, in-memory, or symbolically).
