@@ -13,7 +13,7 @@
     - [Standard Type System](./disp/type-system.md)
   - [Syntax Agnosticism](./disp/syntax-agnosticism.md)
     - [Standard Syntax](./disp/syntax.md)
-  - [Naming](./disp/names.md)
+  - [Naming with Knowledge Graphs](./disp/names.md)
   - [Modular Parsing](./disp/modular-parsing.md)
   - [Hardware Modeling](./disp/hardware-modeling.md)
   - [Hashtypes](./disp/hashtypes/hashtypes.md)
