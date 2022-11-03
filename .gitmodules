@@ -1,0 +1,3 @@
+[submodule "shadow"]
+	path = shadow
+	url = https://github.com/zyansheep/shadow
