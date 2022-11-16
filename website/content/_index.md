@@ -44,8 +44,10 @@ In accordance with the first tenant of Dither, Dither's core is built in small, 
 
 ## Roadmap
 
-Currently, Dither is in the simulation phase. Creating decentralized protocols is difficult, and much testing needs to be done to make sure everything works. Various core parts of Dither are being tested in the 
-[dither-sim](https://github.com/libdither/dither-sim) and 
-[dither-sim-tauri](https://github.com/zyansheep/dither-sim-tauri) repositories.
+Currently, Dither is in the simulation phase. Creating decentralized protocols is difficult, and much testing needs to be done to make sure everything works. Simulations of dither will done in the [libdither](https://github.com/libdither/libdither) repository using the [shadow network simulator](https://shadow.github.io/) for its ability to do reproducible tests on production binaries.
 
-Once Dither Core moves out of the simulation phase, the first proof-of-concept application will be a chat app as outlined in the [Dither Chat application spec](docs/applications/dither-chat.html). In this application, Direct messages will be End-To-End Encrypted and servers can be hosted by a collection of trusted computers. Dither Chat will provide an easy-to-use, modular usable by many different interfaces to support as many platforms as possible.
+Once Dither moves out of the simulation phase, the first proof-of-concept application will be a chat app as outlined in the [Dither Chat application spec](docs/applications/dither-chat.html).
+
+## Community
+
+It is just me working on this project for now and it will probably stay that way until I can finish the core parts of Dither. Nevertheless, I am open to conversation, critique, and contributions on the github and Dither's [Matrix server](https://matrix.to/#/#dither:matrix.org). Come stop by and say hi!

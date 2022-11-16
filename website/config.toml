@@ -14,6 +14,11 @@ theme = "book"
   name = 'Git'
   url = 'https://github.com/libdither'
   weight = 4
+[[menu.main]]
+  identifier = 'matrix'
+  name = 'Matrix'
+  url = 'https://matrix.to/#/#dither:matrix.org'
+  weight = 5
 
 [markup.goldmark.parser.attribute]
 block = true
