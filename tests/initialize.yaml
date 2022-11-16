@@ -1,0 +1,41 @@
+general:
+  # stop after 10 simulated seconds
+  stop_time: 10s
+  # old versions of cURL use a busy loop, so to avoid spinning in this busy
+  # loop indefinitely, we add a system call latency to advance the simulated
+  # time when running non-blocking system calls
+  # model_unblocked_syscall_latency: true
+
+network:
+  graph:
+    type: gml
+    inline: |
+      graph [
+        node [
+          id 0
+          host_bandwidth_down "140 Mbit"
+          host_bandwidth_up "18 Mbit"
+        ]
+        edge [
+          source 0
+          target 0
+          latency "50 ms"
+          packet_loss 0.01
+        ]
+      ]
+
+hosts:
+  # a host with the hostname 'server'
+  node1:
+    network_node_id: 0
+    processes:
+    - path: cargo run -- 
+      args: -m http.server 80
+      start_time: 3s
+  # three hosts with hostnames 'client1', 'client2', and 'client3'
+  node2:
+    network_node_id: 0c
+    processes:
+    - path: /usr/bin/curl
+      args: -s server
+      start_time: 5s
