@@ -4,4 +4,4 @@
 
 See [**The Dither Spec**](https://dither.link/docs/dither.html) for more information.
 
-Note: This project is a work-in-progress. Check out the [Discord](https://discord.gg/qUsMuyKu89) if you wanna chat.
+Note: This project is a work-in-progress. Check out the [Matrix Server](https://matrix.to/#/#dither:matrix.org) if you wanna chat.
