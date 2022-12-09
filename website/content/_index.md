@@ -50,4 +50,4 @@ Once Dither moves out of the simulation phase, the first proof-of-concept applic
 
 ## Community
 
-It is just me working on this project for now and it will probably stay that way until I can finish the core parts of Dither. Nevertheless, I am open to conversation, critique, and contributions on the github and Dither's [Matrix server](https://matrix.to/#/#dither:matrix.org). Come stop by and say hi!
+It is just me working on this project for now and it will probably stay that way until I can finish the core parts of Dither. Nevertheless, I am open to conversation, critique, and contributions on GitHub and Dither's [Matrix Space](https://matrix.to/#/#dither:matrix.org). Come stop by and say hi!
