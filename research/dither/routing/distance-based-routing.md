@@ -1,6 +1,8 @@
 # Distance Based Routing
 
-Distance Based Routing (DBR) is a protocol to obfuscate connections between computers on the Dither network. It improves on speed and flexibility over existing solutions (i.e. I2P and TOR) by taking into account the latency between nodes on the network. Instead of having to randomly choose nodes from a list to route through, by knowing the relative latencies of nodes, routing paths between nodes can be chosen to optimize for low-latency or anonymity, or a balance of both.
+Distance Based Routing (DBR) is a protocol for efficiently obfuscating connections between computers.
+
+It improves on speed and flexibility over existing solutions (i.e. I2P and TOR) by taking into account the latency between nodes on the network. Instead of having to randomly choose nodes from a global list to route through, by knowing the relative latencies of nodes, routing paths between nodes can be chosen to optimize for low-latency or anonymity, or a balance of both.
 
 Note: There is a [research paper](https://www.dither.link/papers/distance-based-routing-whitepaper.pdf) comparing DBR to existing random-route solutions, for a somewhat amateurish comparison.
 
