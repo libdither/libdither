@@ -93,3 +93,10 @@ Ideas:
  - Each node only sends traffic through direct nodes it knows it has received traffic from.
  - There is more to theorize about here for future research :)
 
+
+## Inspirations / Similar Work
+
+(If anyone knows of any similar work not listed here, please tell me on Matrix!)
+
+[Coordinate-Based Routing for High Performance Anonymity](https://boonloo.cis.upenn.edu/papers/msherr-dissertation.pdf)
+
