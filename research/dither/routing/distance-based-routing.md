@@ -98,5 +98,7 @@ Ideas:
 
 (If anyone knows of any similar work not listed here, please tell me on Matrix!)
 
+Vivaldi - [pdf](https://pdos.csail.mit.edu/papers/vivaldi:sigcomm/paper.pdf), [video](https://www.youtube.com/watch?v=AszPoJjWK9Q&t=1690s)
+
 [Coordinate-Based Routing for High Performance Anonymity](https://boonloo.cis.upenn.edu/papers/msherr-dissertation.pdf)
 

@@ -4,6 +4,8 @@ Since Disp has [Syntax Agnosticism](syntax-agnosticism.md), it does not require 
 
 Disp's default syntax is still a work-in-progress, however I think I want something similar to lisp with various Rust conventions sprinkled in.
 
+## Note: This Syntax is just an idea and subject to lots of change
+
 ```
 // By itself, this is a comment
 // It doubles as documentation when paired with an object
