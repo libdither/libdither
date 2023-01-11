@@ -35,9 +35,11 @@ unsigned-varint = "0.7.1"
 rkyv_codec = "0.3.0"
 replace_with = "0.1.7"
 cupchan = "0.1.2"
+num = "0.4.0"
 
 [lib]
 name = "node"
 path = "src/lib.rs"
 
 [features]
+
