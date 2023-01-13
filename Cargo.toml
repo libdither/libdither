@@ -34,15 +34,7 @@ path = "src/bin.rs"
 num-complex = { git = "https://github.com/zyansheep/num-complex" }
 
 [workspace.metadata.nix]
-nativeBuildInputs = [
-	"cargo-edit",
-	"rust-analyzer",
-	"gdb",
-]
-buildInputs = []
-toolchain = "nightly"
 systems = [ "x86_64-linux" ]
-devshell = { name = "rust-dev-shell" }
 
 [package.metadata.nix]
 app = true
