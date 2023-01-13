@@ -360,9 +360,9 @@ dependencies = [
 
 [[package]]
 name = "crossterm"
-version = "0.24.0"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab9f7409c70a38a56216480fba371ee460207dd8926ccf5b4160591759559170"
+checksum = "e64e6c0fbe2c17357405f7c758c1ef960fce08bdfb2c03d88d2a18d7e09c4b67"
 dependencies = [
  "bitflags",
  "crossterm_winapi",
@@ -637,7 +637,7 @@ dependencies = [
 [[package]]
 name = "hashdb"
 version = "0.1.0"
-source = "git+https://github.com/libdither/disp#93fdc61b512d80986850718b1b8d734506ab0839"
+source = "git+https://github.com/libdither/disp#e59020e83bfb857f8d37fcdd2f5646160c24d17c"
 dependencies = [
  "bincode",
  "bs58",
@@ -658,7 +658,7 @@ dependencies = [
 [[package]]
 name = "hashdb_derive"
 version = "0.1.0"
-source = "git+https://github.com/libdither/disp#93fdc61b512d80986850718b1b8d734506ab0839"
+source = "git+https://github.com/libdither/disp#e59020e83bfb857f8d37fcdd2f5646160c24d17c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -849,8 +849,8 @@ dependencies = [
 
 [[package]]
 name = "nalgebra"
-version = "0.31.0"
-source = "git+https://github.com/zyansheep/nalgebra?branch=dev#525bc63de286713d98b22a9e78aad6a96365bfac"
+version = "0.31.4"
+source = "git+https://github.com/dimforge/nalgebra?branch=dev#0cf79aef0e6155befc3279a3145f1940822b8377"
 dependencies = [
  "approx",
  "bytecheck",
@@ -860,7 +860,6 @@ dependencies = [
  "num-rational",
  "num-traits",
  "rkyv",
- "rkyv_wrappers",
  "serde",
  "simba",
  "typenum",
@@ -869,7 +868,7 @@ dependencies = [
 [[package]]
 name = "nalgebra-macros"
 version = "0.1.0"
-source = "git+https://github.com/zyansheep/nalgebra?branch=dev#525bc63de286713d98b22a9e78aad6a96365bfac"
+source = "git+https://github.com/dimforge/nalgebra?branch=dev#0cf79aef0e6155befc3279a3145f1940822b8377"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -945,9 +944,7 @@ name = "num-complex"
 version = "0.4.2"
 source = "git+https://github.com/zyansheep/num-complex#ba05e1365bd3afacff489d21de44ed59d5e03bd7"
 dependencies = [
- "bytecheck",
  "num-traits",
- "rkyv",
  "serde",
 ]
 
@@ -1032,9 +1029,9 @@ dependencies = [
 
 [[package]]
 name = "parking_lot_core"
-version = "0.9.5"
+version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ff9f3fef3968a3ec5945535ed654cb38ff72d7495a25619e2247fb15a2ed9ba"
+checksum = "ba1ef8814b5c993410bb3adfad7a5ed269563e4a2f90c41f5d85be7fb47133bf"
 dependencies = [
  "cfg-if",
  "libc",
@@ -1252,9 +1249,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.7.0"
+version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e076559ef8e241f2ae3479e36f97bd5741c0330689e217ad51ce2c76808b868a"
+checksum = "48aaa5748ba571fb95cd2c85c09f629215d3a6ece942baa100950af03a34f733"
 dependencies = [
  "regex-syntax",
 ]
@@ -1305,9 +1302,9 @@ dependencies = [
 
 [[package]]
 name = "rkyv_codec"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6e04355201667820100c376427c355068b112cd8170828fbaf8d40c1ad9534e"
+checksum = "7a98f5546ce488daba851e41e602c830414211e3e199346a2b5b4b6a36a71f30"
 dependencies = [
  "bytecheck",
  "bytes 0.5.6",
@@ -1332,14 +1329,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rkyv_wrappers"
-version = "0.1.0"
-source = "git+https://github.com/rkyv/rkyv_contrib#1d60628accfd5be08adcbd12d2f2a94a3bb0d843"
-dependencies = [
- "rkyv",
-]
-
-[[package]]
 name = "rustversion"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1347,9 +1336,9 @@ checksum = "5583e89e108996506031660fe09baa5011b9dd0341b89029313006d1fb508d70"
 
 [[package]]
 name = "rustyline-async"
-version = "0.2.6"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dabaf71f2f376f4bca6f5c19359b8b0c2e65ee8042c367bcec92d379fdd20d58"
+checksum = "00e1a02d2c727fac4c73a019de82183d990af0e13d6bed2e3a6f37a525ff591d"
 dependencies = [
  "crossterm",
  "futures",
@@ -1956,19 +1945,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a3e1820f08b8513f676f7ab6c1f99ff312fb97b553d30ff4dd86f9f15728aa7"
 dependencies = [
  "windows_aarch64_gnullvm",
- "windows_aarch64_msvc 0.42.0",
- "windows_i686_gnu 0.42.0",
- "windows_i686_msvc 0.42.0",
- "windows_x86_64_gnu 0.42.0",
+ "windows_aarch64_msvc 0.42.1",
+ "windows_i686_gnu 0.42.1",
+ "windows_i686_msvc 0.42.1",
+ "windows_x86_64_gnu 0.42.1",
  "windows_x86_64_gnullvm",
- "windows_x86_64_msvc 0.42.0",
+ "windows_x86_64_msvc 0.42.1",
 ]
 
 [[package]]
 name = "windows_aarch64_gnullvm"
-version = "0.42.0"
+version = "0.42.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41d2aa71f6f0cbe00ae5167d90ef3cfe66527d6f613ca78ac8024c3ccab9a19e"
+checksum = "8c9864e83243fdec7fc9c5444389dcbbfd258f745e7853198f365e3c4968a608"
 
 [[package]]
 name = "windows_aarch64_msvc"
@@ -1978,9 +1967,9 @@ checksum = "ec7711666096bd4096ffa835238905bb33fb87267910e154b18b44eaabb340f2"
 
 [[package]]
 name = "windows_aarch64_msvc"
-version = "0.42.0"
+version = "0.42.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd0f252f5a35cac83d6311b2e795981f5ee6e67eb1f9a7f64eb4500fbc4dcdb4"
+checksum = "4c8b1b673ffc16c47a9ff48570a9d85e25d265735c503681332589af6253c6c7"
 
 [[package]]
 name = "windows_i686_gnu"
@@ -1990,9 +1979,9 @@ checksum = "763fc57100a5f7042e3057e7e8d9bdd7860d330070251a73d003563a3bb49e1b"
 
 [[package]]
 name = "windows_i686_gnu"
-version = "0.42.0"
+version = "0.42.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbeae19f6716841636c28d695375df17562ca208b2b7d0dc47635a50ae6c5de7"
+checksum = "de3887528ad530ba7bdbb1faa8275ec7a1155a45ffa57c37993960277145d640"
 
 [[package]]
 name = "windows_i686_msvc"
@@ -2002,9 +1991,9 @@ checksum = "7bc7cbfe58828921e10a9f446fcaaf649204dcfe6c1ddd712c5eebae6bda1106"
 
 [[package]]
 name = "windows_i686_msvc"
-version = "0.42.0"
+version = "0.42.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84c12f65daa39dd2babe6e442988fc329d6243fdce47d7d2d155b8d874862246"
+checksum = "bf4d1122317eddd6ff351aa852118a2418ad4214e6613a50e0191f7004372605"
 
 [[package]]
 name = "windows_x86_64_gnu"
@@ -2014,15 +2003,15 @@ checksum = "6868c165637d653ae1e8dc4d82c25d4f97dd6605eaa8d784b5c6e0ab2a252b65"
 
 [[package]]
 name = "windows_x86_64_gnu"
-version = "0.42.0"
+version = "0.42.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf7b1b21b5362cbc318f686150e5bcea75ecedc74dd157d874d754a2ca44b0ed"
+checksum = "c1040f221285e17ebccbc2591ffdc2d44ee1f9186324dd3e84e99ac68d699c45"
 
 [[package]]
 name = "windows_x86_64_gnullvm"
-version = "0.42.0"
+version = "0.42.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09d525d2ba30eeb3297665bd434a54297e4170c7f1a44cad4ef58095b4cd2028"
+checksum = "628bfdf232daa22b0d64fdb62b09fcc36bb01f05a3939e20ab73aaf9470d0463"
 
 [[package]]
 name = "windows_x86_64_msvc"
@@ -2032,6 +2021,6 @@ checksum = "5e4d40883ae9cae962787ca76ba76390ffa29214667a111db9e0a1ad8377e809"
 
 [[package]]
 name = "windows_x86_64_msvc"
-version = "0.42.0"
+version = "0.42.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f40009d85759725a34da6d89a94e63d7bdc50a862acf0dbc7c8e488f1edcb6f5"
+checksum = "447660ad36a13288b1db4d4248e857b510e8c3a225c822ba4fb748c0aafecffd"

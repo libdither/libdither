@@ -1,5 +1,7 @@
+#![allow(incomplete_features)]
 #![feature(try_blocks)]
-#![feature(str_split_as_str)]
+#![feature(generic_const_exprs)]
+#![feature(str_split_remainder)]
 
 use std::{net::{Ipv4Addr, SocketAddr}, io::Write, sync::Arc};
 
@@ -60,7 +62,7 @@ async fn main() -> anyhow::Result<()> {
 							}
 							"data" => {
 								let node_id = split.next().map(|s|s.parse::<NodeID>()).ok_or(anyhow!("Failed to parse NodeID"))??;
-								let data = split.as_str().as_bytes().to_vec();
+								let data = split.remainder().ok_or(anyhow!("Data not passed"))?.as_bytes().to_vec();
 								
 								send_node_action(&mut command_sender, NodeAction::ForwardPacket(node_id, NodePacket::Data(data))).await?;
 							}

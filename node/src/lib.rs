@@ -3,7 +3,6 @@
 #![feature(try_blocks)]
 #![feature(arbitrary_self_types)]
 #![feature(associated_type_bounds)]
-#![feature(map_first_last)]
 
 #[macro_use]
 extern crate thiserror;
@@ -138,8 +137,6 @@ pub struct Node<Net: Network> {
 	addrs: HashMap<Net::Address, RemoteIdx>,
 
 	route_map: SecondaryMap<RemoteIdx, RouteCoord>,
-
-	active: Vec<RemoteIdx>,
 	/// Sorted list of nodes based on how close they are latency-wise, values are squared distances
 	direct_sorted: BTreeMap<u64, RemoteIdx>, // All nodes that have been tested, sorted by lowest value
 }
@@ -162,7 +159,6 @@ impl<Net: Network> Node<Net> {
 			addrs: Default::default(),
 			direct_sorted: Default::default(),
 			route_map: Default::default(),
-			active: Default::default(),
 		}
 	}
 	pub fn remote(&self, node_idx: RemoteIdx) -> Result<&RemoteHandle<Net>, NodeError<Net>> {

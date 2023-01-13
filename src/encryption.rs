@@ -17,7 +17,7 @@ pub enum EncryptionError<Net: Network> {
 /// When connecting to peer, read 
 pub async fn encrypt_outgoing<Net: Network>(mut read: Net::Read, mut write: Net::Write, my_id: &NodeID, connecting_id: &NodeID, connecting_addr: Net::Address) -> Result<Connection<Net>, EncryptionError<Net>> {
 	write.write(my_id.as_bytes()).await?; // Write my NodeID
-	let node_id = NodeID::from_async_reader(&mut read).await?;
+	let node_id = NodeID::from_reader_async(&mut read).await?;
 	if node_id == *connecting_id { // Verify remote ID
 		Ok(Connection { node_id, addr: connecting_addr, read, write })
 	} else {
@@ -28,7 +28,7 @@ pub async fn encrypt_outgoing<Net: Network>(mut read: Net::Read, mut write: Net:
 
 // When handling incoming session, read connecting node_id and write own node_id
 pub async fn encrypt_incoming<Net: Network>(mut read: Net::Read, mut write: Net::Write, my_id: &NodeID, incoming_addr: Net::Address) -> Result<Connection<Net>, EncryptionError<Net>> {
-	let incoming_node_id = NodeID::from_async_reader(&mut read).await.map_err(|_|EncryptionError::BadHash)?;
+	let incoming_node_id = NodeID::from_reader_async(&mut read).await.map_err(|_|EncryptionError::BadHash)?;
 	write.write(my_id.as_bytes()).await?;
 	Ok(Connection { node_id: incoming_node_id, addr: incoming_addr, read, write })
 }
