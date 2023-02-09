@@ -1,4 +1,7 @@
 # Tree of Math
+
+> NOTE: This will be done using Disp instead.
+
 Defining all of math programatically using set theory.
 
 ## Traits

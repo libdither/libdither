@@ -13,7 +13,7 @@ Example: Lets take the wikipedia article for [programming language](https://en.w
 
 > A **programming language** is any set of rules that converts [strings](https://en.wikipedia.org/wiki/Formal_language#Words_over_an_alphabet "Formal language"), or [graphical](https://en.wikipedia.org/wiki/Computer_graphics "Computer graphics") [program](https://en.wikipedia.org/wiki/Computer_program "Computer program") elements in the case of [visual programming languages](https://en.wikipedia.org/wiki/Visual_programming_language "Visual programming language"), to various kinds of [machine code output](https://en.wikipedia.org/wiki/Machine_code "Machine code"). Programming languages are one kind of [computer language](https://en.wikipedia.org/wiki/Computer_language "Computer language"), and are used in [computer programming](https://en.wikipedia.org/wiki/Computer_programming "Computer programming") to implement [algorithms](https://en.wikipedia.org/wiki/Algorithm "Algorithm").
 
-What is a "string"? The layperson might think of a string as a piece of thread. The physicist might think of it in the context of string theory. In this context "strings" really means a string of text. Something that is written with a keyboard, stored in a computer. And heres the problem. We have all this assumed meaning embedded into the word "string" that unless you started from the beginning, it would be difficult to understand anything.
+What is a "string"? The layperson might think of a string as a piece of thread. The physicist might think of it in the context of string theory. In this context "strings" really means a string of text. Something that is written with a keyboard, stored in a computer. And here's the problem. We have all this assumed meaning embedded into the word "string" that unless you started from the beginning, it would be difficult to understand anything.
 
 We will distill `string` down into a simpler form: "a data stucture representing a sequence of characters". 
 
@@ -31,9 +31,10 @@ The word "character" by itself without context has many definitions, but we are 
 In the pure context of writing, a character represents: "a graphic symbol used in writing or printing that represents information".
 
 Lets define a character more abstractly as: "an undividable thing that can be represented in some medium and composed to represent different things"
+
 I know, not super descriptive, but heres what we can do with it:
 `character := something : representable & composable & undividable`
-We do what we do best in language, we define something in terms of what we can do with it. In this case, we use the concept of "types" and we describe some thing that is at the intersection of all these types representing qualities. These types are acting as propositions and we are defining a character as all the things that prove all three propositions. `something` kinda acts like an unbound variable in this sense. See [extending-the-type-hierarchy](disp/extending-the-type-hierarchy.md)
+We do what we do best in language, we define something in terms of what we can do with it. In this case, we use the concept of "types" and we describe some thing that is at the intersection of all these types representing qualities. These types are acting as propositions and we are defining a character as all the things that prove all three propositions. `something` kinda acts like an unbound variable in this sense.
 
 In this manner, we can attempt to describe things in more concrete ways. Eventually to the point where we can describe everything in terms of primitive constructions.
 

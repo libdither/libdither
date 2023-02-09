@@ -41,5 +41,5 @@ Potential Applications:
  - Written out, the total verification function looks like: `Verify(S_accumulated, a_membership_proof, signed_data, a_membership_proof, a_key_hidden_proof) -> Bool`
  - The inputs to the previous verification function are subsequently used to deterministically generate a `K`-dimensional vector with each value selected from a gaussian distribution ranging from 0 to u32::MAX.
  - The vectors are combined using the MIN function for its idempotent properties, and then the estimation function from [this paper](https://repositorium.sdum.uminho.pt/bitstream/1822/33841/2/1143.pdf) is used to estimate the total number of trusted users participating in the census.
- - Once all nodes have added their part to the pie, every node should arrive on the same number for the count!
+ - All nodes broadcast their vectors & verification information and other nodes verify the trusted user proof and if correct, mins their current vector with the new vector. After enough time, every node should arrive at the same number for the count.
 
