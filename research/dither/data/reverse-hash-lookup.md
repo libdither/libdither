@@ -1,34 +1,42 @@
 # Reverse Hash Lookup (WIP)
 
- - This solves the problem of having a hash and wanting to find pieces of data that link to that hash. This is super useful for comment systems and the like.
- - This is a system by which one can find structures that link to a given hash implementing the reverse trait.
- - If there is some pieces of data that links from or adds useful definitions to a given piece of data, this is the place for it. One example of this in practice might be having a comment thread. Each comment is its own Hashtype that contains the hash of the post or a replying comment. In order for someone who has the post structure to find the comments, they would need find all the pieces of data linking to this piece of data (i.e. a Reverse Hash Lookup)
- - To implement this system, there will be a partial binary tree represented by a DAG that can be traversed using the data of the target. (i.e. the post structure's hash). Then the tree can be traversed down using consecutive trail searches. Until a list of all known linked hashes is found. These structures must contain a specific trait called a RevHash to be able to be validated onto the distributed tree. The addition of new links to this tree is done through an implementation of Dither Chain Consensus (see the [#Dither Consensus Chains](#dither-consensus-chains) section).
+Directed Acyclic Graph data structures (DAGs) may be elegant for storing and linking pieces of data, but they don't provide any kind of mutability on their own. This is the purpose of the Reverse Hash Lookup (RHL). RHL allows you to create a piece of data that links to two or more other pieces of data (via hash-linking) *and then lookup the link given one of the linked pieces of data*.
 
-Allows for finding what structures link to a given structure.
+## Structure
 
-Example: Someone can find a comment that links to a post, just given the hash of the post.
+RHL has many different ways to solve the two problems of distributing links and finding links. (Links here being pieces of data containing the hash of some other object that is being "linked to"). Links could be shared only with friends or trusted individuals, links could be broadcast all over the network and re-stored by other nodes, links could be stored in blockchains or link maps maintained by centralized servers, etc. All these different use-cases may be useful for different applications, so RHL tries to generalize over all possible use-cases.
 
-# IDEAS TO ADD
-Keep track of the number of child nodes for each node in the tree so you can merge reverse hash lookup trees easily in a peer-to-peer fashion which means consensus can be less rigourous.
 
-## General Structure
+Ideas:
+ - A Link defines its own methods of distribution and search. (Perhaps embedded as a hashtype).
 
-A binary hash-linked search tree stored in a decentralized fashion with [DTS](../routing/directional-trail-search.md) that maps a given hash to object that contains that hash. Hashes are agreed upon in a decentralized manner, but direct consensus is assured, and a pubsub system helps speed up consensus for high-activity hashes.
+### Methods of Distribution & Search
 
-## Specific Structure
+ - A link can be broadcast to some set of trusted nodes (friend group), queries are done by asking friends if they have registered any links to an object.
+ - A link can be registered in some sort of global consensus
+   - Central server(s) store any links that are uploaded and respond to queries
+   - Blockchain storing links (all "full" nodes store all links), queries done locally
+   - Global Binary Tree mapping hashes to links (less space, more network activity when searching)
+ - A link can be broadcast via a publish-subscribe system and exist ephemerally, find beliefs by constantly listening on a topic (or to the entire network).
 
-### Tree
- - The goal for this tree is for nodes to contain as little information as possible so that large portions of the tree can be sent at once.
- - A Binary Tree contains `Branch`es and `Node`s. For this structure, each one will be its own self-defining structure. Each node will contain
- - Binary Tree, contains
+## Potential Applications
 
-### Traits
+This kinda of system is useful as a basis for other systems that need to link disparate pieces of data together for the purposes of querying or consensus. Here are just a few examples of the systems that RHL could enable:
 
- - `Node<T, L>` - Nodes of the tree
-   - `subnodes: List<T, L>` - subnodes of this node
- - `Leaf` - 
+ - [Comment systems](../../applications/dithca.md). Each comment is a piece of data signed by some individual. Links can created over the comments that allow for querying some subset of all the comments, i.e. `top comments` or `set of all comments` or `comments from friends`. These links themselves may be immutable, but can be joined together via other links in a chain where the newest link in the chain is the most up-to-date view of the comment system.
+ - [Web of Beliefs](../../applications/web-of-beliefs.md). A justification / rule links two beliefs together and beliefs may be private or publicly shared and distributed. Beliefs justified by some rule sets may be more propagated than others (i.e. scientific beliefs). Or beliefs can be accepted or rejected based on arbitrary social conditions like "what proportion of my friends hold belief x?" (Such as is the case with names). Multiple conflicting beliefs can be held at once, such as if it is not clear which one should be accepted as default (or there are uses for both beliefs in different context, such as with definitions).
+ - [Anonymous Interactions](zero-knowledge-proofs.md#example-trusted-user-distributed-anonymous-count). Links could be generated ephemerally to prove that a public key in some trusted set of public keys interacted with a piece of content in some manner, and then added to some hyperloglog or statistical counter.
 
- - This is a system by which one can find structures that link to a given hash implementing the reverse trait.
- - If there is some pieces of data that links from or adds useful defintions to a given piece of data, this is the place for it. One example of this in practice might be having a comment thread. Each comment is its own Hashstruct that contains the hash of the post or a replying comment. In order for someone who has the post structure to find the comments, they would need find all the pieces of data linking to this piece of data (i.e. a Reverse Hash Lookup)
- - To implement this system, there will be a partial binary tree represented by a DAG that can be traversed using the data of the target. (i.e. the post structure's hash). Then the tree can be traversed down using consecutive trail searches. Until a list of all known linked hashes is found. These structures must contain a specific trait called a RevHash to be able to be validated onto the distributed tree. The addition of new links to this tree is done through an implementation of Dither Chain Consensus (see the [#Dither Consensus Chains](#dither-consensus-chains) section).
+
+## Specification Ideas
+
+Disp type `Link<Type>` is implemented for whatever hash type is used in the specific link needed. i.e.
+
+For a link to be type-valid, the objects it links to must also be the correct type. Zero-knowledge proofs could be used for this application in the future to avoid unnecessary fetching.
+
+```
+struct Link<T: Type> {
+  hash: Multihash,
+  valid_link: (fetch(hash) : T)
+}
+```
