@@ -74,7 +74,7 @@ impl<Coord: CoordinateType, const ADAPT_CONST: f64, const ERROR_CONST: f64> Node
 
     type RemoteState = AdaptiveCoordinatorRemoteState<Coord>;
 
-    fn update(&mut self, remotes: impl Iterator<Item = &mut Self::RemoteState>) {
+    fn update<'a>(&mut self, remotes: impl Iterator<Item = &'a mut Self::RemoteState>) {
         for remote in remotes {
             // Algorithm as found here: https://pdos.csail.mit.edu/papers/vivaldi:sigcomm/paper.pdf#page=4
 

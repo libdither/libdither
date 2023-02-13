@@ -8,10 +8,7 @@ edition = "2021"
 [dependencies]
 # Async
 async-std = "1.12.0"
-futures = "0.3.25"
-
-# Data
-bevy_ecs = "0.9.1"
+futures = "0.3.26"
 thiserror = "1.0.38"
 eyre = "0.6.8"
 
@@ -20,3 +17,14 @@ rkyv = { version = "0.7.39", features = ["validation"] } # Zero-Copy Serializati
 bytecheck = "0.6.9"
 rkyv_codec = "0.3.1"
 unsigned-varint = "0.7.1"
+bevy_ecs = "0.9.1"
+
+# Other Serialization
+serde = "1.0.152"
+
+# Other
+hashdb = { git = "https://github.com/libdither/disp" }
+nalgebra = { version = "0.32.1", features = ["rkyv-serialize"] }
+num = "0.4.0"
+log = "0.4.17"
+derive_more = "0.99.17"

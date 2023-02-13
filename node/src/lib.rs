@@ -1,14 +1,223 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
+#![allow(dead_code)]
+#![feature(async_fn_in_trait)]
+#![feature(return_position_impl_trait_in_trait)]
+
+pub mod session;
+mod net;
+mod packet;
+// mod coordinator;
+
+use std::collections::HashMap;
+
+use async_std::task;
+use futures::{channel::mpsc::{unbounded, self, UnboundedSender}, StreamExt};
+use session::*;
+pub use net::*;
+pub use packet::*;
+
+type NetworkCoord = nalgebra::SVector<f64, 3>;
+
+use bevy_ecs::prelude::*;
+
+/// Multihash that uniquely identifying a node (represents the Multihash of the node's Public Key)
+type NodeID = hashdb::Hash;
+
+#[derive(Component)]
+struct Remote {
+	id: NodeID,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[derive(Component)]
+struct Connected<Net: Network> {
+	action_sender: UnboundedSender<SessionAction<Net>>,
+}
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+/// Actions that can be run by an external entity (either the internet implementation or the user)
+#[derive(Debug)]
+pub enum NodeAction<Net: Network> {
+	/// Connect to another node
+	Connect(NodeID, Net::Address, Option<Net::NodePubKey>),
+	
+	/// Send arbitrary packet to Remote
+	ForwardPacket(NodeID, NodePacket<Net>),
+
+	/// Find node at or near specific coordinates in the network that is willing to be a router.
+	FindRouter(NetworkCoord),
+
+	/// Establish Onion-route
+	EstablishRoute(Vec<NodeID>),
+
+	/// Print Node info to stdout
+	PrintNode,
+}
+
+/// Contains ECS and Network implementation
+pub struct Node<Net: Network> {
+	world: World,
+	_listen_addr: Net::Address,
+}
+
+#[derive(Default, Resource)]
+pub struct RemoteIDMap {
+	map: HashMap<NodeID, Entity>,
+}
+#[derive(Resource)]
+pub struct NodeConfig<Net: Network> {
+	private_key: Net::NodePrivKey,
+	public_key: Net::NodePubKey,
+	node_id: NodeID,
+	listen_addrs: Vec<Net::Address>,
+}
+impl<Net: Network> From<&NodeConfig<Net>> for NetConfig<Net> {
+    fn from(value: &NodeConfig<Net>) -> Self {
+        NetConfig {
+            private_key: value.private_key.clone(),
+            public_key: value.public_key.clone(),
+            listen_addrs: value.listen_addrs.clone(),
+        }
     }
+}
+
+impl<Net: Network> Node<Net> {
+	pub fn new(config: NodeConfig<Net>) -> Self {
+		let mut world = World::new();
+		world.init_resource::<RemoteIDMap>();
+		world.insert_resource::<NodeConfig<Net>>(config);
+
+		Self {
+			world,
+			_listen_addr: config.listen_addrs[0]
+		}
+	}
+	/// Runs the event loop of the node. This should be spawned in its own task.
+	pub async fn run(&mut self, mut action_receiver: mpsc::Receiver<NodeAction<Net>>) -> Result<(), Net::ConnectionError> {
+		let config = self.world.get_resource::<NodeConfig<Net>>().unwrap();
+		let (network, mut connection_stream) = Net::init(config.into()).await?;
+		self.world.insert_resource(network);
+
+		// Create a new Schedule, which defines an execution strategy for Systems
+		let mut schedule = Schedule::default();
+
+		// Stages in this ECS
+		#[derive(StageLabel)]
+		pub enum Stages {
+			MainUpdate,
+		}
+
+		// Main stage, runs after event update stage
+		let main = SystemStage::parallel();
+		//main.add_system(handle_session_events::<Net>);
+		schedule.add_stage_after(Stages::MainUpdate, Stages::MainUpdate, main);
+
+		// Session threads send events to main ECS thread through this channel
+		let (entity_event_sender, mut entity_event_receiver) = unbounded::<EntitySessionEvent<Net>>();
+
+		// Main event loop, awaits multiple futures (timers, session events, etc.) and runs the ECS schedule once
+		loop {
+			// Wait for events and handle them by updating world.
+			futures::select! {
+				event = entity_event_receiver.next() => {
+					if let Some(event) = event {
+						Self::handle_session_events(&mut self.world, event);
+					} else { break }
+				}
+				action = action_receiver.next() => {
+					if let Some(action) = action {
+						self.handle_node_action(action).await;
+					}
+				}
+				conn = connection_stream.next() => {
+					match conn{
+						Some(Ok(conn)) => self.handle_connection(conn, entity_event_sender.clone()),
+						Some(Err(err)) => log::error!("Incoming Connection Failed: {err}"),
+						_ => {},
+					}
+					
+				}
+				complete => break,
+			}
+			
+
+			// Run schedule with updated world
+			schedule.run(&mut self.world);
+		}
+
+		Ok(())
+	}
+	// Update the world based on events from active session threads.
+	fn handle_session_events(world: &mut World, session_event: EntitySessionEvent<Net>) {
+		let EntitySessionEvent { entity_id, event } = session_event;
+		match event {
+			SessionEvent::UpdateSessionComponent(session) => {
+				world.entity_mut(entity_id).insert(session);
+			},
+			SessionEvent::Packet(_) => todo!(),
+		}
+	}
+	async fn handle_node_action(&mut self, action: NodeAction<Net>) {
+		match action {
+			NodeAction::Connect(remote_id, remote_addr, pub_key) => {
+				let entity = self.world.resource::<RemoteIDMap>().map.get(&remote_id).cloned();
+				// Check if NodeID already registered in world. (Using HashMap mapping NodeID to Entity)
+				let (pub_key, persistent_state) = if let Some(entity) = entity {
+					// Check if already connected, if so no need to connect again.
+					if self.world.get::<Connected<Net>>(entity).is_some() {
+						log::info!("NodeAction: Connect: Already Connected to Remote: {remote_id:?}");
+						return;
+					}
+
+					// Check if Session exists and if so, also if the pub_key matches.
+					let persistent_state = if let Some(session) = self.world.get::<Session<Net>>(entity) {
+						if session.net_address != remote_addr {
+							log::info!("NodeAction: Connect: Connecting to a different remote address than from previous Session")
+						}
+						session.persistent_state.clone()
+					} else { None };
+					
+					(pub_key, persistent_state)
+				} else {
+					// If NodeID not registered, register it
+					let entity = self.world.spawn(Remote { id : remote_id.clone() } ).id();
+					self.world.resource_mut::<RemoteIDMap>().map.insert(remote_id.clone(), entity);
+
+					(pub_key, None)
+				};
+				self.world.resource::<Net>().connect(remote_id, remote_addr, pub_key, persistent_state);
+			},
+			NodeAction::PrintNode => todo!(),
+			NodeAction::ForwardPacket(_, _) => todo!(),
+			NodeAction::EstablishRoute(_) => todo!(),
+   			NodeAction::FindRouter(_) => todo!(),
+		}
+	}
+	fn handle_connection(&mut self, connection: Connection<Net>, session_event_sender: UnboundedSender<EntitySessionEvent<Net>>) {
+		let remote_id = NodeID::hash(connection.remote_pub_key.as_ref());
+		let entity = self.world.resource::<RemoteIDMap>().map.get(&remote_id).cloned();
+
+		// Session component
+		let session = Session::<Net> {
+			net_address: connection.net_address,
+			remote_pub_key: Some(connection.remote_pub_key),
+			persistent_state: Some(connection.persistent_state),
+		};
+		
+		// Session events
+		let (action_sender, action_receiver) = unbounded();
+		task::spawn(async move {
+			Session::run(connection, entity, session_event_sender, action_receiver).await;
+		});
+		
+		let connected = Connected { action_sender };
+
+		if let Some(entity) = entity {
+			let mut entity = self.world.entity_mut(entity);
+			entity.insert((session, connected));
+		} else {
+			self.world.spawn((Remote { id: remote_id }, session, connected));
+		}
+	}
+}
+
+fn network_coordinate_system() {
+
 }

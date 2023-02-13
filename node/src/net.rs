@@ -2,15 +2,15 @@
 //! A Node should be able to work in any kind of network. simulated or not. This file provides the basic structures that any network implementation will use to interact with a Node, in addition to any structures a User will use to interact with the network implementation and by extension, the Node.
 
 use std::fmt;
-use bevy_ecs::prelude::Component;
+use bevy_ecs::{prelude::Component, system::Resource};
 use bytecheck::CheckBytes;
 use futures::{AsyncRead, AsyncWrite, Stream, stream::FusedStream};
-use rkyv::{Serialize, Archive, ser::{Serializer, serializers::{CompositeSerializer, AlignedSerializer, FallbackScratch, HeapScratch, AllocScratch, SharedSerializeMap}}, Deserialize, AlignedVec, validation::validators::DefaultValidator, Infallible};
+use rkyv::{Serialize, Archive, ser::{serializers::{CompositeSerializer, AlignedSerializer, FallbackScratch, HeapScratch, AllocScratch, SharedSerializeMap}}, Deserialize, AlignedVec, validation::validators::DefaultValidator, Infallible};
 
 use crate::NodeID;
 
 /// Trait that establishes encrypted connection to another computer
-pub trait Network: Clone + 'static {
+pub trait Network: Resource + Clone + 'static {
 	/// Address used to establish a connection with some other node over a network.
 	type Address: Clone + PartialEq + Eq + std::hash::Hash + fmt::Debug + fmt::Display + for<'de> serde::Deserialize<'de> + serde::Serialize
 	+ for<'b> Serialize<CompositeSerializer<AlignedSerializer<&'b mut AlignedVec>, FallbackScratch<HeapScratch<256_usize>, AllocScratch>, SharedSerializeMap>>
@@ -32,19 +32,26 @@ pub trait Network: Clone + 'static {
 	/// Error emitted by encrypted transport protocol when establishing connection
 	type ConnectionError: std::error::Error + Send + Sync + fmt::Debug + fmt::Display;
 
-	/// Listens for new connections on listen_addr. Returns a stream of `Connection`s. If the stream is dropped, the implementation must ensure everything is cleaned up.
-	async fn listen(listen_addr: Self::Address) -> Result<impl Stream<Item = Result<Connection<Self>, Self::ConnectionError>> + Unpin + FusedStream, Self::ConnectionError>;
+	/// Initiates the network with some Config. Returns Self as a handle as well as a stream of `Connection`s. If the stream is dropped, the implementation must ensure everything is cleaned up.
+	async fn init(config: NetConfig<Self>) -> Result<(Self, impl Stream<Item = Result<Connection<Self>, Self::ConnectionError>> + Unpin + FusedStream), Self::ConnectionError>;
 
-	/// Establish two-way connection with remote
-	async fn connect(
-		self_id: &NodeID,
-		self_pub_key: &Self::NodePubKey,
-		self_private_key: &Self::NodePrivKey,
-		remote_id: &NodeID,
-		net_address: &Self::Address,
+	/// Establish two-way connection with remote, returns immediately.
+	fn connect(
+		&self,
+		remote_id: NodeID,
+		net_address: Self::Address,
 		remote_pub_key: Option<Self::NodePubKey>,
 		persistent_state: Option<Self::PersistentState>,
-	) -> Result<Connection<Self>, Self::ConnectionError>;
+	);
+
+	/// Listen to some new set of addresses
+	fn listen(&self, addrs: impl Iterator<Item = Self::Address>);
+}
+
+pub struct NetConfig<Net: Network> {
+	private_key: Net::NodePrivKey,
+	public_key: Net::NodePubKey,
+	listen_addrs: Vec<Net::Address>,
 }
 
 /// Represents an encrypted two-way bytestream to another computer, identified by its NodeID and arbitrary network address.

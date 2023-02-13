@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 #![feature(try_blocks)]
+#![feature(async_fn_in_trait)]
 #![feature(io_error_more)]
 
 #[macro_use]
@@ -7,42 +8,24 @@ extern crate thiserror;
 
 use std::net::SocketAddr;
 
-use encryption::EncryptionError;
 use futures::{StreamExt, channel::mpsc, SinkExt, FutureExt};
 use async_std::{net::{TcpListener, TcpStream}, task};
+use net_tcp_noenc::TcpNoenc;
 use rkyv::Archived;
 
-use node::net::Network;
-pub use node::{self, Node, NodeAction, NodePacket, net::{NetAction, NetEvent, UserAction, UserEvent, Connection}};
+use node::{Network, Node};
+pub use node::{self, NodePacket};
 
 pub mod commands;
-pub mod encryption;
+pub mod net_tcp_noenc;
 pub use commands::{DitherCommand, DitherEvent};
 
-#[derive(Error, Debug)]
-pub enum TransportError {
-	#[error("failed to establish encrypted connection: {0}")]
-	EncryptionError(#[from] EncryptionError<DitherNet>),
-	#[error("io error: {0}")]
-	IoError(#[from] std::io::Error),
-}
+type DitherNet = TcpNoenc;
 
 pub struct DitherCore {
 	stored_node: Option<Node<DitherNet>>,
-	node_network_receiver: mpsc::Receiver<NetAction<DitherNet>>,
-	node_network_sender: mpsc::Sender<NetAction<DitherNet>>,
 	listen_addr: Address,
 	event_sender: mpsc::Sender<DitherEvent>,
-}
-
-#[derive(Debug, Clone)]
-pub struct DitherNet;
-impl Network for DitherNet {
-	type Address = SocketAddr;
-	type ArchivedAddress = Archived<Self::Address>;
-	type Read = TcpStream;
-	type Write = TcpStream;
-	type ConnectionError = TransportError;
 }
 
 pub type Address = <DitherNet as Network>::Address;
@@ -50,13 +33,11 @@ pub type Address = <DitherNet as Network>::Address;
 impl DitherCore {
 	pub fn init(listen_addr: Address) -> anyhow::Result<(DitherCore, mpsc::Receiver<DitherEvent>)> {
 		let (node_network_sender, node_network_receiver) = mpsc::channel(20);
-		let node = Node::<DitherNet>::new(Node::<DitherNet>::gen_id());
+		let node = Node::<DitherNet>::new(net_tcp_noenc::TcpNoenc {});
 		
 		let (event_sender, dither_event_receiver) = mpsc::channel(20);
 		let core = DitherCore {
 			stored_node: Some(node),
-			node_network_receiver,
-			node_network_sender,
 			listen_addr,
 			event_sender,
 		};
@@ -64,18 +45,25 @@ impl DitherCore {
 		Ok((core, dither_event_receiver))
 	}
 	pub async fn run(mut self, mut dither_command_receiver: mpsc::Receiver<DitherCommand>) -> anyhow::Result<Self> {
-		let listener = TcpListener::bind(self.listen_addr).await?;
-		let local_addr = listener.local_addr()?;
-		log::debug!("Listening on: {:?}", local_addr);
-		let mut incoming = listener.incoming();
-		
-		let ((node_join, mut node_action_sender), my_node_id) = if let Some(mut node) = self.stored_node {
+
+		let mut node = self.stored_node.take().ok_or_else(||anyhow::anyhow!("no node initiated"))?;
+		let join = task::spawn(async move {
+			node.run().await;
+			node
+		});
+
+		self.stored_node = Some(join.await);
+
+		Ok(self)
+
+
+		/* let ((node_join, mut node_action_sender), my_node_id) = if let Some(mut node) = self.stored_node {
 			node.local_addr = Some(local_addr);
 			let node_id = node.node_id.clone();
 			(node.spawn(self.node_network_sender.clone()), node_id)
-		} else { Err(anyhow::anyhow!("No stored node"))? };
+		} else { Err(anyhow::anyhow!("No stored node"))? }; */
 		
-		let node_network_receiver = &mut self.node_network_receiver;
+		/* let node_network_receiver = &mut self.node_network_receiver;
 		loop {
 			futures::select! {
 				dither_command = dither_command_receiver.next()  => {
@@ -107,7 +95,7 @@ impl DitherCore {
 									let _ = task::spawn(async move {
 										let result: Result<Connection<DitherNet>, TransportError> = try {
 											let conn = TcpStream::connect(addr.clone()).await?;
-											encryption::encrypt_outgoing(conn.clone(), conn, &my_node_id, &node_id, addr).await?
+											net_tcp_noise::encrypt_outgoing(conn.clone(), conn, &my_node_id, &node_id, addr).await?
 										};
 										action_sender.send(NodeAction::NetEvent(NetEvent::ConnectResponse(result))).await.unwrap();
 									});
@@ -131,7 +119,7 @@ impl DitherCore {
 						let result: Result<Connection<DitherNet>, TransportError> = try {
 							let stream = tcp_stream?;
 							let addr = stream.peer_addr()?;
-							let conn = encryption::encrypt_incoming(stream.clone(), stream, &my_node_id, addr).await?;
+							let conn = net_tcp_noise::encrypt_incoming(stream.clone(), stream, &my_node_id, addr).await?;
 							log::debug!("Incoming connection: {:?}", conn);
 							conn
 						};
@@ -152,7 +140,7 @@ impl DitherCore {
 		
 		self.stored_node = Some(node_join.await);
 
-		Ok(self)
+		Ok(self) */
 	}
 }
 

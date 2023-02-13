@@ -33,7 +33,7 @@ pub enum DitherCommand {
 	EstablishRoute(RouteCoord, u8), // Establish number of hops  */
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+/* #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum DitherEvent {
 	NodeInfo(node::net::NodeInfo<DitherNet>)
 	/* Bootstrap(NodeID, node::net::Address),
@@ -52,4 +52,4 @@ pub enum DitherEvent {
 	GetRemote(NodeID),
 
 	EstablishRoute(RouteCoord, u8), // Establish number of hops  */
-}
+} */
