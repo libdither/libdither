@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use async_std::sync::RwLock;
+use async_std::{sync::RwLock, task};
 use bevy_ecs::prelude::*;
-use futures::{select, channel::mpsc::{UnboundedSender, UnboundedReceiver}, SinkExt};
+use futures::{select, channel::mpsc::{UnboundedSender, UnboundedReceiver, unbounded}, SinkExt, StreamExt};
 use rkyv::Deserialize;
 use thiserror::Error;
 
@@ -13,7 +13,6 @@ pub struct EntitySessionEvent<Net: Network> {
 	pub event: SessionEvent<Net>,
 }
 pub enum SessionEvent<Net: Network> {
-	UpdateSessionComponent(Session<Net>),
 	Packet(Box<NodePacket<Net>>),
 }
 
@@ -33,25 +32,53 @@ pub enum SessionError<Net: Network> {
 
 /// Component that represents data required to connect to a remote node.
 #[derive(Component, Clone)]
-pub struct Session<Net: Network> {
+pub struct SessionInfo<Net: Network> {
 	pub net_address: Net::Address,
 	pub remote_pub_key: Option<Net::NodePubKey>,
 	pub persistent_state: Option<Net::PersistentState>,
 }
+
+#[derive(Component)]
+struct Session<Net: Network> {
+	action_sender: UnboundedSender<SessionAction<Net>>,
+}
+
 impl<Net: Network> Session<Net> {
+	pub fn spawn(connection: Connection<Net>, entity_id: Entity, session_event_sender: UnboundedSender<EntitySessionEvent<Net>>) -> Session<Net> {
+		
+		// Session action sender
+		let (action_sender, action_receiver) = unbounded();
+		// Spawn session task with connection
+		task::spawn(async move {
+			if let Err(err) = Self::run(connection, entity_id, session_event_sender, action_receiver).await {
+				log::warn!("Session closed with error: {err}")
+			}
+		});
+		Session { action_sender }
+	}
 	/// Run `Session` with network `Connection`
 	pub async fn run(conn: Connection<Net>, entity_id: Entity, mut event_sender: UnboundedSender<EntitySessionEvent<Net>>, action_receiver: UnboundedReceiver<SessionAction<Net>>) -> Result<(), SessionError<Net>> {
 	
 		let (mut packet_read, packet_write) = (PacketRead::<Net>::new(conn.read), PacketWrite::<Net>::new(conn.write));
 	
 		loop {
-			if let Ok(packet) = packet_read.read_packet().await {
-				let pinging_packet: PingingNodePacket<Net> = packet.deserialize(&mut rkyv::Infallible).unwrap();
+			futures::select! {
+				packet = packet_read.read_packet().fuse() => {
+					let pinging_packet: PingingNodePacket<Net> = packet.deserialize(&mut rkyv::Infallible).unwrap();
 				
-				let event = SessionEvent::Packet(Box::new(pinging_packet.packet));
-	
-				event_sender.send(EntitySessionEvent { entity_id, event }).await?;
+					let event = SessionEvent::Packet(Box::new(pinging_packet.packet));
+		
+					event_sender.send(EntitySessionEvent { entity_id, event }).await?;
+				}
+				action = action_receiver.next() => {
+					if let Some(action) = action {
+						Self::handle_session_action(action, &mut packet_write).await?;
+					}
+				}
 			}
 		}
+	}
+	pub async fn handle_session_action(action: SessionAction<Net>, packet_write: &mut PacketWrite<Net>) -> Result<(), SessionError<Net>> {
+		
 	}
 }

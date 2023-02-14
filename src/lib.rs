@@ -6,19 +6,16 @@
 #[macro_use]
 extern crate thiserror;
 
-use std::net::SocketAddr;
-
 use futures::{StreamExt, channel::mpsc, SinkExt, FutureExt};
-use async_std::{net::{TcpListener, TcpStream}, task};
+use async_std::{task};
 use net_tcp_noenc::TcpNoenc;
-use rkyv::Archived;
 
 use node::{Network, Node};
 pub use node::{self, NodePacket};
 
 pub mod commands;
 pub mod net_tcp_noenc;
-pub use commands::{DitherCommand, DitherEvent};
+pub use commands::{DitherCommand};
 
 type DitherNet = TcpNoenc;
 

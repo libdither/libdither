@@ -49,9 +49,9 @@ pub trait Network: Resource + Clone + 'static {
 }
 
 pub struct NetConfig<Net: Network> {
-	private_key: Net::NodePrivKey,
-	public_key: Net::NodePubKey,
-	listen_addrs: Vec<Net::Address>,
+	pub private_key: Net::NodePrivKey,
+	pub public_key: Net::NodePubKey,
+	pub listen_addrs: Vec<Net::Address>,
 }
 
 /// Represents an encrypted two-way bytestream to another computer, identified by its NodeID and arbitrary network address.
