@@ -24,33 +24,26 @@ pub struct PingingNodePacket<Net: Network> {
 #[archive(bound(serialize = "__S: rkyv::ser::ScratchSpace + rkyv::ser::Serializer"))]
 #[archive_attr(derive(CheckBytes, Debug), check_bytes(bound = "__C: rkyv::validation::ArchiveContext, <__C as rkyv::Fallible>::Error: bytecheck::Error"))]
 pub enum NodePacket<Net: Network> {
-	/// Bootstrap off of a node
-	Bootstrap {
-		requester: NodeID,
+	/// Sent by a node that is looking for new nodes to connect to, usually nodes that have recently joined the network.
+	/// Received by direct peer of sender node, request contains sender's best approximation of its own Network Coordinates.
+	/// Receiver node will send WantPeer packets to some subset of its peers
+	RequestPeer {
+		near: NetworkCoord,
 	},
 
-	/// Tell another node my info
-	Info {
-		route_coord: NetworkCoord,
-		active_peers: usize,
-		active: bool,
-		prompting_node: Option<NodeID>,
-	},
-
-	/// Request a certain number of another node's peers that are closest to this node to make themselves known
-	RequestPeers {
-		nearby: Vec<(NetworkCoord, usize)>
-	},
-
-	/// Notify peer near `requesting` that the `requesting` node is looking for a peer.
+	/// Sent by a node that receives a RequestPeers request to multiple nodes
+	/// Notify peer near requester that the `requester` node is looking for a peer.
 	WantPeer {
-		requesting: NodeID,
-		addr: Net::Address
+		requester_id: NodeID,
+		requester_addr: Net::Address
+	},
+	/// Send back 
+	AlreadyPeered {
+		requester_id: NodeID,
 	},
 
 	/// `Ack` packet
 	/// used to respond to acknowledge packets if there is no other suitable acknowledgement packet.
-	Ack,
 
 	/// Raw Data Packet
 	Data(Vec<u8>),

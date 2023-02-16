@@ -1,13 +1,14 @@
 #![allow(dead_code)]
 #![feature(async_fn_in_trait)]
 #![feature(return_position_impl_trait_in_trait)]
+#![feature(generic_const_exprs)]
 
 pub mod session;
 mod net;
 mod packet;
 // mod coordinator;
 
-use std::collections::HashMap;
+use std::{collections::{HashMap, VecDeque}, time::Duration};
 
 use async_std::task;
 use futures::{channel::mpsc::{unbounded, self, UnboundedSender}, StreamExt};
@@ -15,7 +16,8 @@ use session::*;
 pub use net::*;
 pub use packet::*;
 
-type NetworkCoord = nalgebra::SVector<f64, 3>;
+type Latency = u32;
+type NetworkCoord = nalgebra::SVector<i64, 3>;
 
 use bevy_ecs::prelude::*;
 
@@ -65,13 +67,13 @@ pub struct NodeConfig<Net: Network> {
 	listen_addrs: Vec<Net::Address>,
 }
 impl<Net: Network> From<&NodeConfig<Net>> for NetConfig<Net> {
-    fn from(value: &NodeConfig<Net>) -> Self {
-        NetConfig {
-            private_key: value.private_key.clone(),
-            public_key: value.public_key.clone(),
-            listen_addrs: value.listen_addrs.clone(),
-        }
-    }
+	fn from(value: &NodeConfig<Net>) -> Self {
+		NetConfig {
+			private_key: value.private_key.clone(),
+			public_key: value.public_key.clone(),
+			listen_addrs: value.listen_addrs.clone(),
+		}
+	}
 }
 
 impl<Net: Network> Node<Net> {
@@ -149,7 +151,15 @@ impl<Net: Network> Node<Net> {
 	fn handle_session_events(world: &mut World, session_event: EntitySessionEvent<Net>) {
 		let EntitySessionEvent { entity_id, event } = session_event;
 		match event {
-			SessionEvent::Packet(_) => todo!(),
+			SessionEvent::Packet(packet) => match *packet {
+				NodePacket::RequestPeer { near } => todo!(),
+				NodePacket::WantPeer { requester_id, requester_addr } => todo!(),
+				_ => unimplemented!(),
+			}
+			SessionEvent::LatencyMeasurement(measurement) => {
+				// Update latest measured latency to new latency measurement
+				world.entity_mut(entity_id).insert(LatestMeasuredLatency(measurement));
+			},  
 		}
 	}
 	async fn handle_node_action(&mut self, action: NodeAction<Net>) {
@@ -185,43 +195,71 @@ impl<Net: Network> Node<Net> {
 			NodeAction::PrintNode => todo!(),
 			NodeAction::ForwardPacket(_, _) => todo!(),
 			NodeAction::EstablishRoute(_) => todo!(),
-   			NodeAction::FindRouter(_) => todo!(),
+				 NodeAction::FindRouter(_) => todo!(),
 		}
 	}
 	fn handle_connection(&mut self, connection: Connection<Net>, session_event_sender: UnboundedSender<EntitySessionEvent<Net>>) {
+		// Derive remote ID
 		let remote_id = NodeID::hash(connection.remote_pub_key.as_ref());
+
+		// Search RemoteIDMap for entity given NodeID
 		let entity = self.world.resource::<RemoteIDMap>().map.get(&remote_id).cloned();
 
-		// Session component
-		let session = SessionInfo::<Net> {
+		// Create Session info
+		let session_info = SessionInfo::<Net> {
 			net_address: connection.net_address.clone(),
 			remote_pub_key: Some(connection.remote_pub_key.clone()),
 			persistent_state: Some(connection.persistent_state.clone()),
 		};
-		
-		let connected = Session { action_sender };
 
-		let entity = if let Some(entity_id) = entity {
+		// Create new or Update relevant entity SessionInfo
+		let entity_id = if let Some(entity_id) = entity {
 			let mut entity = self.world.entity_mut(entity_id);
-			entity.insert((session, connected));
+			entity.insert(session_info);
 			entity_id
 		} else {
-			self.world.spawn((Remote { id: remote_id }, session, connected)).id()
+			self.world.spawn((Remote { id: remote_id }, session_info)).id()
 		};
 
-		
+		// Spawn session
+		self.world.entity_mut(entity_id).insert(
+			Session::spawn(connection, entity_id, session_event_sender)
+		);
+	
 	}
 }
 
 #[derive(Debug, Component)]
-struct LatencyTracker {
+pub struct LatestMeasuredLatency(Duration);
 
+#[derive(Debug, Default, Component)]
+pub struct LatencyMetrics {
+	latencies: VecDeque<u64>,
+	min_latency: u64,
+}
+impl LatencyMetrics {
+	fn register_latency(&mut self, latency: u64) {
+		self.latencies.push_back(latency);
+	}
+	fn min_latency(&self) -> u64 {
+		self.latencies.iter().cloned().min().unwrap_or(u64::MAX)
+	}
 }
 
-fn update_latencies(latencies: Query<LatencyTracker>) {
-
+/// Uses latest measured latency to update latency metrics
+fn update_latencies(mut query: Query<(&mut LatencyMetrics, &LatestMeasuredLatency), Changed<LatestMeasuredLatency>>) {
+	for (mut metrics, latency) in query.iter_mut() {
+		metrics.register_latency(latency.0.as_micros() as u64)
+	}
 }
 
-fn network_coordinate_system() {
+#[derive(Debug, Component)]
+struct Coordinates {
+	in_coord: NetworkCoord,
+	out_coord: NetworkCoord,
+}
+
+/// Uses min latency measurements to calculate network coordinates
+fn network_coordinate_system(mut query: Query<(&mut Coordinates, &LatencyMetrics)>) {
 
 }
