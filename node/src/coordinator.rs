@@ -60,19 +60,19 @@ impl CoordinateType for CoordDDHf64 {
 }
 
 #[derive(Debug, Default)]
-struct AdaptiveCoordinator<Coord: CoordinateType, const ERROR_CONST: f64, const MOVE_CONST: f64 = 0.25> {
+struct VivaldiAdaptiveCoordinator<Coord: CoordinateType, const ERROR_CONST: f64, const MOVE_CONST: f64 = 0.25> {
     coord: Coord,
     error: f64,
 }
-struct AdaptiveCoordinatorRemoteState<Coord: CoordinateType> {
+struct VivaldiAdaptiveCoordinatorRemoteState<Coord: CoordinateType> {
     coord: Coord,
     error: f64,
     measured_distance: f64,
 }
-impl<Coord: CoordinateType, const ADAPT_CONST: f64, const ERROR_CONST: f64> NodeCoordinator for AdaptiveCoordinator<Coord, ERROR_CONST, ADAPT_CONST> {
+impl<Coord: CoordinateType, const ADAPT_CONST: f64, const ERROR_CONST: f64> NodeCoordinator for VivaldiAdaptiveCoordinator<Coord, ERROR_CONST, ADAPT_CONST> {
     type Coord = Coord;
 
-    type RemoteState = AdaptiveCoordinatorRemoteState<Coord>;
+    type RemoteState = VivaldiAdaptiveCoordinatorRemoteState<Coord>;
 
     fn update<'a>(&mut self, remotes: impl Iterator<Item = &'a mut Self::RemoteState>) {
         for remote in remotes {
@@ -103,6 +103,14 @@ impl<Coord: CoordinateType, const ADAPT_CONST: f64, const ERROR_CONST: f64> Node
             self.coord.add((delta * sample_error) * dir);
         }
     }
+}
+
+#[derive(Debug, Default)]
+struct PhoenixCoordinator<const EARLY_HOST_THRESHOLD: usize, const LAMBDA: f64> {
+    
+}
+struct PhoenixCoordinatorRemoteState {
+
 }
 
 fn main() {

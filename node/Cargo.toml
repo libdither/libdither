@@ -28,3 +28,4 @@ nalgebra = { version = "0.32.1", features = ["rkyv-serialize"] }
 num = "0.4.0"
 log = "0.4.17"
 derive_more = "0.99.17"
+nnmf_nalgebra = "0.1.0"

@@ -1,23 +1,25 @@
 #![allow(dead_code)]
+#![allow(incomplete_features)]
 #![feature(async_fn_in_trait)]
 #![feature(return_position_impl_trait_in_trait)]
 #![feature(generic_const_exprs)]
+#![feature(drain_filter)]
 
 pub mod session;
 mod net;
 mod packet;
-// mod coordinator;
+pub mod nc_system;
 
 use std::{collections::{HashMap, VecDeque}, time::Duration};
 
-use async_std::task;
 use futures::{channel::mpsc::{unbounded, self, UnboundedSender}, StreamExt};
 use session::*;
 pub use net::*;
 pub use packet::*;
 
-type Latency = u32;
+type Latency = u64;
 type NetworkCoord = nalgebra::SVector<i64, 3>;
+
 
 use bevy_ecs::prelude::*;
 
@@ -116,7 +118,7 @@ impl<Net: Network> Node<Net> {
 		loop {
 			// Wait for events and handle them by updating world.
 			futures::select! {
-				// Handle session events
+				// Handle events from sessions (i.e. remote packets or latency measurements)
 				event = entity_event_receiver.next() => {
 					if let Some(event) = event {
 						Self::handle_session_events(&mut self.world, event);
@@ -133,13 +135,12 @@ impl<Net: Network> Node<Net> {
 					match conn{
 						Some(Ok(conn)) => self.handle_connection(conn, entity_event_sender.clone()),
 						Some(Err(err)) => log::error!("Incoming Connection Failed: {err}"),
-						_ => {},
+						_ => { log::info!("Connection Stream closed."); break },
 					}
 					
 				}
 				complete => break,
 			}
-			
 
 			// Run schedule with updated world
 			schedule.run(&mut self.world);
@@ -149,16 +150,19 @@ impl<Net: Network> Node<Net> {
 	}
 	// Update the world based on events from active session threads.
 	fn handle_session_events(world: &mut World, session_event: EntitySessionEvent<Net>) {
-		let EntitySessionEvent { entity_id, event } = session_event;
+		let EntitySessionEvent { entity, event } = session_event;
 		match event {
 			SessionEvent::Packet(packet) => match *packet {
 				NodePacket::RequestPeer { near } => todo!(),
 				NodePacket::WantPeer { requester_id, requester_addr } => todo!(),
+				NodePacket::NCSystemPacket(packet) => {
+					nc_system::handle_nc_packet::<Net>(world, entity, packet);
+				}
 				_ => unimplemented!(),
 			}
 			SessionEvent::LatencyMeasurement(measurement) => {
 				// Update latest measured latency to new latency measurement
-				world.entity_mut(entity_id).insert(LatestMeasuredLatency(measurement));
+				world.entity_mut(entity).insert(LatestMeasuredLatency(measurement));
 			},  
 		}
 	}
@@ -236,6 +240,8 @@ pub struct LatestMeasuredLatency(Duration);
 pub struct LatencyMetrics {
 	latencies: VecDeque<u64>,
 	min_latency: u64,
+
+	early_latencies: Option<Vec<(Entity, Latency)>>
 }
 impl LatencyMetrics {
 	fn register_latency(&mut self, latency: u64) {
@@ -251,15 +257,4 @@ fn update_latencies(mut query: Query<(&mut LatencyMetrics, &LatestMeasuredLatenc
 	for (mut metrics, latency) in query.iter_mut() {
 		metrics.register_latency(latency.0.as_micros() as u64)
 	}
-}
-
-#[derive(Debug, Component)]
-struct Coordinates {
-	in_coord: NetworkCoord,
-	out_coord: NetworkCoord,
-}
-
-/// Uses min latency measurements to calculate network coordinates
-fn network_coordinate_system(mut query: Query<(&mut Coordinates, &LatencyMetrics)>) {
-
 }

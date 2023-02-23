@@ -2,14 +2,14 @@ use std::{time::{Instant, Duration}};
 
 use async_std::{task};
 use bevy_ecs::prelude::*;
-use futures::{select, channel::mpsc::{UnboundedSender, UnboundedReceiver, unbounded}, SinkExt, StreamExt, FutureExt};
+use futures::{select, channel::mpsc::{UnboundedSender, UnboundedReceiver, unbounded, self}, SinkExt, StreamExt, FutureExt};
 use rkyv::{Deserialize, Archived};
 use thiserror::Error;
 
 use crate::{Network, NodeID, packet::{PacketRead, PacketWrite}, NodePacket, PingingNodePacket, Connection};
 
 pub struct EntitySessionEvent<Net: Network> {
-	pub entity_id: Entity,
+	pub entity: Entity,
 	pub event: SessionEvent<Net>,
 }
 pub enum SessionEvent<Net: Network> {
@@ -59,6 +59,9 @@ impl<Net: Network> Session<Net> {
 		});
 		Session { action_sender }
 	}
+	pub fn send_packet(&self, packet: NodePacket<Net>) -> Result<(), mpsc::TrySendError<SessionAction<Net>>> {
+		self.action_sender.unbounded_send(SessionAction::Packet(Box::new(packet)))
+	}
 }
 
 struct SessionState<Net: Network> {
@@ -97,7 +100,7 @@ impl<Net: Network> SessionState<Net> {
 				
 		let event = SessionEvent::Packet(Box::new(pinging_packet.packet));
 
-		self.event_sender.send(EntitySessionEvent { entity_id: self.entity_id, event }).await?;
+		self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event }).await?;
 
 		Ok(())
 	}

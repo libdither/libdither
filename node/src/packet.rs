@@ -7,7 +7,7 @@ use futures::SinkExt;
 use rkyv::{AlignedVec, Archive, Archived, Deserialize, Infallible, Serialize, with::Inline};
 use rkyv_codec::{RkyvCodecError, RkyvWriter, VarintLength, archive_stream};
 
-use crate::{net::Network, NetworkCoord};
+use crate::{net::Network, NetworkCoord, Latency, nc_system::NCSystemPacket};
 use super::{NodeID};
 
 /// Acknowledging node packet
@@ -22,7 +22,7 @@ pub struct PingingNodePacket<Net: Network> {
 /// Packets that are sent between nodes in this protocol.
 #[derive(Debug, Archive, Serialize, Deserialize, Clone)]
 #[archive(bound(serialize = "__S: rkyv::ser::ScratchSpace + rkyv::ser::Serializer"))]
-#[archive_attr(derive(CheckBytes, Debug), check_bytes(bound = "__C: rkyv::validation::ArchiveContext, <__C as rkyv::Fallible>::Error: bytecheck::Error"))]
+#[archive_attr(derive(CheckBytes), check_bytes(bound = "__C: rkyv::validation::ArchiveContext, <__C as rkyv::Fallible>::Error: bytecheck::Error"))]
 pub enum NodePacket<Net: Network> {
 	/// Sent by a node that is looking for new nodes to connect to, usually nodes that have recently joined the network.
 	/// Received by direct peer of sender node, request contains sender's best approximation of its own Network Coordinates.
@@ -41,9 +41,8 @@ pub enum NodePacket<Net: Network> {
 	AlreadyPeered {
 		requester_id: NodeID,
 	},
-
-	/// `Ack` packet
-	/// used to respond to acknowledge packets if there is no other suitable acknowledgement packet.
+	// Subpacket for all things network-coordinate-system
+	NCSystemPacket(NCSystemPacket),
 
 	/// Raw Data Packet
 	Data(Vec<u8>),
