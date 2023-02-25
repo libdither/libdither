@@ -8,9 +8,11 @@ use std::{net::{Ipv4Addr, SocketAddr}, io::Write, sync::Arc};
 use anyhow::anyhow;
 use async_std::task;
 use futures::{SinkExt, StreamExt, FutureExt, channel::mpsc};
-use libdither::{NodeAction, NodePacket, DitherCommand, DitherCore, Address};
+use libdither::{NodePacket, DitherCommand, DitherCore, Address};
+use libdither::NodeAction;
 use node::NodeID;
 
+use rand::thread_rng;
 use rustyline_async::{Readline, ReadlineError};
 
 async fn send_node_action(command_sender: &mut mpsc::Sender<DitherCommand>, action: NodeAction<libdither::DitherNet>) -> Result<(), mpsc::SendError> {
@@ -27,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
 		Some(Err(err)) => return Ok(println!("Failed to parse port number: {err}"))
 	};
 	let listen_addr = SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), listen_port);
-	let (core, mut event_receiver) = DitherCore::init(listen_addr)?;
+	let (core, mut event_receiver) = DitherCore::init(listen_addr, &mut thread_rng())?;
 	let (mut command_sender, command_receiver) = mpsc::channel(20);
 	
 	let mut core_join = task::spawn(core.run(command_receiver)).fuse();

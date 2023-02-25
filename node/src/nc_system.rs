@@ -3,12 +3,15 @@ use std::collections::HashMap;
 use bevy_ecs::prelude::*;
 
 use bytecheck::CheckBytes;
-use nalgebra::DMatrix;
+use nalgebra::{DMatrix};
 use rkyv::{Serialize, Archive, Deserialize};
 
-use crate::{NodeID, Latency, LatencyMetrics, NetworkCoord, Remote, session::Session, NodePacket, Network, RemoteIDMap};
+use crate::{NodeID, Latency, LatencyMetrics, Remote, session::Session, NodePacket, Network, RemoteIDMap};
 
 const EARLY_HOSTS_THRESHOLD: usize = 20;
+const COORDINATE_DIMENSIONS: usize = 7;
+
+pub type NetworkCoord = nalgebra::SVector<i64, COORDINATE_DIMENSIONS>;
 
 #[derive(Debug, Archive, Serialize, Deserialize, Clone)]
 #[archive(bound(serialize = "__S: rkyv::ser::ScratchSpace + rkyv::ser::Serializer"))]
@@ -22,7 +25,7 @@ pub fn handle_nc_packet<Net: Network>(world: &mut World, entity: Entity, packet:
     match packet {
         NCSystemPacket::RequestLatencies => {
             // Send back latencies if the network this node knows about is "small".
-            if !world.get_resource::<Coordinates>().unwrap().normal_network {
+            if world.get_resource::<LatencyMatrix>().is_some() {
                 let latencies = world.query::<(Entity, &LatencyMetrics)>()
                     .iter(world)
                     .map(|(e, l)|(world.entity(e).get::<Remote>().unwrap().id.clone(), l.min_latency()))
@@ -35,7 +38,7 @@ pub fn handle_nc_packet<Net: Network>(world: &mut World, entity: Entity, packet:
         }
         NCSystemPacket::Latencies(latencies) => {
             // If receive latencies, and in a small network, store them
-            if !world.get_resource::<Coordinates>().unwrap().normal_network && latencies.len() >= EARLY_HOSTS_THRESHOLD {
+            if let Some(matrix) = world.get_resource_mut::<LatencyMatrix>() {
 				let own_id = &world.get_resource::<crate::NodeConfig<Net>>().unwrap().node_id;
 
                 let remote_map = world.get_resource::<RemoteIDMap>().unwrap();
@@ -66,7 +69,7 @@ pub struct LatencyMatrix {
 	// Set of entities that are registered in the latency_matrix. If when registered there are left-over measurements not added to the matrix, they are stored here.
 	index_map: HashMap<Entity, (usize, Vec<(Entity, Latency)>)>,
 	// Each row represents a node, each column of each row represents a latency measured from Row # -> Column #
-	latency_matrix: DMatrix<Latency>,
+	latency_matrix: DMatrix<f64>,
 }
 impl LatencyMatrix {
 	/// Create a new latency matrix
@@ -91,7 +94,7 @@ impl LatencyMatrix {
 			
 			// Get new index and resize latency_matrix
 			let new_index = self.latency_matrix.nrows();
-			self.latency_matrix.resize_mut(new_index + 1, new_index + 1, 0);
+			self.latency_matrix.resize_mut(new_index + 1, new_index + 1, 0.0);
 
 			// Register new index and pending measurements
 			self.index_map.insert(entity, (new_index, vec![]));
@@ -100,8 +103,8 @@ impl LatencyMatrix {
 		};
 
 		// Register direct latency measurements
-		self.latency_matrix[(index, 0)] = direct_latencies.0;
-		self.latency_matrix[(0, index)] = direct_latencies.1;
+		self.latency_matrix[(index, 0)] = direct_latencies.0 as f64;
+		self.latency_matrix[(0, index)] = direct_latencies.1 as f64;
 
 		// Pending list of latency measurements from `entity` to nodes that are not registered in the matrix.
 		// These are stored as pending to be added later when those nodes' latency lists are requessted
@@ -117,11 +120,11 @@ impl LatencyMatrix {
 			// Once I have the index:
 
 			// Set outgoing row -> column latency
-			self.latency_matrix[(index, *remote_index)] = outgoing_latency;
+			self.latency_matrix[(index, *remote_index)] = outgoing_latency as f64;
 
 			// Look for incoming latency on the pending list if available, otherwise use outgoing latency measurement from index node
 			let incoming = remote_pending.iter().find_map(|(e, l)|(*e == entity).then_some(*l)).unwrap_or(outgoing_latency);
-			self.latency_matrix[(*remote_index, index)] = incoming;
+			self.latency_matrix[(*remote_index, index)] = incoming as f64;
 		}
 		self.index_map.get_mut(&entity).unwrap().1 = pending;
 
@@ -140,23 +143,28 @@ impl LatencyMatrix {
 pub struct Coordinates {
 	in_coord: NetworkCoord,
 	out_coord: NetworkCoord,
-	/// False if network is small, true if network is functioning normally (controls whether or not latency matricies are calculated)
-	normal_network: bool, 
 }
 
-fn early_hosts_system(coordinates: ResMut<Coordinates>, latency_matrix: Res<LatencyMatrix>) {
+/// Do non-negative matrix factorization for early host coordinates (this function should only run if LatencyMatrix exists as a resource)
+pub fn early_hosts_system(mut coordinates: ResMut<Coordinates>, latency_matrix: Res<LatencyMatrix>) {
+	let matrix = &latency_matrix.latency_matrix;
+	let (w, h) = nnmf_nalgebra::non_negative_matrix_factorization_generic(
+		matrix, 
+		1000, 
+		1.0, 
+		nalgebra::Dyn(matrix.nrows()), 
+		nalgebra::Dyn(matrix.ncols()), 
+		nalgebra::Const::<COORDINATE_DIMENSIONS>);
 
+	coordinates.in_coord = w.row(0).clone().transpose().map(|m|m as i64);
+	coordinates.out_coord = h.column(0).clone_owned().map(|m|m as i64);
 }
 
-/// Uses min latency measurements to calculate network coordinates
-fn network_coordinate_system(coordinates: ResMut<Coordinates>, latency_matrix: Res<LatencyMatrix>, mut query: Query<(&mut Coordinates, &LatencyMetrics)>) {
-	if !coordinates.normal_network {
+/// Uses latency measurements to iteratively update network coordinates
+/// Current implementation: Uses a weight-based update algorithm as outlined in [Phoenix](https://user.informatik.uni-goettingen.de/~ychen/papers/Phoenix_TNSM.pdf)
+pub fn network_coordinate_system(coordinates: ResMut<Coordinates>, latency_matrix: Res<LatencyMatrix>, mut query: Query<(&mut Coordinates, &LatencyMetrics)>) {
+	// If regular size network use update strategy as outlined in Phoenix paper.
+	for (mut remote_coords, metrics) in query.iter_mut() {
 		
-	} else {
-		// If regular size network use update strategy as outlined in Phoenix paper.
-		for (mut coordinates, metrics) in query.iter_mut() {
-		
-		}
 	}
-	
 }

@@ -12,17 +12,16 @@ futures = "0.3.26"
 thiserror = "1.0.38"
 eyre = "0.6.8"
 
-# Packet Serialization
+# ECS
+bevy_ecs = { git = "https://github.com/bevyengine/bevy", branch = "main" }
+
+# Serialization
 rkyv = { version = "0.7.39", features = ["validation"] } # Zero-Copy Serialization
 bytecheck = "0.6.9"
 rkyv_codec = "0.3.1"
-unsigned-varint = "0.7.1"
-bevy_ecs = "0.9.1"
-
-# Other Serialization
 serde = "1.0.152"
 
-# Other
+# Data & Utilities
 hashdb = { git = "https://github.com/libdither/disp" }
 nalgebra = { version = "0.32.1", features = ["rkyv-serialize"] }
 num = "0.4.0"

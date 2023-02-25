@@ -12,19 +12,20 @@ pub mod nc_system;
 
 use std::{collections::{HashMap, VecDeque}, time::Duration};
 
-use futures::{channel::mpsc::{unbounded, self, UnboundedSender}, StreamExt};
+use bevy_ecs::prelude::*;
+use futures::{channel::mpsc::{unbounded, self, UnboundedSender, TrySendError}, StreamExt};
+
+use nc_system::{LatencyMatrix, Coordinates};
 use session::*;
 pub use net::*;
 pub use packet::*;
 
 type Latency = u64;
-type NetworkCoord = nalgebra::SVector<i64, 3>;
-
-
-use bevy_ecs::prelude::*;
+pub use nc_system::NetworkCoord;
+use thiserror::Error;
 
 /// Multihash that uniquely identifying a node (represents the Multihash of the node's Public Key)
-type NodeID = hashdb::Hash;
+pub type NodeID = hashdb::Hash;
 
 #[derive(Component)]
 struct Remote {
@@ -48,6 +49,25 @@ pub enum NodeAction<Net: Network> {
 
 	/// Print Node info to stdout
 	PrintNode,
+
+	GetRemoteList,
+	GetRemoteInfo(Entity),
+}
+
+pub enum NodeEvent<Net: Network> {
+	// Event returned when new connection is established
+	NewConnection(NodeID, Net::Address),
+	
+	// Event returned for GetRemoteList, return list of remotes.
+	RemoteList(Vec<(NodeID, Entity)>),
+	// Event returned for GetRemoteInfo
+	RemoteInfo(Entity, (NodeID, Session<Net>, Coordinates))
+}
+
+#[derive(Debug, Error)]
+pub enum NodeError<Net: Network> {
+	#[error("node event sender was closed: {0}")]
+	NodeEventSenderClosed(#[from] TrySendError<NodeEvent<Net>>)
 }
 
 /// Contains ECS and Network implementation
@@ -63,10 +83,14 @@ pub struct RemoteIDMap {
 
 #[derive(Resource)]
 pub struct NodeConfig<Net: Network> {
-	private_key: Net::NodePrivKey,
-	public_key: Net::NodePubKey,
-	node_id: NodeID,
-	listen_addrs: Vec<Net::Address>,
+	pub private_key: Net::NodePrivKey,
+	pub public_key: Net::NodePubKey,
+	pub node_id: NodeID,
+	pub listen_addrs: Vec<Net::Address>,
+}
+#[derive(Resource)]
+pub struct EventSender<Net: Network> {
+	sender: UnboundedSender<NodeEvent<Net>>,
 }
 impl<Net: Network> From<&NodeConfig<Net>> for NetConfig<Net> {
 	fn from(value: &NodeConfig<Net>) -> Self {
@@ -79,12 +103,13 @@ impl<Net: Network> From<&NodeConfig<Net>> for NetConfig<Net> {
 }
 
 impl<Net: Network> Node<Net> {
-	pub fn new(config: NodeConfig<Net>) -> Self {
+	pub fn new(config: NodeConfig<Net>, event_sender: UnboundedSender<NodeEvent<Net>>) -> Self {
 		let _listen_addr = config.listen_addrs[0].clone();
 
 		let mut world = World::new();
 		world.init_resource::<RemoteIDMap>();
 		world.insert_resource::<NodeConfig<Net>>(config);
+		world.insert_resource::<EventSender<Net>>(EventSender { sender: event_sender });
 
 		Self {
 			world,
@@ -100,16 +125,16 @@ impl<Net: Network> Node<Net> {
 		// Create a new Schedule, which defines an execution strategy for Systems
 		let mut schedule = Schedule::default();
 
-		// Stages in this ECS
+		/* // Stages in this ECS
 		#[derive(StageLabel)]
 		pub enum Stages {
 			MainUpdate,
-		}
+		} */
 
 		// Main stage, runs after event update stage
-		let main = SystemStage::parallel();
-		//main.add_system(handle_session_events::<Net>);
-		schedule.add_stage_after(Stages::MainUpdate, Stages::MainUpdate, main);
+		
+		schedule.add_system(nc_system::early_hosts_system.run_if(resource_exists::<LatencyMatrix>()));
+		schedule.add_system(nc_system::network_coordinate_system.run_if(|r: Option<Res<LatencyMatrix>>|r.is_none()));
 
 		// Session threads send events to main ECS thread through this channel
 		let (entity_event_sender, mut entity_event_receiver) = unbounded::<EntitySessionEvent<Net>>();
@@ -125,11 +150,12 @@ impl<Net: Network> Node<Net> {
 					} else { break }
 				}
 				// Handle actions
-				action = action_receiver.next() => {
-					if let Some(action) = action {
-						self.handle_node_action(action).await;
+				action = action_receiver.next() => if let Some(action) = action {
+					if let Err(err) = self.handle_node_action(action).await {
+						log::error!("Error: {err}");
+						break;
 					}
-				}
+				},
 				// Handle new connections
 				conn = connection_stream.next() => {
 					match conn{
@@ -166,7 +192,8 @@ impl<Net: Network> Node<Net> {
 			},  
 		}
 	}
-	async fn handle_node_action(&mut self, action: NodeAction<Net>) {
+	async fn handle_node_action(&mut self, action: NodeAction<Net>) -> Result<(), NodeError<Net>
+	> {
 		match action {
 			NodeAction::Connect(remote_id, remote_addr, pub_key) => {
 				let entity = self.world.resource::<RemoteIDMap>().map.get(&remote_id).cloned();
@@ -175,7 +202,7 @@ impl<Net: Network> Node<Net> {
 					// Check if already connected, if so no need to connect again.
 					if self.world.get::<Session<Net>>(entity).is_some() {
 						log::info!("NodeAction: Connect: Already Connected to Remote: {remote_id:?}");
-						return;
+						return Ok(());
 					}
 
 					// Check if Session exists and if so, also if the pub_key matches.
@@ -199,8 +226,19 @@ impl<Net: Network> Node<Net> {
 			NodeAction::PrintNode => todo!(),
 			NodeAction::ForwardPacket(_, _) => todo!(),
 			NodeAction::EstablishRoute(_) => todo!(),
-				 NodeAction::FindRouter(_) => todo!(),
+			NodeAction::FindRouter(_) => todo!(),
+			NodeAction::GetRemoteList => {
+				let remote_map = &self.world.resource::<RemoteIDMap>().map;
+				let remotes = remote_map.into_iter().map(|(id, entity)|(id.clone(), entity.clone())).collect::<Vec<(NodeID, Entity)>>();
+				self.send_event(NodeEvent::RemoteList(remotes))?;
+			},
+			NodeAction::GetRemoteInfo(_) => todo!(),
 		}
+		Ok(())
+	}
+	fn send_event(&self, event: NodeEvent<Net>) -> Result<(), NodeError<Net>> {
+		self.world.resource::<EventSender<Net>>().sender.unbounded_send(event)?;
+		Ok(())
 	}
 	fn handle_connection(&mut self, connection: Connection<Net>, session_event_sender: UnboundedSender<EntitySessionEvent<Net>>) {
 		// Derive remote ID
