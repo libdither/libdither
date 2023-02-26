@@ -54,6 +54,7 @@ pub enum NodeAction<Net: Network> {
 	GetRemoteInfo(Entity),
 }
 
+#[derive(Debug, Clone)]
 pub enum NodeEvent<Net: Network> {
 	// Event returned when new connection is established
 	NewConnection(NodeID, Net::Address),
@@ -61,7 +62,7 @@ pub enum NodeEvent<Net: Network> {
 	// Event returned for GetRemoteList, return list of remotes.
 	RemoteList(Vec<(NodeID, Entity)>),
 	// Event returned for GetRemoteInfo
-	RemoteInfo(Entity, (NodeID, Session<Net>, Coordinates))
+	RemoteInfo(Entity, NodeID, Coordinates)
 }
 
 #[derive(Debug, Error)]
@@ -111,28 +112,26 @@ impl<Net: Network> Node<Net> {
 		world.insert_resource::<NodeConfig<Net>>(config);
 		world.insert_resource::<EventSender<Net>>(EventSender { sender: event_sender });
 
+		// Init NC System
+		world.init_resource::<Coordinates>();
+
 		Self {
 			world,
 			_listen_addr
 		}
 	}
 	/// Runs the event loop of the node. This should be spawned in its own task.
-	pub async fn run(&mut self, mut action_receiver: mpsc::Receiver<NodeAction<Net>>) -> Result<(), Net::ConnectionError> {
-		let config = self.world.get_resource::<NodeConfig<Net>>().unwrap();
+	pub async fn run(mut self, mut action_receiver: mpsc::UnboundedReceiver<NodeAction<Net>>) -> Result<Self, Net::ConnectionError> {
+		let config = self.world.resource::<NodeConfig<Net>>();
 		let (network, mut connection_stream) = Net::init(config.into()).await?;
 		self.world.insert_resource(network);
 
 		// Create a new Schedule, which defines an execution strategy for Systems
 		let mut schedule = Schedule::default();
 
-		/* // Stages in this ECS
-		#[derive(StageLabel)]
-		pub enum Stages {
-			MainUpdate,
-		} */
+		schedule.add_system(update_latencies);
 
-		// Main stage, runs after event update stage
-		
+		// Init NC Systems
 		schedule.add_system(nc_system::early_hosts_system.run_if(resource_exists::<LatencyMatrix>()));
 		schedule.add_system(nc_system::network_coordinate_system.run_if(|r: Option<Res<LatencyMatrix>>|r.is_none()));
 
@@ -172,7 +171,7 @@ impl<Net: Network> Node<Net> {
 			schedule.run(&mut self.world);
 		}
 
-		Ok(())
+		Ok(self)
 	}
 	// Update the world based on events from active session threads.
 	fn handle_session_events(world: &mut World, session_event: EntitySessionEvent<Net>) {
@@ -232,7 +231,22 @@ impl<Net: Network> Node<Net> {
 				let remotes = remote_map.into_iter().map(|(id, entity)|(id.clone(), entity.clone())).collect::<Vec<(NodeID, Entity)>>();
 				self.send_event(NodeEvent::RemoteList(remotes))?;
 			},
-			NodeAction::GetRemoteInfo(_) => todo!(),
+			NodeAction::GetRemoteInfo(entity) => {
+				if self.world.get_entity(entity).is_none() {
+					log::error!("unknown entity: {entity:?}");
+					return Ok(());
+				}
+				if let Ok((entity, remote, coordinates)) = self.world.query::<(Entity, &Remote, &Coordinates)>().get(&self.world, entity) {
+					self.send_event(NodeEvent::RemoteInfo(
+						entity,
+						remote.id.clone(),
+						coordinates.clone(),
+					))?;
+				} else {
+					log::error!("entity {entity:?} exists but has components: {:?}", self.world.inspect_entity(entity));
+				}
+				
+			},
 		}
 		Ok(())
 	}

@@ -54,7 +54,7 @@ impl<Net: Network> Session<Net> {
 		// Spawn session task with connection
 		task::spawn(async move {
 			if let Err(err) = SessionState::run(connection, entity_id, session_event_sender, action_receiver).await {
-				log::warn!("Session closed with error: {err}")
+				log::warn!("Session closed with error: {err}");
 			}
 		});
 		Session { action_sender }

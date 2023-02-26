@@ -139,7 +139,7 @@ impl LatencyMatrix {
 	}
 }
 
-#[derive(Debug, Component, Resource)]
+#[derive(Debug, Clone, Default, Component, Resource)]
 pub struct Coordinates {
 	in_coord: NetworkCoord,
 	out_coord: NetworkCoord,
@@ -162,7 +162,7 @@ pub fn early_hosts_system(mut coordinates: ResMut<Coordinates>, latency_matrix: 
 
 /// Uses latency measurements to iteratively update network coordinates
 /// Current implementation: Uses a weight-based update algorithm as outlined in [Phoenix](https://user.informatik.uni-goettingen.de/~ychen/papers/Phoenix_TNSM.pdf)
-pub fn network_coordinate_system(coordinates: ResMut<Coordinates>, latency_matrix: Res<LatencyMatrix>, mut query: Query<(&mut Coordinates, &LatencyMetrics)>) {
+pub fn network_coordinate_system(coordinates: ResMut<Coordinates>, mut query: Query<(&mut Coordinates, &LatencyMetrics)>) {
 	// If regular size network use update strategy as outlined in Phoenix paper.
 	for (mut remote_coords, metrics) in query.iter_mut() {
 		

@@ -4,11 +4,10 @@ use std::fmt;
 
 use bytecheck::CheckBytes;
 use futures::SinkExt;
-use rkyv::{AlignedVec, Archive, Archived, Deserialize, Infallible, Serialize, with::Inline};
+use rkyv::{AlignedVec, Archive, Archived, Deserialize, Infallible, Serialize};
 use rkyv_codec::{RkyvCodecError, RkyvWriter, VarintLength, archive_stream};
 
-use crate::{net::Network, NetworkCoord, Latency, nc_system::NCSystemPacket};
-use super::{NodeID};
+use crate::{net::Network, NetworkCoord, NodeID, nc_system::NCSystemPacket};
 
 /// Acknowledging node packet
 #[derive(Debug, Archive, Serialize, Deserialize, Clone)]
