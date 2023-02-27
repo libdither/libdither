@@ -37,8 +37,7 @@ async fn main() -> anyhow::Result<()> {
 	let listen_addr = SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), listen_port);
 
 	// Generate fake private key for testing because I haven't implemented encryption yet
-	let mut private_key = vec![69; 16];
-	thread_rng().fill_bytes(&mut private_key);
+	let mut private_key = listen_addr.to_string().as_bytes().to_vec();
 
 	// Generate node_config
 	let node_config = NodeConfig::<DitherNet> {
@@ -61,7 +60,7 @@ async fn main() -> anyhow::Result<()> {
 	simplelog::WriteLogger::init(log::LevelFilter::Debug, simplelog::Config::default(), stdout.clone()).unwrap();
 
 	// Send NodeAction to check for errors in the bevy schedule
-	action_sender.send(NodeAction::GetRemoteList).await?;
+	action_sender.send(NodeAction::GetInfo).await?;
 
 	loop {
 		futures::select! {
@@ -70,6 +69,7 @@ async fn main() -> anyhow::Result<()> {
 			},
 			command = rl.readline().fuse() => match command {
 				Ok(line) => {
+					rl.add_history_entry(line.clone());
 					if let Err(err) = handle_command(line, &mut action_sender, &mut stdout).await {
 						writeln!(stdout, "Error: {}", err)?;
 					}
@@ -111,10 +111,11 @@ async fn handle_command(line: String, action_sender: &mut mpsc::UnboundedSender<
 		"connect" => {
 			let node_id = split.next().map(|s|s.parse::<NodeID>()).ok_or(anyhow!("Failed to parse NodeID"))??;
 			let addr = split.next().map(|s|s.parse::<Address>()).ok_or(anyhow!("Failed to parse Multiaddr"))??;
-			action_sender.send(NodeAction::Connect(node_id, addr, None)).await?;
+			action_sender.send(NodeAction::Connect(node_id.clone(), addr, None)).await?;
+			writeln!(stdout, "Connecting to: {} ID: {:?}", addr, node_id)?;
 		}
 		"list" => {
-			action_sender.send(NodeAction::GetRemoteList).await?;
+			action_sender.send(NodeAction::GetInfo).await?;
 		}
 		"info" => {
 			let dec = text::int::<_, Simple<char>>(10).try_map(|s, span| s

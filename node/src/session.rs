@@ -2,16 +2,19 @@ use std::{time::{Instant, Duration}};
 
 use async_std::{task};
 use bevy_ecs::prelude::*;
-use futures::{select, channel::mpsc::{UnboundedSender, UnboundedReceiver, unbounded, self}, SinkExt, StreamExt, FutureExt};
+use futures::{channel::mpsc::{UnboundedSender, UnboundedReceiver, unbounded, self}, SinkExt, StreamExt, FutureExt};
 use rkyv::{Deserialize, Archived};
 use thiserror::Error;
 
-use crate::{Network, NodeID, packet::{PacketRead, PacketWrite}, NodePacket, PingingNodePacket, Connection};
+use crate::{Network, packet::{PacketRead, PacketWrite}, NodePacket, PingingNodePacket, Connection};
 
+#[derive(Debug)]
 pub struct EntitySessionEvent<Net: Network> {
 	pub entity: Entity,
 	pub event: SessionEvent<Net>,
 }
+
+#[derive(Debug)]
 pub enum SessionEvent<Net: Network> {
 	// TODO: Get rid of these stupid allocations
 	Packet(Box<NodePacket<Net>>),
@@ -25,7 +28,7 @@ pub enum SessionAction<Net: Network> {
 
 #[derive(Error, Debug)]
 pub enum SessionError<Net: Network> {
-	#[error("malformed packet")]
+	#[error("malformed packet: {0}")]
 	MalformedPacket(#[from] rkyv_codec::RkyvCodecError),
 	#[error("connection error: {0}")]
 	ConnectionError(Net::ConnectionError),
@@ -92,8 +95,10 @@ impl<Net: Network> SessionState<Net> {
 						state.handle_session_action(action).await?;
 					}
 				}
+				complete => break,
 			}
 		}
+		Ok(())
 	}
 	pub async fn handle_packet(&mut self, packet: &Archived<PingingNodePacket<Net>>) -> Result<(), SessionError<Net>> {
 		let pinging_packet: PingingNodePacket<Net> = packet.deserialize(&mut rkyv::Infallible).unwrap();

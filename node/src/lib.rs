@@ -50,7 +50,7 @@ pub enum NodeAction<Net: Network> {
 	/// Print Node info to stdout
 	PrintNode,
 
-	GetRemoteList,
+	GetInfo,
 	GetRemoteInfo(Entity),
 }
 
@@ -60,7 +60,7 @@ pub enum NodeEvent<Net: Network> {
 	NewConnection(NodeID, Net::Address),
 	
 	// Event returned for GetRemoteList, return list of remotes.
-	RemoteList(Vec<(NodeID, Entity)>),
+	Info(NodeID, Vec<Net::Address>, Coordinates, Vec<(NodeID, Entity)>),
 	// Event returned for GetRemoteInfo
 	RemoteInfo(Entity, NodeID, Coordinates)
 }
@@ -143,13 +143,13 @@ impl<Net: Network> Node<Net> {
 			// Wait for events and handle them by updating world.
 			futures::select! {
 				// Handle events from sessions (i.e. remote packets or latency measurements)
-				event = entity_event_receiver.next() => {
-					if let Some(event) = event {
-						Self::handle_session_events(&mut self.world, event);
-					} else { break }
-				}
+				event = entity_event_receiver.next() => if let Some(event) = event {
+					log::debug!("node: received SessionEvent: {event:?}");
+					Self::handle_session_events(&mut self.world, event);
+				},
 				// Handle actions
 				action = action_receiver.next() => if let Some(action) = action {
+					log::debug!("node: received NodeAction: {action:?}");
 					if let Err(err) = self.handle_node_action(action).await {
 						log::error!("Error: {err}");
 						break;
@@ -157,6 +157,7 @@ impl<Net: Network> Node<Net> {
 				},
 				// Handle new connections
 				conn = connection_stream.next() => {
+					log::debug!("node: received connection: {:?}", conn);
 					match conn{
 						Some(Ok(conn)) => self.handle_connection(conn, entity_event_sender.clone()),
 						Some(Err(err)) => log::error!("Incoming Connection Failed: {err}"),
@@ -170,6 +171,8 @@ impl<Net: Network> Node<Net> {
 			// Run schedule with updated world
 			schedule.run(&mut self.world);
 		}
+
+		log::info!("node: shutting down");
 
 		Ok(self)
 	}
@@ -191,8 +194,7 @@ impl<Net: Network> Node<Net> {
 			},  
 		}
 	}
-	async fn handle_node_action(&mut self, action: NodeAction<Net>) -> Result<(), NodeError<Net>
-	> {
+	async fn handle_node_action(&mut self, action: NodeAction<Net>) -> Result<(), NodeError<Net>> {
 		match action {
 			NodeAction::Connect(remote_id, remote_addr, pub_key) => {
 				let entity = self.world.resource::<RemoteIDMap>().map.get(&remote_id).cloned();
@@ -214,22 +216,26 @@ impl<Net: Network> Node<Net> {
 					
 					(pub_key, persistent_state)
 				} else {
-					// If NodeID not registered, register it
+					// If NodeID not registered, register it in RemoteIDMap
 					let entity = self.world.spawn(Remote { id : remote_id.clone() } ).id();
 					self.world.resource_mut::<RemoteIDMap>().map.insert(remote_id.clone(), entity);
 
 					(pub_key, None)
 				};
+				// Connect to it via Network
 				self.world.resource::<Net>().connect(remote_id, remote_addr, pub_key, persistent_state);
 			},
 			NodeAction::PrintNode => todo!(),
 			NodeAction::ForwardPacket(_, _) => todo!(),
 			NodeAction::EstablishRoute(_) => todo!(),
 			NodeAction::FindRouter(_) => todo!(),
-			NodeAction::GetRemoteList => {
+			NodeAction::GetInfo => {
 				let remote_map = &self.world.resource::<RemoteIDMap>().map;
 				let remotes = remote_map.into_iter().map(|(id, entity)|(id.clone(), entity.clone())).collect::<Vec<(NodeID, Entity)>>();
-				self.send_event(NodeEvent::RemoteList(remotes))?;
+				
+				let node_config = self.world.resource::<NodeConfig<Net>>();
+				let coords = self.world.resource::<Coordinates>();
+				self.send_event(NodeEvent::Info(node_config.node_id.clone(), node_config.listen_addrs.clone(), coords.clone(), remotes))?;
 			},
 			NodeAction::GetRemoteInfo(entity) => {
 				if self.world.get_entity(entity).is_none() {
@@ -243,7 +249,7 @@ impl<Net: Network> Node<Net> {
 						coordinates.clone(),
 					))?;
 				} else {
-					log::error!("entity {entity:?} exists but has components: {:?}", self.world.inspect_entity(entity));
+					log::error!("entity {entity:?} exists but has components: {:?}", self.world.inspect_entity(entity).iter().map(|info|info.name()).collect::<Vec<&str>>());
 				}
 				
 			},
@@ -257,6 +263,8 @@ impl<Net: Network> Node<Net> {
 	fn handle_connection(&mut self, connection: Connection<Net>, session_event_sender: UnboundedSender<EntitySessionEvent<Net>>) {
 		// Derive remote ID
 		let remote_id = NodeID::hash(connection.remote_pub_key.as_ref());
+
+		log::info!("node: received connection from {remote_id:?} from address: {:?}", connection.net_address);
 
 		// Search RemoteIDMap for entity given NodeID
 		let entity = self.world.resource::<RemoteIDMap>().map.get(&remote_id).cloned();

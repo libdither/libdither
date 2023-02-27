@@ -2,12 +2,14 @@
 
 use std::net::SocketAddr;
 use bevy_ecs::system::Resource;
+use rkyv::{AlignedVec, Infallible, Deserialize, to_bytes};
+use rkyv_codec::{RkyvCodecError, VarintLength};
 use thiserror::Error;
 
 use async_std::{net::{TcpStream, TcpListener}, task};
-use futures::{StreamExt, channel::mpsc::{channel, self, unbounded}, SinkExt, FutureExt};
+use futures::{StreamExt, channel::mpsc::{channel, self, unbounded, SendError, Sender}, SinkExt, FutureExt};
 
-use node::{NodeID, Connection, Network};
+use node::{NodeID, Connection, Network, NetConfig};
 
 enum NetRequest<Net: Network> {
 	Connect {
@@ -28,6 +30,60 @@ pub struct TcpNoenc {
 pub enum TcpNoencError {
 	#[error("io error: {0}")]
 	IoError(#[from] std::io::Error),
+	#[error("codec error: {0}")]
+	CodecError(#[from] RkyvCodecError),
+}
+
+struct TcpNoencState {
+	conn_sender: Sender<Result<Connection<TcpNoenc>, TcpNoencError>>,
+	listener: TcpListener,
+	net_config: NetConfig<TcpNoenc>,
+}
+impl TcpNoencState {
+	async fn handle_request(&mut self, request: NetRequest<TcpNoenc>) -> Result<(), SendError> {
+		match request {
+			NetRequest::Connect { remote_id: _, net_address, remote_pub_key: _, persistent_state: _ } => {
+				// Connect to remote
+				let tcp_stream: Result<(TcpStream, SocketAddr), TcpNoencError> = try {
+					(TcpStream::connect(net_address).await?, net_address)
+				};
+				
+				self.handle_connection(tcp_stream).await?;
+			}
+			NetRequest::Listen(socket_addrs) => {
+				if let Ok(new_listener) = TcpListener::bind(&socket_addrs[..]).await {
+					log::info!("net: listening on new address: {socket_addrs:?}");
+					self.listener = new_listener;
+				} else {
+					log::error!("net: failed to listen on new address: {socket_addrs:?}");
+				}
+			}
+		}
+		Ok(())
+	}
+	async fn handle_connection(&mut self, tcp_stream: Result<(TcpStream, SocketAddr), TcpNoencError>) -> Result<(), SendError> {
+		let conn_result: Result<Connection<TcpNoenc>, TcpNoencError> = try {
+			let (mut tcp_stream, net_address) = tcp_stream?;
+
+			// Send own public key to remote
+			let archived = to_bytes::<_, 64>(&self.net_config.public_key).map_err(|_|RkyvCodecError::SerializeError)?;
+			rkyv_codec::archive_sink::<_, VarintLength>(&mut tcp_stream, &archived).await?;
+
+			// Read remote public key from stream before passing back connection
+			let mut buffer = AlignedVec::with_capacity(32);
+			let archive = rkyv_codec::archive_stream::<_, Vec<u8>, VarintLength>(&mut tcp_stream, &mut buffer).await?;
+			let remote_pub_key: Vec<u8> = archive.deserialize(&mut Infallible).unwrap();
+
+			Connection {
+				net_address,
+				remote_pub_key,
+				persistent_state: (),
+				read: tcp_stream.clone(),
+				write: tcp_stream,
+			}
+		};
+		self.conn_sender.send(conn_result).await
+	}
 }
 
 impl Network for TcpNoenc {
@@ -50,54 +106,28 @@ impl Network for TcpNoenc {
 	async fn init(config: node::NetConfig<Self>) -> Result<(Self, impl futures::Stream<Item = Result<Connection<Self>, Self::ConnectionError>> + Unpin + futures::stream::FusedStream), Self::ConnectionError> {
         let (request_sender, mut request_receiver) = unbounded::<NetRequest<Self>>();
 		
-		let mut listener = TcpListener::bind(&config.listen_addrs[..]).await?;
+		let (conn_sender, conn_stream) = channel::<Result<Connection<Self>, Self::ConnectionError>>(20);
 
-		let (mut conn_sender, conn_stream) = channel::<Result<Connection<Self>, Self::ConnectionError>>(20);
+		let mut state = TcpNoencState {
+			listener: TcpListener::bind(&config.listen_addrs[..]).await?,
+			conn_sender,
+			net_config: config,
+		};
 
 		// Spawn task that listens for incoming connections
         task::spawn(async move {
-			
 			loop {
 				let result: Result<(), Self::ConnectionError> = try {
 					futures::select! {
-						request = request_receiver.next().fuse() => {
-							let request = request.unwrap();
-							match request {
-								NetRequest::Connect { remote_id: _, net_address, remote_pub_key: _, persistent_state: _ } => {
-									let conn_result: Result<Connection<Self>, Self::ConnectionError> = try {
-										let tcp_stream = TcpStream::connect(net_address).await?;
-										
-										Connection {
-											net_address,
-											remote_pub_key: net_address.to_string().as_bytes().to_vec(),
-											persistent_state: (),
-											read: tcp_stream.clone(),
-											write: tcp_stream,
-										}
-									};
-									if let Err(_) = conn_sender.send(conn_result).await {
-										break
-									}
-								}
-								NetRequest::Listen(socket_addrs) => {
-									listener = TcpListener::bind(&socket_addrs[..]).await?;
-								}
+						request = request_receiver.next().fuse() => if let Some(request) = request {
+							if let Err(err) = state.handle_request(request).await {
+								log::error!("net: connection sender closed: {err}");
+								break
 							}
-						}
-						tcp_stream = listener.accept().fuse() => {
-							let conn_result: Result<Connection<Self>, Self::ConnectionError> = try {
-								let (tcp_stream, net_address) = tcp_stream?;
-			
-								Connection {
-									net_address,
-									remote_pub_key: net_address.to_string().as_bytes().to_vec(),
-									persistent_state: (),
-									read: tcp_stream.clone(),
-									write: tcp_stream,
-								}
-							};
-							
-							if let Err(_) = conn_sender.send(conn_result).await {
+						},
+						tcp_stream = state.listener.accept().fuse() => {
+							if let Err(err) = state.handle_connection(tcp_stream.map_err(TcpNoencError::from)).await {
+								log::error!("net: connection sender closed: {err}");
 								break
 							}
 						}
@@ -139,31 +169,3 @@ impl Network for TcpNoenc {
     }
 }
 
-/* #[derive(Error, Debug)]
-pub enum EncryptionError<Net: Network> {
-	#[error("expected {expected} for node at {addr}, but node sent {found}")]
-	InvalidNodeID { addr: Net::Address, expected: NodeID, found: NodeID },
-	#[error("invalid multihash encoding")]
-	BadHash,
-	#[error("io error: {0}")]
-	IOError(#[from] std::io::Error),
-}
-
-/// When connecting to peer, read 
-pub async fn encrypt_outgoing<Net: Network>(mut read: Net::Read, mut write: Net::Write, my_id: &NodeID, connecting_id: &NodeID, connecting_addr: Net::Address) -> Result<Connection<Net>, EncryptionError<Net>> {
-	write.write(my_id.as_bytes()).await?; // Write my NodeID
-	let node_id = NodeID::from_reader_async(&mut read).await?;
-	if node_id == *connecting_id { // Verify remote ID
-		Ok(Connection { node_id, addr: connecting_addr, read, write })
-	} else {
-		Err(EncryptionError::InvalidNodeID { addr: connecting_addr, expected: connecting_id.clone(), found: node_id })
-	}
-	
-}
-
-// When handling incoming session, read connecting node_id and write own node_id
-pub async fn encrypt_incoming<Net: Network>(mut read: Net::Read, mut write: Net::Write, my_id: &NodeID, incoming_addr: Net::Address) -> Result<Connection<Net>, EncryptionError<Net>> {
-	let incoming_node_id = NodeID::from_reader_async(&mut read).await.map_err(|_|EncryptionError::BadHash)?;
-	write.write(my_id.as_bytes()).await?;
-	Ok(Connection { node_id: incoming_node_id, addr: incoming_addr, read, write })
-} */

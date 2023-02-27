@@ -23,11 +23,10 @@ snow = "0.9.1"
 bevy_ecs = { git = "https://github.com/bevyengine/bevy", branch = "main" }
 rand = "0.8.5"
 chumsky = "0.9.0"
+bincode = "1.3.3"
+rkyv_codec = "0.3.1"
 
 [features]
-
-[workspace.metadata.nix]
-systems = [ "x86_64-linux" ]
 
 [package.metadata.nix]
 app = true

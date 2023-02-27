@@ -86,6 +86,7 @@ impl<'b, Net: Network> PacketRead<Net> {
 pub struct PacketWrite<Net: Network> {
 	writer: RkyvWriter<Net::Write, VarintLength>,
 }
+
 impl<Net: Network> std::fmt::Debug for PacketWrite<Net> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { f.debug_struct("PacketWrite").finish() }
 }

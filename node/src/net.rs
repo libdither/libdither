@@ -10,7 +10,7 @@ use rkyv::{Serialize, Archive, ser::{serializers::{CompositeSerializer, AlignedS
 use crate::NodeID;
 
 /// Trait that establishes encrypted connection to another computer
-pub trait Network: Resource + Clone + 'static {
+pub trait Network: fmt::Debug + Resource + Clone + 'static {
 	/// Address used to establish a connection with some other node over a network.
 	type Address: Clone + PartialEq + Eq + std::hash::Hash + fmt::Debug + fmt::Display + for<'de> serde::Deserialize<'de> + serde::Serialize
 	+ for<'b> Serialize<CompositeSerializer<AlignedSerializer<&'b mut AlignedVec>, FallbackScratch<HeapScratch<256_usize>, AllocScratch>, SharedSerializeMap>>

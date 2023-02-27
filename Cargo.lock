@@ -203,7 +203,7 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 [[package]]
 name = "bevy_ecs"
 version = "0.9.0"
-source = "git+https://github.com/bevyengine/bevy?branch=main#b8263b55fb29526f99b8644b84dff421877bad59"
+source = "git+https://github.com/bevyengine/bevy?branch=main#15c55a12ff53c702acb167761424182f77f64dd7"
 dependencies = [
  "async-channel",
  "bevy_ecs_macros",
@@ -222,7 +222,7 @@ dependencies = [
 [[package]]
 name = "bevy_ecs_macros"
 version = "0.9.0"
-source = "git+https://github.com/bevyengine/bevy?branch=main#b8263b55fb29526f99b8644b84dff421877bad59"
+source = "git+https://github.com/bevyengine/bevy?branch=main#15c55a12ff53c702acb167761424182f77f64dd7"
 dependencies = [
  "bevy_macro_utils",
  "proc-macro2",
@@ -233,7 +233,7 @@ dependencies = [
 [[package]]
 name = "bevy_macro_utils"
 version = "0.9.0"
-source = "git+https://github.com/bevyengine/bevy?branch=main#b8263b55fb29526f99b8644b84dff421877bad59"
+source = "git+https://github.com/bevyengine/bevy?branch=main#15c55a12ff53c702acb167761424182f77f64dd7"
 dependencies = [
  "quote",
  "syn",
@@ -243,12 +243,12 @@ dependencies = [
 [[package]]
 name = "bevy_ptr"
 version = "0.9.0"
-source = "git+https://github.com/bevyengine/bevy?branch=main#b8263b55fb29526f99b8644b84dff421877bad59"
+source = "git+https://github.com/bevyengine/bevy?branch=main#15c55a12ff53c702acb167761424182f77f64dd7"
 
 [[package]]
 name = "bevy_reflect"
 version = "0.9.0"
-source = "git+https://github.com/bevyengine/bevy?branch=main#b8263b55fb29526f99b8644b84dff421877bad59"
+source = "git+https://github.com/bevyengine/bevy?branch=main#15c55a12ff53c702acb167761424182f77f64dd7"
 dependencies = [
  "bevy_ptr",
  "bevy_reflect_derive",
@@ -264,7 +264,7 @@ dependencies = [
 [[package]]
 name = "bevy_reflect_derive"
 version = "0.9.0"
-source = "git+https://github.com/bevyengine/bevy?branch=main#b8263b55fb29526f99b8644b84dff421877bad59"
+source = "git+https://github.com/bevyengine/bevy?branch=main#15c55a12ff53c702acb167761424182f77f64dd7"
 dependencies = [
  "bevy_macro_utils",
  "bit-set",
@@ -277,7 +277,7 @@ dependencies = [
 [[package]]
 name = "bevy_tasks"
 version = "0.9.0"
-source = "git+https://github.com/bevyengine/bevy?branch=main#b8263b55fb29526f99b8644b84dff421877bad59"
+source = "git+https://github.com/bevyengine/bevy?branch=main#15c55a12ff53c702acb167761424182f77f64dd7"
 dependencies = [
  "async-channel",
  "async-executor",
@@ -291,7 +291,7 @@ dependencies = [
 [[package]]
 name = "bevy_utils"
 version = "0.9.0"
-source = "git+https://github.com/bevyengine/bevy?branch=main#b8263b55fb29526f99b8644b84dff421877bad59"
+source = "git+https://github.com/bevyengine/bevy?branch=main#15c55a12ff53c702acb167761424182f77f64dd7"
 dependencies = [
  "ahash",
  "bevy_utils_proc_macros",
@@ -307,7 +307,7 @@ dependencies = [
 [[package]]
 name = "bevy_utils_proc_macros"
 version = "0.9.0"
-source = "git+https://github.com/bevyengine/bevy?branch=main#b8263b55fb29526f99b8644b84dff421877bad59"
+source = "git+https://github.com/bevyengine/bevy?branch=main#15c55a12ff53c702acb167761424182f77f64dd7"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -355,24 +355,24 @@ dependencies = [
 
 [[package]]
 name = "blake2b_simd"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72936ee4afc7f8f736d1c38383b56480b5497b4617b4a77bdbf1d2ababc76127"
+checksum = "3c2f0dc9a68c6317d884f97cc36cf5a3d20ba14ce404227df55e1af708ab04bc"
 dependencies = [
  "arrayref",
  "arrayvec",
- "constant_time_eq 0.1.5",
+ "constant_time_eq",
 ]
 
 [[package]]
 name = "blake2s_simd"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db539cc2b5f6003621f1cd9ef92d7ded8ea5232c7de0f9faa2de251cd98730d4"
+checksum = "6637f448b9e61dfadbdcbae9a885fadee1f3eaffb1f8d3c1965d3ade8bdfd44f"
 dependencies = [
  "arrayref",
  "arrayvec",
- "constant_time_eq 0.1.5",
+ "constant_time_eq",
 ]
 
 [[package]]
@@ -385,7 +385,7 @@ dependencies = [
  "arrayvec",
  "cc",
  "cfg-if",
- "constant_time_eq 0.2.4",
+ "constant_time_eq",
 ]
 
 [[package]]
@@ -529,12 +529,6 @@ dependencies = [
 
 [[package]]
 name = "constant_time_eq"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
-
-[[package]]
-name = "constant_time_eq"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3ad85c1f65dc7b37604eb0e89748faf0b9653065f2a8ef69f96a687ec1e9279"
@@ -574,9 +568,9 @@ dependencies = [
 
 [[package]]
 name = "crossterm"
-version = "0.25.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e64e6c0fbe2c17357405f7c758c1ef960fce08bdfb2c03d88d2a18d7e09c4b67"
+checksum = "77f67c7faacd4db07a939f55d66a983a5355358a1f17d32cc9a8d01d1266b9ce"
 dependencies = [
  "bitflags",
  "crossterm_winapi",
@@ -709,9 +703,9 @@ dependencies = [
 
 [[package]]
 name = "fastrand"
-version = "1.8.0"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7a407cfaa3385c4ae6b23e84623d48c2798d06e3e6a1878f7f59f17b3f86499"
+checksum = "e51093e27b0797c359783294ca4f0a911c270184cb10f85783b118614a1501be"
 dependencies = [
  "instant",
 ]
@@ -910,7 +904,7 @@ dependencies = [
 [[package]]
 name = "hashdb"
 version = "0.1.0"
-source = "git+https://github.com/libdither/disp#e59020e83bfb857f8d37fcdd2f5646160c24d17c"
+source = "git+https://github.com/libdither/disp#7138392f6a39dbf263e4ac88662ce73bdc3e5fc2"
 dependencies = [
  "bincode",
  "bs58",
@@ -931,7 +925,7 @@ dependencies = [
 [[package]]
 name = "hashdb_derive"
 version = "0.1.0"
-source = "git+https://github.com/libdither/disp#e59020e83bfb857f8d37fcdd2f5646160c24d17c"
+source = "git+https://github.com/libdither/disp#7138392f6a39dbf263e4ac88662ce73bdc3e5fc2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1012,12 +1006,14 @@ dependencies = [
  "anyhow",
  "async-std",
  "bevy_ecs",
+ "bincode",
  "chumsky",
  "futures",
  "log",
  "node",
  "rand",
  "rkyv",
+ "rkyv_codec 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustyline-async",
  "serde",
  "simplelog",
@@ -1074,14 +1070,14 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
 name = "mio"
-version = "0.8.5"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5d732bc30207a6423068df043e3d02e0735b155ad7ce1a6f76fe2baa5b158de"
+checksum = "5b9d9a46eff5b4ff64b45a9e316a6d1e0bc719ef429cbec4dc630684212bfdf9"
 dependencies = [
  "libc",
  "log",
  "wasi",
- "windows-sys 0.42.0",
+ "windows-sys 0.45.0",
 ]
 
 [[package]]
@@ -1172,7 +1168,7 @@ dependencies = [
  "nnmf_nalgebra",
  "num",
  "rkyv",
- "rkyv_codec",
+ "rkyv_codec 0.3.1 (git+https://github.com/zyansheep/rkyv_codec)",
  "serde",
  "thiserror",
 ]
@@ -1274,9 +1270,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.17.0"
+version = "1.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66"
+checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
 
 [[package]]
 name = "opaque-debug"
@@ -1578,18 +1574,18 @@ dependencies = [
 
 [[package]]
 name = "rend"
-version = "0.3.6"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79af64b4b6362ffba04eef3a4e10829718a4896dac19daa741851c86781edf95"
+checksum = "581008d2099240d37fb08d77ad713bcaec2c4d89d50b5b21a8bb1996bbab68ab"
 dependencies = [
  "bytecheck",
 ]
 
 [[package]]
 name = "rkyv"
-version = "0.7.39"
+version = "0.7.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cec2b3485b07d96ddfd3134767b8a447b45ea4eb91448d0a35180ec0ffd5ed15"
+checksum = "c30f1d45d9aa61cbc8cd1eb87705470892289bb2d01943e7803b873a57404dc3"
 dependencies = [
  "bytecheck",
  "hashbrown",
@@ -1617,10 +1613,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "rkyv_codec"
+version = "0.3.1"
+source = "git+https://github.com/zyansheep/rkyv_codec#023634a874ac1d6b52bf6fc10e2399b678714a6c"
+dependencies = [
+ "bytecheck",
+ "bytes 0.5.6",
+ "bytes 1.4.0",
+ "futures",
+ "futures_codec",
+ "pin-project 1.0.12",
+ "rkyv",
+ "thiserror",
+ "unsigned-varint",
+]
+
+[[package]]
 name = "rkyv_derive"
-version = "0.7.39"
+version = "0.7.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6eaedadc88b53e36dd32d940ed21ae4d850d5916f2581526921f553a72ac34c4"
+checksum = "ff26ed6c7c4dfc2aa9480b86a60e3c7233543a270a680e10758a507c5a4ce476"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1644,9 +1656,9 @@ dependencies = [
 
 [[package]]
 name = "rustyline-async"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00e1a02d2c727fac4c73a019de82183d990af0e13d6bed2e3a6f37a525ff591d"
+checksum = "e6aa6cfac9125ee80a5d0b1205289db1bfe7551268eb702f12b9cb36cb83e1df"
 dependencies = [
  "crossterm",
  "futures",
@@ -1737,9 +1749,9 @@ dependencies = [
 
 [[package]]
 name = "signal-hook"
-version = "0.3.14"
+version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a253b5e89e2698464fc26b545c9edceb338e18a89effeeecfea192c3025be29d"
+checksum = "732768f1176d21d09e076c23a93123d40bba92d50c4058da34d45c8de8e682b9"
 dependencies = [
  "libc",
  "signal-hook-registry",
@@ -1758,9 +1770,9 @@ dependencies = [
 
 [[package]]
 name = "signal-hook-registry"
-version = "1.4.0"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e51e73328dc4ac0c7ccbda3a494dfa03df1de2f46018127f60c693f2648455b0"
+checksum = "d8229b473baa5980ac72ef434c4415e70c4b5e71b423043adb4ba059f89c99a1"
 dependencies = [
  "libc",
 ]
@@ -1791,9 +1803,9 @@ dependencies = [
 
 [[package]]
 name = "slab"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4614a76b2a8be0058caa9dbbaf66d988527d86d003c11a94fbd335d7661edcef"
+checksum = "6528351c9bc8ab22353f9d776db39a20288e8d6c37ef8cfe3317cf875eecfc2d"
 dependencies = [
  "autocfg",
 ]
@@ -1851,9 +1863,9 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "syn"
-version = "1.0.107"
+version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f4064b5b16e03ae50984a5a8ed5d4f8803e6bc1fd170a3cda91a1be4b18e3f5"
+checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1913,18 +1925,19 @@ dependencies = [
 
 [[package]]
 name = "thread_local"
-version = "1.1.4"
+version = "1.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5516c27b78311c50bf42c071425c560ac799b11c30b31f87e3081965fe5e0180"
+checksum = "3fdd6f064ccff2d6567adcb3873ca630700f00b5ad3f060c25b5dcfd9a4ce152"
 dependencies = [
+ "cfg-if",
  "once_cell",
 ]
 
 [[package]]
 name = "time"
-version = "0.3.17"
+version = "0.3.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a561bf4617eebd33bca6434b988f39ed798e527f51a1e797d0ee4f61c0a38376"
+checksum = "cd0cbfecb4d19b5ea75bb31ad904eb5b9fa13f21079c3b92017ebdf4999a5890"
 dependencies = [
  "itoa",
  "libc",
@@ -1942,9 +1955,9 @@ checksum = "2e153e1f1acaef8acc537e68b44906d2db6436e2b35ac2c6b42640fff91f00fd"
 
 [[package]]
 name = "time-macros"
-version = "0.2.6"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d967f99f534ca7e495c575c62638eebc2898a8c84c119b89e250477bc4ba16b2"
+checksum = "fd80a657e71da814b8e5d60d3374fc6d35045062245d80224748ae522dd76f36"
 dependencies = [
  "time-core",
 ]
@@ -2170,9 +2183,9 @@ dependencies = [
 
 [[package]]
 name = "wide"
-version = "0.7.6"
+version = "0.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "feff0a412894d67223777b6cc8d68c0dab06d52d95e9890d5f2d47f10dd9366c"
+checksum = "b3c11d2adfe89e9da42f01023d2c2998c53aa916ef4d26ca716dbb983725c0d2"
 dependencies = [
  "bytemuck",
  "safe_arch",
