@@ -15,7 +15,7 @@ use std::{collections::{HashMap, VecDeque}, time::Duration};
 use bevy_ecs::prelude::*;
 use futures::{channel::mpsc::{unbounded, self, UnboundedSender, TrySendError}, StreamExt};
 
-use nc_system::{LatencyMatrix, Coordinates};
+use nc_system::{LatencyMatrix, Coordinates, init_nc_resources};
 use session::*;
 pub use net::*;
 pub use packet::*;
@@ -23,6 +23,8 @@ pub use packet::*;
 type Latency = u64;
 pub use nc_system::NetworkCoord;
 use thiserror::Error;
+
+use crate::nc_system::setup_nc_systems;
 
 /// Multihash that uniquely identifying a node (represents the Multihash of the node's Public Key)
 pub type NodeID = hashdb::Hash;
@@ -62,7 +64,7 @@ pub enum NodeEvent<Net: Network> {
 	// Event returned for GetRemoteList, return list of remotes.
 	Info(NodeID, Vec<Net::Address>, Coordinates, Vec<(NodeID, Entity)>),
 	// Event returned for GetRemoteInfo
-	RemoteInfo(Entity, NodeID, Coordinates)
+	RemoteInfo(Entity, NodeID, LatencyMetrics)
 }
 
 #[derive(Debug, Error)]
@@ -112,8 +114,7 @@ impl<Net: Network> Node<Net> {
 		world.insert_resource::<NodeConfig<Net>>(config);
 		world.insert_resource::<EventSender<Net>>(EventSender { sender: event_sender });
 
-		// Init NC System
-		world.init_resource::<Coordinates>();
+		init_nc_resources(&mut world);
 
 		Self {
 			world,
@@ -129,11 +130,9 @@ impl<Net: Network> Node<Net> {
 		// Create a new Schedule, which defines an execution strategy for Systems
 		let mut schedule = Schedule::default();
 
-		schedule.add_system(update_latencies);
+		schedule.add_system(update_latencies::<Net>);
 
-		// Init NC Systems
-		schedule.add_system(nc_system::early_hosts_system.run_if(resource_exists::<LatencyMatrix>()));
-		schedule.add_system(nc_system::network_coordinate_system.run_if(|r: Option<Res<LatencyMatrix>>|r.is_none()));
+		setup_nc_systems::<Net>(&mut schedule);
 
 		// Session threads send events to main ECS thread through this channel
 		let (entity_event_sender, mut entity_event_receiver) = unbounded::<EntitySessionEvent<Net>>();
@@ -144,12 +143,12 @@ impl<Net: Network> Node<Net> {
 			futures::select! {
 				// Handle events from sessions (i.e. remote packets or latency measurements)
 				event = entity_event_receiver.next() => if let Some(event) = event {
-					log::debug!("node: received SessionEvent: {event:?}");
+					log::debug!("received SessionEvent: {event:?}");
 					Self::handle_session_events(&mut self.world, event);
 				},
 				// Handle actions
 				action = action_receiver.next() => if let Some(action) = action {
-					log::debug!("node: received NodeAction: {action:?}");
+					log::debug!("received NodeAction: {action:?}");
 					if let Err(err) = self.handle_node_action(action).await {
 						log::error!("Error: {err}");
 						break;
@@ -157,7 +156,7 @@ impl<Net: Network> Node<Net> {
 				},
 				// Handle new connections
 				conn = connection_stream.next() => {
-					log::debug!("node: received connection: {:?}", conn);
+					log::debug!("received connection: {:?}", conn);
 					match conn{
 						Some(Ok(conn)) => self.handle_connection(conn, entity_event_sender.clone()),
 						Some(Err(err)) => log::error!("Incoming Connection Failed: {err}"),
@@ -180,7 +179,7 @@ impl<Net: Network> Node<Net> {
 	fn handle_session_events(world: &mut World, session_event: EntitySessionEvent<Net>) {
 		let EntitySessionEvent { entity, event } = session_event;
 		match event {
-			SessionEvent::Packet(packet) => match *packet {
+			SessionEvent::Packet(packet) => match packet {
 				NodePacket::RequestPeer { near } => todo!(),
 				NodePacket::WantPeer { requester_id, requester_addr } => todo!(),
 				NodePacket::NCSystemPacket(packet) => {
@@ -242,11 +241,11 @@ impl<Net: Network> Node<Net> {
 					log::error!("unknown entity: {entity:?}");
 					return Ok(());
 				}
-				if let Ok((entity, remote, coordinates)) = self.world.query::<(Entity, &Remote, &Coordinates)>().get(&self.world, entity) {
+				if let Ok((entity, remote, latency_metrics)) = self.world.query::<(Entity, &Remote, &LatencyMetrics)>().get(&self.world, entity) {
 					self.send_event(NodeEvent::RemoteInfo(
 						entity,
 						remote.id.clone(),
-						coordinates.clone(),
+						latency_metrics.clone(),
 					))?;
 				} else {
 					log::error!("entity {entity:?} exists but has components: {:?}", self.world.inspect_entity(entity).iter().map(|info|info.name()).collect::<Vec<&str>>());
@@ -264,7 +263,7 @@ impl<Net: Network> Node<Net> {
 		// Derive remote ID
 		let remote_id = NodeID::hash(connection.remote_pub_key.as_ref());
 
-		log::info!("node: received connection from {remote_id:?} from address: {:?}", connection.net_address);
+		log::info!("received connection from {remote_id:?} from address: {:?}", connection.net_address);
 
 		// Search RemoteIDMap for entity given NodeID
 		let entity = self.world.resource::<RemoteIDMap>().map.get(&remote_id).cloned();
@@ -286,17 +285,20 @@ impl<Net: Network> Node<Net> {
 		};
 
 		// Spawn session
-		self.world.entity_mut(entity_id).insert(
-			Session::spawn(connection, entity_id, session_event_sender)
-		);
-	
+		let mut entity_mut = self.world.entity_mut(entity_id);
+		let session = Session::spawn(connection, entity_id, session_event_sender);
+		// Set need more pings to true
+		let _ = session.action_sender.unbounded_send(SessionAction::SetDesiredPingCount(10));
+		entity_mut.insert(session);
+		entity_mut.insert(LatencyMetrics::default());
+		
 	}
 }
 
 #[derive(Debug, Component)]
 pub struct LatestMeasuredLatency(Duration);
 
-#[derive(Debug, Default, Component)]
+#[derive(Debug, Clone, Default, Component)]
 pub struct LatencyMetrics {
 	latencies: VecDeque<u64>,
 	min_latency: u64,
@@ -313,8 +315,11 @@ impl LatencyMetrics {
 }
 
 /// Uses latest measured latency to update latency metrics
-fn update_latencies(mut query: Query<(&mut LatencyMetrics, &LatestMeasuredLatency), Changed<LatestMeasuredLatency>>) {
-	for (mut metrics, latency) in query.iter_mut() {
-		metrics.register_latency(latency.0.as_micros() as u64)
+fn update_latencies<Net: Network>(mut query: Query<(&mut LatencyMetrics, &LatestMeasuredLatency, &Session<Net>), Changed<LatestMeasuredLatency>>) {
+	for (mut metrics, latency, session) in query.iter_mut() {
+		metrics.register_latency(latency.0.as_micros() as u64);
+		if metrics.latencies.len() == 10 {
+			let _ = session.action_sender.unbounded_send(SessionAction::SetDesiredPingCount(10));
+		}
 	}
 }

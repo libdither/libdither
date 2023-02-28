@@ -126,6 +126,7 @@ async fn handle_command(line: String, action_sender: &mut mpsc::UnboundedSender<
 			let to_parse = split.next().ok_or(anyhow!("must pass an Entity ID of format: <index>v<generation>"))?;
 			
 			let entity = parser.parse(to_parse).map_err(|err|anyhow!("parsing error: {}", err[0]))?;
+			log::debug!("Getting info of entity: {:?}", entity);
 			action_sender.send(NodeAction::GetRemoteInfo(entity)).await?;
 		}
 		"print" => {

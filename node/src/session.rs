@@ -2,7 +2,7 @@ use std::{time::{Instant, Duration}};
 
 use async_std::{task};
 use bevy_ecs::prelude::*;
-use futures::{channel::mpsc::{UnboundedSender, UnboundedReceiver, unbounded, self}, SinkExt, StreamExt, FutureExt};
+use futures::{channel::mpsc::{UnboundedSender, UnboundedReceiver, unbounded, self, TrySendError}, SinkExt, StreamExt, FutureExt};
 use rkyv::{Deserialize, Archived};
 use thiserror::Error;
 
@@ -17,13 +17,16 @@ pub struct EntitySessionEvent<Net: Network> {
 #[derive(Debug)]
 pub enum SessionEvent<Net: Network> {
 	// TODO: Get rid of these stupid allocations
-	Packet(Box<NodePacket<Net>>),
+	Packet(NodePacket<Net>),
 	LatencyMeasurement(Duration)
 }
 
+/// Interact with remote Session
 pub enum SessionAction<Net: Network> {
-	Ping,
-	Packet(Box<NodePacket<Net>>),
+	// Send Ping NOW, set need_more_pings option if session should respond to acknowledged pings with new pings
+	SetDesiredPingCount(usize),
+	// Send a Packet to remote
+	Packet(NodePacket<Net>),
 }
 
 #[derive(Error, Debug)]
@@ -33,7 +36,9 @@ pub enum SessionError<Net: Network> {
 	#[error("connection error: {0}")]
 	ConnectionError(Net::ConnectionError),
 	#[error("event send error")]
-	SendError(#[from] futures::channel::mpsc::SendError)
+	SendError(#[from] futures::channel::mpsc::SendError),
+	#[error("event sender closed when sending message: {0}")]
+	UnboundedSendError(#[from] TrySendError<EntitySessionEvent<Net>>)
 }
 
 /// Component that represents data required to connect to a remote node.
@@ -63,7 +68,7 @@ impl<Net: Network> Session<Net> {
 		Session { action_sender }
 	}
 	pub fn send_packet(&self, packet: NodePacket<Net>) -> Result<(), mpsc::TrySendError<SessionAction<Net>>> {
-		self.action_sender.unbounded_send(SessionAction::Packet(Box::new(packet)))
+		self.action_sender.unbounded_send(SessionAction::Packet(packet))
 	}
 }
 
@@ -72,6 +77,7 @@ struct SessionState<Net: Network> {
 	ping_tracker: PingTracker<16>,
 	event_sender: UnboundedSender<EntitySessionEvent<Net>>,
 	entity_id: Entity,
+	ping_countdown: usize,
 }
 impl<Net: Network> SessionState<Net> {
 	/// Run `Session` with network `Connection`
@@ -83,6 +89,7 @@ impl<Net: Network> SessionState<Net> {
 			ping_tracker: PingTracker::<16>::default(),
 			event_sender,
 			entity_id,
+			ping_countdown: 0,
 		};
 
 		loop {
@@ -102,10 +109,32 @@ impl<Net: Network> SessionState<Net> {
 	}
 	pub async fn handle_packet(&mut self, packet: &Archived<PingingNodePacket<Net>>) -> Result<(), SessionError<Net>> {
 		let pinging_packet: PingingNodePacket<Net> = packet.deserialize(&mut rkyv::Infallible).unwrap();
-				
-		let event = SessionEvent::Packet(Box::new(pinging_packet.packet));
 
-		self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event }).await?;
+		// Record acknowledged ping
+		if let Some(ack) = pinging_packet.ack_ping {
+			if let Some(duration) = self.ping_tracker.record_unique_id(ack) {
+				// Return latency measurement to main thread
+				self.ping_countdown = self.ping_countdown.saturating_sub(1);
+				self.event_sender.unbounded_send(EntitySessionEvent { entity: self.entity_id, event: SessionEvent::LatencyMeasurement(duration) })?;
+			} else {
+				log::debug!("session: ping tracker: error when recording acknowledged ping id");
+			}
+		}
+
+		// Send back sent ping_id as acknowledgement
+		// TODO: Implement some kind of delayed packet queue so this can be made more efficient (i.e. optionally queue certain outgoing packets so they may be sent with a ping acknowledgement)
+		if let Some(ack_ping) = pinging_packet.ping_id {
+			// Gen ping id if session NEEDS MORE PINGS
+			let ping_id = (self.ping_countdown != 0).then(||self.ping_tracker.gen_unique_id());
+			self.packet_write.write_packet(&PingingNodePacket { packet: None, ping_id, ack_ping: Some(ack_ping) }).await?;
+		}
+
+		// Send packet event if received
+		if let Some(packet) = pinging_packet.packet {
+			let event = SessionEvent::Packet(packet);
+			self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event }).await?;
+		}
+
 
 		Ok(())
 	}
@@ -113,13 +142,19 @@ impl<Net: Network> SessionState<Net> {
 		match action {
 			SessionAction::Packet(packet) => {
 				let ping_packet = PingingNodePacket {
-					packet: *packet,
+					packet: Some(packet),
 					ping_id: None,
 					ack_ping: None,
 				};
 				self.packet_write.write_packet(&ping_packet).await?;
 			},
-				SessionAction::Ping => todo!(),
+			SessionAction::SetDesiredPingCount(ping_count) => {
+				self.ping_countdown = ping_count;
+				if self.ping_countdown != 0 {
+					self.ping_countdown = self.ping_countdown.saturating_sub(1);
+					self.packet_write.write_packet(&PingingNodePacket { packet: None, ping_id: Some(self.ping_tracker.gen_unique_id()), ack_ping: None }).await?;
+				}
+			},
 		}
 		Ok(())
 	}
@@ -146,7 +181,9 @@ impl<const MAX_PENDING: u8> Default for PingTracker<MAX_PENDING>
 		}
 }
 /// Unique identifier for a ping. Used with `PingTracker`
-struct PingID {
+#[derive(Debug, Clone, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
+#[archive_attr(derive(bytecheck::CheckBytes))]
+pub struct PingID {
 	id: u8,
 	gen: u8,
 }
@@ -210,5 +247,26 @@ impl<const MAX_PENDING: u8> PingTracker<MAX_PENDING>
 			},
 			None => None, // Invalid slot index
 		}
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use std::thread::sleep;
+
+use super::*;
+
+	#[test]
+	fn test_ping_tracker() {
+		let mut tracker = PingTracker::<5>::new();
+		let ping_id = tracker.gen_unique_id();
+		sleep(Duration::from_millis(10));
+		tracker.record_unique_id().unwrap();
+
+		let first_ping_id = tracker.gen_unique_id();
+		for _ in 0..4 {
+			tracker.gen_unique_id();
+		}
+		let ping_id = tracker.gen_unique_id();
 	}
 }

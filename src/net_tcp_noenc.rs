@@ -64,6 +64,7 @@ impl TcpNoencState {
 	async fn handle_connection(&mut self, tcp_stream: Result<(TcpStream, SocketAddr), TcpNoencError>) -> Result<(), SendError> {
 		let conn_result: Result<Connection<TcpNoenc>, TcpNoencError> = try {
 			let (mut tcp_stream, net_address) = tcp_stream?;
+			tcp_stream.set_nodelay(true)?;
 
 			// Send own public key to remote
 			let archived = to_bytes::<_, 64>(&self.net_config.public_key).map_err(|_|RkyvCodecError::SerializeError)?;

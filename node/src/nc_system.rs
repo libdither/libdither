@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Instant};
 
 use bevy_ecs::prelude::*;
 
@@ -13,6 +13,18 @@ const COORDINATE_DIMENSIONS: usize = 7;
 
 pub type NetworkCoord = nalgebra::SVector<i64, COORDINATE_DIMENSIONS>;
 
+pub fn init_nc_resources(world: &mut World) {
+	// Init NC Resources
+	world.init_resource::<Coordinates>();
+	world.insert_resource::<LatencyMatrix>(LatencyMatrix::new());
+}
+pub fn setup_nc_systems<Net: Network>(schedule: &mut Schedule) {
+	// Init NC Systems
+	schedule.add_system(nc_system_controller::<Net>);
+	schedule.add_system(early_hosts_system.run_if(resource_exists::<LatencyMatrix>()));
+	schedule.add_system(network_coordinate_system.run_if(|r: Option<Res<LatencyMatrix>>|r.is_none()));
+}
+
 #[derive(Debug, Archive, Serialize, Deserialize, Clone)]
 #[archive(bound(serialize = "__S: rkyv::ser::ScratchSpace + rkyv::ser::Serializer"))]
 #[archive_attr(derive(CheckBytes, Debug), check_bytes(bound = "__C: rkyv::validation::ArchiveContext, <__C as rkyv::Fallible>::Error: bytecheck::Error"))]
@@ -21,6 +33,11 @@ pub enum NCSystemPacket {
 	RequestLatencies,
 	Latencies(Vec<(NodeID, Latency)>),
 }
+
+// Status of entity if RequestLatencies is pending.
+#[derive(Debug, Component)]
+pub struct LatencyRequestActive(Instant);
+
 pub fn handle_nc_packet<Net: Network>(world: &mut World, entity: Entity, packet: NCSystemPacket) {
     match packet {
         NCSystemPacket::RequestLatencies => {
@@ -37,6 +54,8 @@ pub fn handle_nc_packet<Net: Network>(world: &mut World, entity: Entity, packet:
             }
         }
         NCSystemPacket::Latencies(latencies) => {
+			// Received latencies, make sure request is not active.
+			world.entity_mut(entity).remove::<LatencyRequestActive>();
             // If receive latencies, and in a small network, store them
             if let Some(matrix) = world.get_resource_mut::<LatencyMatrix>() {
 				let own_id = &world.get_resource::<crate::NodeConfig<Net>>().unwrap().node_id;
@@ -57,12 +76,13 @@ pub fn handle_nc_packet<Net: Network>(world: &mut World, entity: Entity, packet:
 
 				let outgoing_direct_latency = world.entity(entity).get::<LatencyMetrics>().unwrap().min_latency();
 				let direct_latencies = (outgoing_direct_latency, incoming_direct_latency.unwrap_or(outgoing_direct_latency));
-
+				log::debug!("registering latencies of {:?} in latency matrix: {:?}", entity, latencies);
                 world.get_resource_mut::<LatencyMatrix>().unwrap().add_entity_latencies(entity, latencies, direct_latencies)
             }
         }
     }
 }
+
 
 #[derive(Debug, Resource)]
 pub struct LatencyMatrix {
@@ -81,7 +101,7 @@ impl LatencyMatrix {
 		}
 	}
 	// When the network is small, and this node receives a limited set of measured latencies, each associated with a specific known entity
-	fn add_entity_latencies(&mut self, entity: Entity, mut latencies: Vec<(Entity, Latency)>, direct_latencies: (Latency, Latency)) {
+	fn add_entity_latencies(&mut self, entity: Entity, latencies: Vec<(Entity, Latency)>, direct_latencies: (Latency, Latency)) {
 		let index = if let Some((index, _)) = self.index_map.get_mut(&entity) {
 			*index
 		} else {
@@ -145,6 +165,20 @@ pub struct Coordinates {
 	out_coord: NetworkCoord,
 }
 
+/* pub fn manage_state_system(world: &mut World) {
+	world.query::<&LatencyMetrics>().iter(world).count() >
+} */
+// Manages the state of the NC System and initiates state changes
+pub fn nc_system_controller<Net: Network>(mut commands: Commands, mut latency_metrics: Query<(Entity, &LatencyMetrics, &Session<Net>, Option<&LatencyRequestActive>), Changed<LatencyMetrics>>) {
+	for (entity, metrics, session, request_active) in latency_metrics.iter() {
+		if metrics.latencies.len() >= 10 && request_active.is_none() {
+			let _ = session.send_packet(NodePacket::NCSystemPacket(NCSystemPacket::RequestLatencies));
+			// Mark that request was already sent
+			commands.entity(entity).insert(LatencyRequestActive(Instant::now()));
+		}
+	}
+}
+
 /// Do non-negative matrix factorization for early host coordinates (this function should only run if LatencyMatrix exists as a resource)
 pub fn early_hosts_system(mut coordinates: ResMut<Coordinates>, latency_matrix: Res<LatencyMatrix>) {
 	let matrix = &latency_matrix.latency_matrix;
@@ -156,6 +190,7 @@ pub fn early_hosts_system(mut coordinates: ResMut<Coordinates>, latency_matrix: 
 		nalgebra::Dyn(matrix.ncols()), 
 		nalgebra::Const::<COORDINATE_DIMENSIONS>);
 
+	// Extract coordinates from latency_matrix
 	coordinates.in_coord = w.row(0).clone().transpose().map(|m|m as i64);
 	coordinates.out_coord = h.column(0).clone_owned().map(|m|m as i64);
 }

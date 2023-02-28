@@ -7,15 +7,15 @@ use futures::SinkExt;
 use rkyv::{AlignedVec, Archive, Archived, Deserialize, Infallible, Serialize};
 use rkyv_codec::{RkyvCodecError, RkyvWriter, VarintLength, archive_stream};
 
-use crate::{net::Network, NetworkCoord, NodeID, nc_system::NCSystemPacket};
+use crate::{net::Network, NetworkCoord, NodeID, nc_system::NCSystemPacket, session::PingID};
 
 /// Acknowledging node packet
 #[derive(Debug, Archive, Serialize, Deserialize, Clone)]
 #[archive_attr(derive(CheckBytes))]
 pub struct PingingNodePacket<Net: Network> {
-	pub packet: NodePacket<Net>, // The packet being sent
-	pub ping_id: Option<u16>, // Contains ping id if expects immediate acknowledgement
-	pub ack_ping: Option<u16>, // Packet ping id that this packet is acknowledging
+	pub packet: Option<NodePacket<Net>>, // The packet being sent
+	pub ping_id: Option<PingID>, // Contains ping id if expects immediate acknowledgement
+	pub ack_ping: Option<PingID>, // Packet ping id that this packet is acknowledging
 }
 
 /// Packets that are sent between nodes in this protocol.
