@@ -1,0 +1,14 @@
+[
+    {
+        "action": { "Connect": [ "QmTjsMh4ePZeHRyadGqimgMYZc8ZQLkUTNSq7LNaJLQSuQ", "200.0.0.0:8080", [] ] },
+        "time": { "secs": 1, "nanos": 0 }
+    },
+    {
+        "action": "GetInfo",
+        "time": { "secs": 3, "nanos": 0 }
+    },
+    {
+        "action": { "GetRemoteInfo": { "index": 0, "generation": 0 } },
+        "time": { "secs": 4, "nanos": 0 }
+    }
+]

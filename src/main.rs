@@ -14,8 +14,6 @@ use futures::{SinkExt, StreamExt, FutureExt, channel::mpsc};
 use chumsky::prelude::*;
 
 use node::{NodeID, NodePacket, NodeAction, Node, NodeConfig, Network};
-
-use rand::{thread_rng, RngCore};
 use rustyline_async::{Readline, ReadlineError, SharedWriter};
 
 mod net_tcp_noenc;

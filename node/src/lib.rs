@@ -160,7 +160,7 @@ impl<Net: Network> Node<Net> {
 					log::debug!("received connection: {:?}", conn);
 					match conn{
 						Some(Ok(conn)) => self.handle_connection(conn, entity_event_sender.clone()),
-						Some(Err(err)) => log::error!("Incoming Connection Failed: {err}"),
+						Some(Err(err)) => log::error!("failed to establish connection: {err}"),
 						_ => { log::info!("Connection Stream closed."); break },
 					}
 					

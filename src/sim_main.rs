@@ -7,6 +7,7 @@
 
 use std::{net::{Ipv4Addr, SocketAddr}, time::Duration};
 use futures_delay_queue::{DelayQueue, delay_queue};
+use log::LevelFilter;
 use serde::{Serialize, Deserialize};
 
 use anyhow::anyhow;
@@ -17,6 +18,7 @@ use node::{NodeID, NodeAction, Node, NodeConfig, Network};
 
 mod net_tcp_noenc;
 use net_tcp_noenc::*;
+use simplelog::{Config, SimpleLogger, TerminalMode, TermLogger, ColorChoice};
 
 type DitherNet = TcpNoenc;
 type Address = <DitherNet as Network>::Address;
@@ -29,10 +31,17 @@ struct Command {
 
 #[async_std::main]
 async fn main() -> anyhow::Result<()> {
+	TermLogger::init(
+        LevelFilter::Info,
+        Config::default(),
+        TerminalMode::Stdout,
+        ColorChoice::Never
+    )?;
+
     let mut args = std::env::args();
     let commands_path = args.nth(1).ok_or(anyhow!("requires command file"))?;
 
-	println!("This version of Dither is run in a simulator. Reading {commands_path:?} for commands");
+	log::info!("This version of Dither is run in a simulator. Reading {commands_path:?} for commands");
 
 	// Parse listening addr
 	let port_string = args.next().clone();
@@ -74,19 +83,22 @@ async fn main() -> anyhow::Result<()> {
 	// Send NodeAction to check for errors in the bevy schedule
 	action_sender.send(NodeAction::GetInfo).await?;
 
-
 	loop {
 		futures::select! {
+			command = command_receiver.receive() => if let Some(command) = command {
+				log::info!("Sending NodeAction: {:?}", command);
+				action_sender.send(command).await?;
+			},
 			event = event_receiver.next() => if let Some(event) = event {
-				println!("Received Node Event: {:?}", event);
+				log::info!("Received Node Event: {:?}", event);
 			},
 			join = node_join => match join {
 				Ok(_) => {
-					println!("Exited sucessfully");
+					log::info!("Exited sucessfully");
 					break;
 				},
 				Err(err) => {
-					println!("node errored: {}", err);
+					log::info!("node errored: {}", err);
 					break;
 				},
 			}
