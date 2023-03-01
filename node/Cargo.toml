@@ -16,9 +16,9 @@ eyre = "0.6.8"
 bevy_ecs = { git = "https://github.com/bevyengine/bevy", branch = "main" }
 
 # Serialization
-rkyv = { version = "0.7.39", features = ["validation"] } # Zero-Copy Serialization
-bytecheck = "0.6.9"
-rkyv_codec = { git = "https://github.com/zyansheep/rkyv_codec" }
+rkyv = { version = "0.7.40", features = ["validation"] } # Zero-Copy Serialization
+bytecheck = "0.6.10"
+rkyv_codec = "0.3.1"
 serde = "1.0.152"
 
 # Data & Utilities
