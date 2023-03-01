@@ -23,6 +23,7 @@
             pkg-config
             exa
             fd
+            gdb
             (rust-bin.fromRustupToolchainFile ./rust-toolchain.toml)
           ];
 

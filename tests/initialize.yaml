@@ -29,13 +29,14 @@ hosts:
   node1:
     network_node_id: 0
     processes:
-    - path: cargo run -- 
-      args: -m http.server 80
+    - path: ../target/debug/libdither
+      args: "8080"
       start_time: 3s
+      environment: "RUST_BACKTRACE=1"
   # three hosts with hostnames 'client1', 'client2', and 'client3'
   node2:
-    network_node_id: 0c
+    network_node_id: 0
     processes:
-    - path: /usr/bin/curl
-      args: -s server
-      start_time: 5s
+    - path: ../target/debug/libdither
+      args: "8081"
+      start_time: 3s
