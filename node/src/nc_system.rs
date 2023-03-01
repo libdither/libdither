@@ -25,7 +25,7 @@ pub fn setup_nc_systems<Net: Network>(schedule: &mut Schedule) {
 	schedule.add_system(network_coordinate_system.run_if(|r: Option<Res<LatencyMatrix>>|r.is_none()));
 }
 
-#[derive(Debug, Archive, Serialize, Deserialize, Clone)]
+#[derive(Debug, Archive, Serialize, Deserialize, Clone, serde::Serialize, serde::Deserialize)]
 #[archive(bound(serialize = "__S: rkyv::ser::ScratchSpace + rkyv::ser::Serializer"))]
 #[archive_attr(derive(CheckBytes, Debug), check_bytes(bound = "__C: rkyv::validation::ArchiveContext, <__C as rkyv::Fallible>::Error: bytecheck::Error"))]
 pub enum NCSystemPacket {

@@ -1,4 +1,4 @@
 /target
 .direnv
-tests/shadow.data
-tests/shadow.log
+shadow.data
+shadow.log

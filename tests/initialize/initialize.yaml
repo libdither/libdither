@@ -19,7 +19,7 @@ network:
         edge [
           source 0
           target 0
-          latency "50 ms"
+          latency "20 ms"
           packet_loss 0.01
         ]
       ]
@@ -29,14 +29,14 @@ hosts:
   node1:
     network_node_id: 0
     processes:
-    - path: ../target/debug/libdither
-      args: "8080"
+    - path: ../../target/debug/sim_bin
+      args: [ '../../../node_instructions.json', '8080' ]
       start_time: 3s
       environment: "RUST_BACKTRACE=1"
   # three hosts with hostnames 'client1', 'client2', and 'client3'
   node2:
     network_node_id: 0
     processes:
-    - path: ../target/debug/libdither
-      args: "8081"
+    - path: ../../target/debug/sim_bin
+      args: [ '../../../node_instructions.json', '8081' ]
       start_time: 3s

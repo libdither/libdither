@@ -5,18 +5,15 @@
 #![feature(async_fn_in_trait)]
 #![feature(type_alias_impl_trait)]
 
-use std::{net::{Ipv4Addr, SocketAddr}, io::Write, time::Duration};
+use std::{net::{Ipv4Addr, SocketAddr}, time::Duration};
+use futures_delay_queue::{DelayQueue, delay_queue};
 use serde::{Serialize, Deserialize};
 
 use anyhow::anyhow;
-use async_std::task;
-use bevy_ecs::prelude::Entity;
+use async_std::{task};
 use futures::{SinkExt, StreamExt, FutureExt, channel::mpsc};
 
-use node::{NodeID, NodePacket, NodeAction, Node, NodeConfig, Network};
-
-use rand::{thread_rng, RngCore};
-use rustyline_async::{Readline, ReadlineError, SharedWriter};
+use node::{NodeID, NodeAction, Node, NodeConfig, Network};
 
 mod net_tcp_noenc;
 use net_tcp_noenc::*;
@@ -33,20 +30,27 @@ struct Command {
 #[async_std::main]
 async fn main() -> anyhow::Result<()> {
     let mut args = std::env::args();
-    let commands_path = Path::new(std::env::args().next().ok_or(anyhow!("requires command file"))?);
+    let commands_path = args.nth(1).ok_or(anyhow!("requires command file"))?;
 
 	println!("This version of Dither is run in a simulator. Reading {commands_path:?} for commands");
 
 	// Parse listening addr
-	let listen_port: u16 = match args.next().map(|s|s.parse()) {
+	let port_string = args.next().clone();
+	let listen_port: u16 = match port_string.clone().map(|s|s.parse()) {
 		Some(Ok(port)) => port,
 		None => return Err(anyhow!("Requires a port number as a second command line argument")),
-		Some(Err(err)) => return Err(anyhow!("Failed to parse port number: {err}"))
+		Some(Err(err)) => return Err(anyhow!("Failed to parse port number {:?}: {err}", port_string.clone()))
 	};
 	let listen_addr = SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), listen_port);
 
     // Open file & deserialize commands.
-    
+    let commands_file = std::fs::File::open(commands_path)?;
+    let commands: Vec<Command> = serde_json::from_reader(commands_file)?;
+
+    let (delay_queue, command_receiver) = delay_queue();
+    for command in commands {
+        delay_queue.insert(command.action, command.time);
+    }
 
 	// Generate fake private key for testing because I haven't implemented encryption yet
 	let mut private_key = listen_addr.to_string().as_bytes().to_vec();

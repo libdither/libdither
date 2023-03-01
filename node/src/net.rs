@@ -19,7 +19,7 @@ pub trait Network: fmt::Debug + Resource + Clone + 'static {
 	type ArchivedAddress: fmt::Debug + Deserialize<Self::Address, Infallible> + for<'v> CheckBytes<DefaultValidator<'v>> + Send + Sync;
 
 	/// Public key of a node, optionally passed to connect(). 
-	type NodePubKey: AsRef<[u8]> + Send + Sync + Clone + fmt::Debug;
+	type NodePubKey: AsRef<[u8]> + Send + Sync + Clone + fmt::Debug + serde::Serialize + for<'d> serde::Deserialize<'d>;
 	/// Private key of local node
 	type NodePrivKey: Send + Sync + Clone;
 	/// Persistent state can be optionally passed to connect(), stores stuff like symmetric keys, forward secrecy stuff, etc.

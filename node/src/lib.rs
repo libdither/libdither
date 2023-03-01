@@ -36,6 +36,7 @@ struct Remote {
 
 /// Actions that can be run by an external entity (either the internet implementation or the user)
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(bound(serialize="", deserialize=""))]
 pub enum NodeAction<Net: Network> {
 	/// Connect to another node
 	Connect(NodeID, Net::Address, Option<Net::NodePubKey>),

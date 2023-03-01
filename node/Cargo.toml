@@ -23,7 +23,7 @@ serde = "1.0.152"
 
 # Data & Utilities
 hashdb = { git = "https://github.com/libdither/disp" }
-nalgebra = { version = "0.32.1", features = ["rkyv-serialize"] }
+nalgebra = { version = "0.32.1", features = ["rkyv-serialize", "serde-serialize"] }
 num = "0.4.0"
 log = "0.4.17"
 derive_more = "0.99.17"

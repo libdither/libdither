@@ -19,7 +19,8 @@ pub struct PingingNodePacket<Net: Network> {
 }
 
 /// Packets that are sent between nodes in this protocol.
-#[derive(Debug, Archive, Serialize, Deserialize, Clone)]
+#[derive(Debug, Archive, Serialize, Deserialize, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(bound(serialize="", deserialize=""))]
 #[archive(bound(serialize = "__S: rkyv::ser::ScratchSpace + rkyv::ser::Serializer"))]
 #[archive_attr(derive(CheckBytes), check_bytes(bound = "__C: rkyv::validation::ArchiveContext, <__C as rkyv::Fallible>::Error: bytecheck::Error"))]
 pub enum NodePacket<Net: Network> {
