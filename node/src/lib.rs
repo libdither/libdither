@@ -186,8 +186,10 @@ impl<Net: Network> Node<Net> {
 		let EntitySessionEvent { entity, event } = session_event;
 		match event {
 			SessionEvent::Packet(packet) => match packet {
-				NodePacket::PeerList(latencies) => {
-
+				NodePacket::PeerList(peer_list) => {
+					for peer in peer_list {
+						
+					}
 				}
 				NodePacket::RequestPeers { near } => {
 					// If small world network, send back list
