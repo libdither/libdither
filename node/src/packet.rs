@@ -27,9 +27,11 @@ pub enum NodePacket<Net: Network> {
 	/// Sent by a node that is looking for new nodes to connect to, usually nodes that have recently joined the network.
 	/// Received by direct peer of sender node, request contains sender's best approximation of its own Network Coordinates.
 	/// Receiver node will send WantPeer packets to some subset of its peers
-	RequestPeer {
+	RequestPeers {
 		near: NetworkCoord,
 	},
+	// Sent back in small networks, or to trusted nodes. Is a list or subset of all currently connected nodes.
+	PeerList(Vec<(NodeID, Net::Address)>),
 
 	/// Sent by a node that receives a RequestPeers request to multiple nodes
 	/// Notify peer near requester that the `requester` node is looking for a peer.

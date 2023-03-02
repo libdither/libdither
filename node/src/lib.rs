@@ -186,8 +186,25 @@ impl<Net: Network> Node<Net> {
 		let EntitySessionEvent { entity, event } = session_event;
 		match event {
 			SessionEvent::Packet(packet) => match packet {
-				NodePacket::RequestPeer { near } => todo!(),
-				NodePacket::WantPeer { requester_id, requester_addr } => todo!(),
+				NodePacket::PeerList(latencies) => {
+
+				}
+				NodePacket::RequestPeers { near } => {
+					// If small world network, send back list
+					if world.get_resource::<LatencyMatrix>().is_some() {
+
+					} else { // If large world network, do more complicated things
+						todo!()
+					}
+				},
+				NodePacket::WantPeer { requester_id, requester_addr } => {
+					// If small world network, initiate connection
+					if world.get_resource::<LatencyMatrix>().is_some() {
+
+					} else {
+
+					}
+				},
 				NodePacket::NCSystemPacket(packet) => {
 					nc_system::handle_nc_packet::<Net>(world, entity, packet);
 				}
