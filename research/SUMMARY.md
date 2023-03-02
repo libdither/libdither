@@ -28,3 +28,5 @@
 - [Philosophy]()
   - [Design Philosophy](./applications/application-design-philosophy.md)
   - [Copyright is Cancer](./copyright-is-cancer.md)
+- [Articles]()
+  - [What is a Monad?](./what-is-a-monad.md)
