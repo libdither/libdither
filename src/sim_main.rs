@@ -32,7 +32,7 @@ struct Command {
 #[async_std::main]
 async fn main() -> anyhow::Result<()> {
 	TermLogger::init(
-        LevelFilter::Info,
+        LevelFilter::Debug,
         Config::default(),
         TerminalMode::Stdout,
         ColorChoice::Never
@@ -90,7 +90,7 @@ async fn main() -> anyhow::Result<()> {
 				action_sender.send(command).await?;
 			},
 			event = event_receiver.next() => if let Some(event) = event {
-				log::info!("Received Node Event: {:?}", event);
+				log::info!("Received Node Event: {:#?}", event);
 			},
 			join = node_join => match join {
 				Ok(_) => {

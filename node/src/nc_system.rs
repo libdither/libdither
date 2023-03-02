@@ -89,7 +89,7 @@ pub struct LatencyMatrix {
 	// Set of entities that are registered in the latency_matrix. If when registered there are left-over measurements not added to the matrix, they are stored here.
 	index_map: HashMap<Entity, (usize, Vec<(Entity, Latency)>)>,
 	// Each row represents a node, each column of each row represents a latency measured from Row # -> Column #
-	latency_matrix: DMatrix<f64>,
+	pub latency_matrix: DMatrix<f64>,
 }
 impl LatencyMatrix {
 	/// Create a new latency matrix

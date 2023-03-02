@@ -15,6 +15,7 @@ use std::{collections::{HashMap, VecDeque}, time::Duration};
 use bevy_ecs::prelude::*;
 use futures::{channel::mpsc::{unbounded, self, UnboundedSender, TrySendError}, StreamExt};
 
+use nalgebra::DMatrix;
 use nc_system::{LatencyMatrix, Coordinates, init_nc_resources};
 use session::*;
 pub use net::*;
@@ -29,7 +30,7 @@ use crate::nc_system::setup_nc_systems;
 /// Multihash that uniquely identifying a node (represents the Multihash of the node's Public Key)
 pub type NodeID = hashdb::Hash;
 
-#[derive(Component)]
+#[derive(Debug, Component)]
 struct Remote {
 	id: NodeID,
 }
@@ -63,7 +64,7 @@ pub enum NodeEvent<Net: Network> {
 	NewConnection(NodeID, Net::Address),
 	
 	// Event returned for GetRemoteList, return list of remotes.
-	Info(NodeID, Vec<Net::Address>, Coordinates, Vec<(NodeID, Entity)>),
+	Info(NodeID, Vec<Net::Address>, Coordinates, Vec<(NodeID, Entity)>, Option<DMatrix<f64>>),
 	// Event returned for GetRemoteInfo
 	RemoteInfo(Entity, NodeID, LatencyMetrics)
 }
@@ -80,7 +81,7 @@ pub struct Node<Net: Network> {
 	_listen_addr: Net::Address,
 }
 
-#[derive(Default, Resource)]
+#[derive(Debug, Default, Resource)]
 pub struct RemoteIDMap {
 	map: HashMap<NodeID, Entity>,
 }
@@ -92,6 +93,7 @@ pub struct NodeConfig<Net: Network> {
 	pub node_id: NodeID,
 	pub listen_addrs: Vec<Net::Address>,
 }
+
 #[derive(Resource)]
 pub struct EventSender<Net: Network> {
 	sender: UnboundedSender<NodeEvent<Net>>,
@@ -125,6 +127,9 @@ impl<Net: Network> Node<Net> {
 	/// Runs the event loop of the node. This should be spawned in its own task.
 	pub async fn run(mut self, mut action_receiver: mpsc::UnboundedReceiver<NodeAction<Net>>) -> Result<Self, Net::ConnectionError> {
 		let config = self.world.resource::<NodeConfig<Net>>();
+		
+		log::info!("listening on address: {:?}", config.listen_addrs);
+
 		let (network, mut connection_stream) = Net::init(config.into()).await?;
 		self.world.insert_resource(network);
 
@@ -235,7 +240,8 @@ impl<Net: Network> Node<Net> {
 				
 				let node_config = self.world.resource::<NodeConfig<Net>>();
 				let coords = self.world.resource::<Coordinates>();
-				self.send_event(NodeEvent::Info(node_config.node_id.clone(), node_config.listen_addrs.clone(), coords.clone(), remotes))?;
+				let latency_matrix = self.world.get_resource::<LatencyMatrix>().map(|res|res.latency_matrix.clone());
+				self.send_event(NodeEvent::Info(node_config.node_id.clone(), node_config.listen_addrs.clone(), coords.clone(), remotes, latency_matrix))?;
 			},
 			NodeAction::GetRemoteInfo(entity) => {
 				if self.world.get_entity(entity).is_none() {
@@ -319,8 +325,5 @@ impl LatencyMetrics {
 fn update_latencies<Net: Network>(mut query: Query<(&mut LatencyMetrics, &LatestMeasuredLatency, &Session<Net>), Changed<LatestMeasuredLatency>>) {
 	for (mut metrics, latency, session) in query.iter_mut() {
 		metrics.register_latency(latency.0.as_micros() as u64);
-		if metrics.latencies.len() == 10 {
-			let _ = session.action_sender.unbounded_send(SessionAction::SetDesiredPingCount(10));
-		}
 	}
 }

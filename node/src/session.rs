@@ -151,6 +151,7 @@ impl<Net: Network> SessionState<Net> {
 			SessionAction::SetDesiredPingCount(ping_count) => {
 				self.ping_countdown = ping_count;
 				if self.ping_countdown != 0 {
+					log::debug!("sending ping packet");
 					self.ping_countdown = self.ping_countdown.saturating_sub(1);
 					self.packet_write.write_packet(&PingingNodePacket { packet: None, ping_id: Some(self.ping_tracker.gen_unique_id()), ack_ping: None }).await?;
 				}
