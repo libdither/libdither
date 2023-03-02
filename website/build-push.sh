@@ -2,9 +2,12 @@
 mdbook build dither-spec -d ../public/docs
 hugo
 pushd public
-git commit -am "build"
+git add .
+git commit -m "build"
 git push
 popd
 # Only commit & push build directory
-git commit -m "update build" -- public
+git restore --staged .
+git add public
+git commit -m "update build"
 git push
