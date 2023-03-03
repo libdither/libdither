@@ -10,7 +10,7 @@ mod net;
 mod packet;
 pub mod nc_system;
 
-use std::{collections::{HashMap, VecDeque}, time::Duration};
+use std::{collections::{HashMap, VecDeque}, time::{Duration, Instant}};
 
 use bevy_ecs::prelude::*;
 use futures::{channel::mpsc::{unbounded, self, UnboundedSender, TrySendError}, StreamExt};
@@ -187,8 +187,8 @@ impl<Net: Network> Node<Net> {
 		match event {
 			SessionEvent::Packet(packet) => match packet {
 				NodePacket::PeerList(peer_list) => {
-					for peer in peer_list {
-						
+					for (peer, addr) in peer_list {
+						world.resource::<Net>().connect(peer, addr, None, None);
 					}
 				}
 				NodePacket::RequestPeers { near } => {
@@ -321,22 +321,36 @@ impl<Net: Network> Node<Net> {
 	}
 }
 
+/// Latest latency measurement
 #[derive(Debug, Component)]
 pub struct LatestMeasuredLatency(Duration);
 
+/// Information about latency measurements with a remote node
 #[derive(Debug, Clone, Default, Component)]
 pub struct LatencyMetrics {
 	latencies: VecDeque<u64>,
 	min_latency: u64,
 
-	early_latencies: Option<Vec<(Entity, Latency)>>
+	early_latencies: Option<Vec<(Entity, Latency)>>,
+
+	last_update: Option<Instant>,
 }
 impl LatencyMetrics {
 	fn register_latency(&mut self, latency: u64) {
 		self.latencies.push_back(latency);
+		self.last_update = Some(Instant::now());
 	}
 	fn min_latency(&self) -> u64 {
 		self.latencies.iter().cloned().min().unwrap_or(u64::MAX)
+	}
+	fn needed_measurements(&self) -> usize {
+		// Need 1 ping if more than 5 minutes have passed, otherwise 0
+		let timeout_pings = self.last_update.map(|i|Instant::now().duration_since(i) >= Duration::from_secs(300)).unwrap_or(false) as usize;
+		
+		
+		if self.latencies.len() >= 10 {
+			return 0;
+		}
 	}
 }
 
