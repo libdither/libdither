@@ -67,6 +67,11 @@ impl<Net: Network> Session<Net> {
 		});
 		Session { action_sender }
 	}
+	pub fn send_action(&self, action: SessionAction<Net>) {
+		if let Err(err) = self.action_sender.unbounded_send(action) {
+			log::warn!("Tried to send SessionAction: {:?} but session was closed", err);
+		}
+	}
 	pub fn send_packet(&self, packet: NodePacket<Net>) -> Result<(), mpsc::TrySendError<SessionAction<Net>>> {
 		self.action_sender.unbounded_send(SessionAction::Packet(packet))
 	}

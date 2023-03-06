@@ -6,24 +6,12 @@ use bytecheck::CheckBytes;
 use nalgebra::{DMatrix};
 use rkyv::{Serialize, Archive, Deserialize};
 
-use crate::{NodeID, Latency, LatencyMetrics, Remote, session::Session, NodePacket, Network, RemoteIDMap};
+use crate::{NodeID, Latency, LatencyMetrics, Remote, session::Session, NodePacket, Network, RemoteIDMap, NodeSystem};
 
 const EARLY_HOSTS_THRESHOLD: usize = 20;
 const COORDINATE_DIMENSIONS: usize = 7;
 
 pub type NetworkCoord = nalgebra::SVector<i64, COORDINATE_DIMENSIONS>;
-
-pub fn init_nc_resources(world: &mut World) {
-	// Init NC Resources
-	world.init_resource::<Coordinates>();
-	world.insert_resource::<LatencyMatrix>(LatencyMatrix::new());
-}
-pub fn setup_nc_systems<Net: Network>(schedule: &mut Schedule) {
-	// Init NC Systems
-	schedule.add_system(nc_system_controller::<Net>);
-	schedule.add_system(early_hosts_system.run_if(resource_exists::<LatencyMatrix>()));
-	schedule.add_system(network_coordinate_system.run_if(|r: Option<Res<LatencyMatrix>>|r.is_none()));
-}
 
 #[derive(Debug, Archive, Serialize, Deserialize, Clone, serde::Serialize, serde::Deserialize)]
 #[archive(bound(serialize = "__S: rkyv::ser::ScratchSpace + rkyv::ser::Serializer"))]
@@ -34,55 +22,72 @@ pub enum NCSystemPacket {
 	Latencies(Vec<(NodeID, Latency)>),
 }
 
-// Status of entity if RequestLatencies is pending.
-#[derive(Debug, Component)]
-pub struct LatencyRequestActive(Instant);
-
-pub fn handle_nc_packet<Net: Network>(world: &mut World, entity: Entity, packet: NCSystemPacket) {
-    match packet {
-        NCSystemPacket::RequestLatencies => {
-            // Send back latencies if the network this node knows about is "small".
-            if world.get_resource::<LatencyMatrix>().is_some() {
-                let latencies = world.query::<(Entity, &LatencyMetrics)>()
-                    .iter(world)
-                    .map(|(e, l)|(world.entity(e).get::<Remote>().unwrap().id.clone(), l.min_latency()))
-                    .collect::<Vec<(NodeID, Latency)>>();
-
-				// Send response latencies packet
-				let packet = NodePacket::NCSystemPacket(NCSystemPacket::Latencies(latencies));
-                world.entity(entity).get::<Session<Net>>().unwrap().send_packet(packet).unwrap();
-            }
-        }
-        NCSystemPacket::Latencies(latencies) => {
-			// Received latencies, make sure request is not active.
-			world.entity_mut(entity).remove::<LatencyRequestActive>();
-            // If receive latencies, and in a small network, store them
-            if let Some(matrix) = world.get_resource_mut::<LatencyMatrix>() {
-				let own_id = &world.get_resource::<crate::NodeConfig<Net>>().unwrap().node_id;
-
-                let remote_map = world.get_resource::<RemoteIDMap>().unwrap();
-                let mut incoming_direct_latency: Option<Latency> = Default::default();
-
-				let latencies = latencies.iter().flat_map(|(id, latency)|{
-					match remote_map.map.get(id) {
-						Some(entity) => Some((entity.clone(), *latency)),
-						None if incoming_direct_latency.is_none() => {
-							if id == own_id { incoming_direct_latency = Some(*latency) }
-							None
-						}
-						_ => None,
-					}
-				}).collect();
-
-				let outgoing_direct_latency = world.entity(entity).get::<LatencyMetrics>().unwrap().min_latency();
-				let direct_latencies = (outgoing_direct_latency, incoming_direct_latency.unwrap_or(outgoing_direct_latency));
-				log::debug!("registering latencies of {:?} in latency matrix: {:?}", entity, latencies);
-                world.get_resource_mut::<LatencyMatrix>().unwrap().add_entity_latencies(entity, latencies, direct_latencies)
-            }
-        }
+pub struct NCSystem;
+impl NodeSystem for NCSystem {
+    fn register_resources(world: &mut World) {
+        // Init NC Resources
+		world.init_resource::<Coordinates>();
+		world.insert_resource::<LatencyMatrix>(LatencyMatrix::new());
     }
+
+    fn register_systems(schedule: &mut Schedule) {
+        schedule.add_system(nc_system_controller::<Net>);
+		schedule.add_system(early_hosts_system.run_if(resource_exists::<LatencyMatrix>()));
+		schedule.add_system(network_coordinate_system.run_if(|r: Option<Res<LatencyMatrix>>|r.is_none()));
+    }
+
+    type Packet = NCSystemPacket;
+
+    fn handle_packet(world: &mut World, entity: Entity, packet: Self::Packet) {
+		match packet {
+			NCSystemPacket::RequestLatencies => {
+				// Send back latencies if the network this node knows about is "small".
+				if world.get_resource::<LatencyMatrix>().is_some() {
+					let latencies = world.query::<(Entity, &LatencyMetrics)>()
+						.iter(world)
+						.map(|(e, l)|(world.entity(e).get::<Remote>().unwrap().id.clone(), l.min_latency()))
+						.collect::<Vec<(NodeID, Latency)>>();
+	
+					// Send response latencies packet
+					let packet = NodePacket::NCSystemPacket(NCSystemPacket::Latencies(latencies));
+					world.entity(entity).get::<Session<Net>>().unwrap().send_packet(packet).unwrap();
+				}
+			}
+			NCSystemPacket::Latencies(latencies) => {
+				// Received latencies, make sure request is not active.
+				world.entity_mut(entity).remove::<LatencyRequestActive>();
+				// If receive latencies, and in a small network, store them
+				if let Some(matrix) = world.get_resource_mut::<LatencyMatrix>() {
+					let own_id = &world.get_resource::<crate::NodeConfig<Net>>().unwrap().node_id;
+	
+					let remote_map = world.get_resource::<RemoteIDMap>().unwrap();
+					let mut incoming_direct_latency: Option<Latency> = Default::default();
+	
+					let latencies = latencies.iter().flat_map(|(id, latency)|{
+						match remote_map.map.get(id) {
+							Some(entity) => Some((entity.clone(), *latency)),
+							None if incoming_direct_latency.is_none() => {
+								if id == own_id { incoming_direct_latency = Some(*latency) }
+								None
+							}
+							_ => None,
+						}
+					}).collect();
+	
+					let outgoing_direct_latency = world.entity(entity).get::<LatencyMetrics>().unwrap().min_latency();
+					let direct_latencies = (outgoing_direct_latency, incoming_direct_latency.unwrap_or(outgoing_direct_latency));
+					log::debug!("registering latencies of {:?} in latency matrix: {:?}", entity, latencies);
+					world.get_resource_mut::<LatencyMatrix>().unwrap().add_entity_latencies(entity, latencies, direct_latencies)
+				}
+			}
+		}
+	}
+	
 }
 
+// Status of entity if RequestLatencies is pending.
+#[derive(Debug, Component)]
+pub struct RequestLatenciesActive(Instant);
 
 #[derive(Debug, Resource)]
 pub struct LatencyMatrix {
@@ -165,16 +170,14 @@ pub struct Coordinates {
 	out_coord: NetworkCoord,
 }
 
-/* pub fn manage_state_system(world: &mut World) {
-	world.query::<&LatencyMetrics>().iter(world).count() >
-} */
+
 // Manages the state of the NC System and initiates state changes
-pub fn nc_system_controller<Net: Network>(mut commands: Commands, mut latency_metrics: Query<(Entity, &LatencyMetrics, &Session<Net>, Option<&LatencyRequestActive>), Changed<LatencyMetrics>>) {
+pub fn nc_system_controller<Net: Network>(mut commands: Commands, mut latency_metrics: Query<(Entity, &LatencyMetrics, &Session<Net>, Option<&RequestLatenciesActive>), Changed<LatencyMetrics>>) {
 	for (entity, metrics, session, request_active) in latency_metrics.iter() {
 		if metrics.latencies.len() >= 10 && request_active.is_none() {
 			let _ = session.send_packet(NodePacket::NCSystemPacket(NCSystemPacket::RequestLatencies));
 			// Mark that request was already sent
-			commands.entity(entity).insert(LatencyRequestActive(Instant::now()));
+			commands.entity(entity).insert(RequestLatenciesActive(Instant::now()));
 		}
 	}
 }

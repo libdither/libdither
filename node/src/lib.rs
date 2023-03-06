@@ -4,19 +4,24 @@
 #![feature(return_position_impl_trait_in_trait)]
 #![feature(generic_const_exprs)]
 #![feature(drain_filter)]
+#![feature(associated_type_defaults)]
 
 pub mod session;
 mod net;
 mod packet;
 pub mod nc_system;
+mod latency_metrics;
+mod discovery;
+use discovery::DiscoverySystem;
+use latency_metrics::*;
 
-use std::{collections::{HashMap, VecDeque}, time::{Duration, Instant}};
+use std::{collections::HashMap};
 
 use bevy_ecs::prelude::*;
 use futures::{channel::mpsc::{unbounded, self, UnboundedSender, TrySendError}, StreamExt};
 
 use nalgebra::DMatrix;
-use nc_system::{LatencyMatrix, Coordinates, init_nc_resources};
+use nc_system::{LatencyMatrix, Coordinates, NCSystem};
 use session::*;
 pub use net::*;
 pub use packet::*;
@@ -24,8 +29,6 @@ pub use packet::*;
 type Latency = u64;
 pub use nc_system::NetworkCoord;
 use thiserror::Error;
-
-use crate::nc_system::setup_nc_systems;
 
 /// Multihash that uniquely identifying a node (represents the Multihash of the node's Public Key)
 pub type NodeID = hashdb::Hash;
@@ -108,6 +111,15 @@ impl<Net: Network> From<&NodeConfig<Net>> for NetConfig<Net> {
 	}
 }
 
+/// Easy way to modularize different sub-systems of a node. This doesn't prevent system interdependencies, it just streamlines world and schedule initialization. (and a few other things)
+pub trait NodeSystem {
+	fn register_resources(world: &mut World);
+	fn register_systems(schedule: &mut Schedule);
+	type Packet = ();
+	/// Entity must contain valid Session<Net> in world otherwise this function may panic.
+	fn handle_packet(world: &mut World, entity: Entity, packet: Self::Packet) {}
+}
+
 impl<Net: Network> Node<Net> {
 	pub fn new(config: NodeConfig<Net>, event_sender: UnboundedSender<NodeEvent<Net>>) -> Self {
 		let _listen_addr = config.listen_addrs[0].clone();
@@ -117,7 +129,9 @@ impl<Net: Network> Node<Net> {
 		world.insert_resource::<NodeConfig<Net>>(config);
 		world.insert_resource::<EventSender<Net>>(EventSender { sender: event_sender });
 
-		init_nc_resources(&mut world);
+		DiscoverySystem::register_resources(&mut world);
+		LatencyMetricsSystem::register_resources(&mut world);
+		NCSystem::register_resources(&mut world);
 
 		Self {
 			world,
@@ -136,9 +150,12 @@ impl<Net: Network> Node<Net> {
 		// Create a new Schedule, which defines an execution strategy for Systems
 		let mut schedule = Schedule::default();
 
-		schedule.add_system(update_latencies::<Net>);
+		LatencyMetricsSystem::register_systems(&mut schedule);
 
-		setup_nc_systems::<Net>(&mut schedule);
+		DiscoverySystem::register_systems(&mut schedule);
+		LatencyMetricsSystem::register_systems(&mut schedule);
+		NCSystem::register_systems(&mut schedule);
+
 
 		// Session threads send events to main ECS thread through this channel
 		let (entity_event_sender, mut entity_event_receiver) = unbounded::<EntitySessionEvent<Net>>();
@@ -208,13 +225,12 @@ impl<Net: Network> Node<Net> {
 					}
 				},
 				NodePacket::NCSystemPacket(packet) => {
-					nc_system::handle_nc_packet::<Net>(world, entity, packet);
+					NCSystem::handle_packet(world, entity, packet);
 				}
 				_ => unimplemented!(),
 			}
 			SessionEvent::LatencyMeasurement(measurement) => {
-				// Update latest measured latency to new latency measurement
-				world.entity_mut(entity).insert(LatestMeasuredLatency(measurement));
+				LatencyMetricsSystem::handle_packet(world, entity, measurement);
 			},  
 		}
 	}
@@ -314,49 +330,9 @@ impl<Net: Network> Node<Net> {
 		let mut entity_mut = self.world.entity_mut(entity_id);
 		let session = Session::spawn(connection, entity_id, session_event_sender);
 		// Set need more pings to true
-		let _ = session.action_sender.unbounded_send(SessionAction::SetDesiredPingCount(10));
+		session.send_action(SessionAction::SetDesiredPingCount(10));
 		entity_mut.insert(session);
 		entity_mut.insert(LatencyMetrics::default());
 		
-	}
-}
-
-/// Latest latency measurement
-#[derive(Debug, Component)]
-pub struct LatestMeasuredLatency(Duration);
-
-/// Information about latency measurements with a remote node
-#[derive(Debug, Clone, Default, Component)]
-pub struct LatencyMetrics {
-	latencies: VecDeque<u64>,
-	min_latency: u64,
-
-	early_latencies: Option<Vec<(Entity, Latency)>>,
-
-	last_update: Option<Instant>,
-}
-impl LatencyMetrics {
-	fn register_latency(&mut self, latency: u64) {
-		self.latencies.push_back(latency);
-		self.last_update = Some(Instant::now());
-	}
-	fn min_latency(&self) -> u64 {
-		self.latencies.iter().cloned().min().unwrap_or(u64::MAX)
-	}
-	fn needed_measurements(&self) -> usize {
-		// Need 1 ping if more than 5 minutes have passed, otherwise 0
-		let timeout_pings = self.last_update.map(|i|Instant::now().duration_since(i) >= Duration::from_secs(300)).unwrap_or(false) as usize;
-		
-		
-		if self.latencies.len() >= 10 {
-			return 0;
-		}
-	}
-}
-
-/// Uses latest measured latency to update latency metrics
-fn update_latencies<Net: Network>(mut query: Query<(&mut LatencyMetrics, &LatestMeasuredLatency, &Session<Net>), Changed<LatestMeasuredLatency>>) {
-	for (mut metrics, latency, session) in query.iter_mut() {
-		metrics.register_latency(latency.0.as_micros() as u64);
 	}
 }

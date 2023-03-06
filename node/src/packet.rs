@@ -7,7 +7,7 @@ use futures::SinkExt;
 use rkyv::{AlignedVec, Archive, Archived, Deserialize, Infallible, Serialize};
 use rkyv_codec::{RkyvCodecError, RkyvWriter, VarintLength, archive_stream};
 
-use crate::{net::Network, NetworkCoord, NodeID, nc_system::NCSystemPacket, session::PingID};
+use crate::{net::Network, NetworkCoord, NodeID, nc_system::NCSystemPacket, session::PingID, discovery::DiscoveryPacket};
 
 /// Acknowledging node packet
 #[derive(Debug, Archive, Serialize, Deserialize, Clone)]
@@ -24,25 +24,7 @@ pub struct PingingNodePacket<Net: Network> {
 #[archive(bound(serialize = "__S: rkyv::ser::ScratchSpace + rkyv::ser::Serializer"))]
 #[archive_attr(derive(CheckBytes), check_bytes(bound = "__C: rkyv::validation::ArchiveContext, <__C as rkyv::Fallible>::Error: bytecheck::Error"))]
 pub enum NodePacket<Net: Network> {
-	/// Sent by a node that is looking for new nodes to connect to, usually nodes that have recently joined the network.
-	/// Received by direct peer of sender node, request contains sender's best approximation of its own Network Coordinates.
-	/// Receiver node will send WantPeer packets to some subset of its peers
-	RequestPeers {
-		near: NetworkCoord,
-	},
-	// Sent back in small networks, or to trusted nodes. Is a list or subset of all currently connected nodes.
-	PeerList(Vec<(NodeID, Net::Address)>),
-
-	/// Sent by a node that receives a RequestPeers request to multiple nodes
-	/// Notify peer near requester that the `requester` node is looking for a peer.
-	WantPeer {
-		requester_id: NodeID,
-		requester_addr: Net::Address
-	},
-	/// Send back 
-	AlreadyPeered {
-		requester_id: NodeID,
-	},
+	DiscoveryPacket(DiscoveryPacket<Net>),
 	// Subpacket for all things network-coordinate-system
 	NCSystemPacket(NCSystemPacket),
 
