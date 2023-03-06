@@ -44,7 +44,7 @@ pub struct DiscoverySystem<Net: Network> {
 
 impl<Net: Network> NodeSystem for DiscoverySystem<Net> {
 	fn register_resources(world: &mut World) {
-		todo!()
+		
 	}
 
 	fn register_systems(schedule: &mut Schedule) {
