@@ -117,6 +117,7 @@ pub trait NodeSystem {
 	fn register_systems(schedule: &mut Schedule);
 	type Packet = ();
 	/// Entity must contain valid Session<Net> in world otherwise this function may panic.
+	#[allow(unused_variables)]
 	fn handle_packet(world: &mut World, entity: Entity, packet: Self::Packet) {}
 }
 
@@ -129,9 +130,9 @@ impl<Net: Network> Node<Net> {
 		world.insert_resource::<NodeConfig<Net>>(config);
 		world.insert_resource::<EventSender<Net>>(EventSender { sender: event_sender });
 
-		DiscoverySystem::register_resources(&mut world);
-		LatencyMetricsSystem::register_resources(&mut world);
-		NCSystem::register_resources(&mut world);
+		DiscoverySystem::<Net>::register_resources(&mut world);
+		LatencyMetricsSystem::<Net>::register_resources(&mut world);
+		NCSystem::<Net>::register_resources(&mut world);
 
 		Self {
 			world,
@@ -150,12 +151,9 @@ impl<Net: Network> Node<Net> {
 		// Create a new Schedule, which defines an execution strategy for Systems
 		let mut schedule = Schedule::default();
 
-		LatencyMetricsSystem::register_systems(&mut schedule);
-
-		DiscoverySystem::register_systems(&mut schedule);
-		LatencyMetricsSystem::register_systems(&mut schedule);
-		NCSystem::register_systems(&mut schedule);
-
+		DiscoverySystem::<Net>::register_systems(&mut schedule);
+		LatencyMetricsSystem::<Net>::register_systems(&mut schedule);
+		NCSystem::<Net>::register_systems(&mut schedule);
 
 		// Session threads send events to main ECS thread through this channel
 		let (entity_event_sender, mut entity_event_receiver) = unbounded::<EntitySessionEvent<Net>>();
@@ -203,34 +201,14 @@ impl<Net: Network> Node<Net> {
 		let EntitySessionEvent { entity, event } = session_event;
 		match event {
 			SessionEvent::Packet(packet) => match packet {
-				NodePacket::PeerList(peer_list) => {
-					for (peer, addr) in peer_list {
-						world.resource::<Net>().connect(peer, addr, None, None);
-					}
-				}
-				NodePacket::RequestPeers { near } => {
-					// If small world network, send back list
-					if world.get_resource::<LatencyMatrix>().is_some() {
-
-					} else { // If large world network, do more complicated things
-						todo!()
-					}
-				},
-				NodePacket::WantPeer { requester_id, requester_addr } => {
-					// If small world network, initiate connection
-					if world.get_resource::<LatencyMatrix>().is_some() {
-
-					} else {
-
-					}
-				},
+				NodePacket::DiscoveryPacket(packet) => DiscoverySystem::handle_packet(world, entity, packet),
 				NodePacket::NCSystemPacket(packet) => {
-					NCSystem::handle_packet(world, entity, packet);
+					NCSystem::<Net>::handle_packet(world, entity, packet);
 				}
 				_ => unimplemented!(),
 			}
 			SessionEvent::LatencyMeasurement(measurement) => {
-				LatencyMetricsSystem::handle_packet(world, entity, measurement);
+				LatencyMetricsSystem::<Net>::handle_packet(world, entity, measurement);
 			},  
 		}
 	}

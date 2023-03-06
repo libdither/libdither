@@ -1,9 +1,14 @@
 //! This node system is for peer discovery. It requests for peers from another node and receives a list of peers to connect to or awaits connections from other peers.
 
 use bevy_ecs::prelude::*;
+use rand::Rng;
+use rkyv::{Archive, Serialize, Deserialize};
+use bytecheck::CheckBytes;
 
 use crate::{NodeSystem, session::{SessionInfo, Session}, Remote, NodePacket, Network, NodeID, nc_system::LatencyMatrix};
 
+#[derive(Debug, Clone, Archive, Serialize, Deserialize, serde::Serialize, serde::Deserialize)]
+#[archive_attr(derive(CheckBytes))]
 pub enum DiscoveryPacket<Net: Network> {
 	/// Sent by a node that is looking for new nodes to connect to, usually nodes that have recently joined the network.
 	RequestPeers,
@@ -43,7 +48,7 @@ impl<Net: Network> NodeSystem for DiscoverySystem<Net> {
 	}
 
 	fn register_systems(schedule: &mut Schedule) {
-		schedule.add_system(handle_peer_request_list::<Net>);
+		schedule.add_system(handle_peer_request::<Net>);
 	}
 
 	type Packet = DiscoveryPacket<Net>;
@@ -60,42 +65,56 @@ impl<Net: Network> NodeSystem for DiscoverySystem<Net> {
 					world.entity_mut(entity).insert(PeerRequest::Notify);
 				}
 			},
-			DiscoveryPacket::PeerList(_) => todo!(),
-			DiscoveryPacket::PeersNotified { number, request_id } => todo!(),
-			DiscoveryPacket::WantPeer { requester_id, requester_addr, request_id } => todo!(),
-			DiscoveryPacket::AcknolwedgedRequest { request_id } => todo!(),
+			DiscoveryPacket::PeerList(list) => {
+				let net = world.resource::<Net>();
+				for (remote_id, net_address) in list {
+					net.connect(remote_id, net_address, None, None);
+				}
+			},
+			DiscoveryPacket::PeersNotified { number: _, request_id: _ } => {},
+			DiscoveryPacket::WantPeer { requester_id, requester_addr, request_id: _ } => {
+				let net = world.resource::<Net>();
+				net.connect(requester_id, requester_addr, None, None);
+			},
+			DiscoveryPacket::AcknolwedgedRequest { request_id: _ } => {},
 		}
 	}
 }
 
 
+#[derive(Debug, Component)]
 enum PeerRequest {
 	List,
 	Notify,
 }
-#[derive(Component)]
-struct PeerList;
-
-#[derive(Component)]
-struct Notify;
 
 
-fn handle_peer_request_list<Net: Network>(mut requesting: Query<(&Session<Net>, &PeerRequest), Added<PeerRequest>>, mut peers: Query<(&Remote, &SessionInfo<Net>)>) {
-	for (session, request) in requesting {
+fn handle_peer_request<Net: Network>(mut requesting: Query<(&Remote, &SessionInfo<Net>, &Session<Net>, &PeerRequest), Added<PeerRequest>>, mut peers: Query<(&Remote, &SessionInfo<Net>, &Session<Net>)>) {
+	for (req_remote, req_info, req_sess, request) in &requesting {
 		match request {
 			PeerRequest::List => {
 				// Send all peers
-				let peers = peers.iter().map(|(remote, info)|(remote.id, info.net_address)).take(20).collect::<Vec<(NodeID, Net::Address)>>();
-				session.send_packet(NodePacket::DiscoveryPacket(DiscoveryPacket::PeerList(peers)));
+				let peers = peers.iter().map(|(remote, info, _)|(remote.id.clone(), info.net_address.clone())).take(20).collect::<Vec<(NodeID, Net::Address)>>();
+				req_sess.send_packet(NodePacket::DiscoveryPacket(DiscoveryPacket::PeerList(peers)));
 			}
 			PeerRequest::Notify => {
-				
+				let request_id = rand::thread_rng().gen::<usize>();
+				let mut peers_count = 0usize;
+				for (_, _, sess) in &peers {
+					peers_count += 1;
+
+					sess.send_packet(NodePacket::DiscoveryPacket(DiscoveryPacket::WantPeer {
+						requester_id: req_remote.id.clone(),
+						requester_addr: req_info.net_address.clone(),
+						request_id,
+					}));
+
+					if peers_count >= 20 { break }
+				}
+
+				req_sess.send_packet(NodePacket::DiscoveryPacket(DiscoveryPacket::PeersNotified { number: peers_count, request_id }));
 			}
 		}
 		
 	}
-}
-
-fn handle_peer_request_notify() {
-
 }

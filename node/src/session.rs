@@ -2,7 +2,7 @@ use std::{time::{Instant, Duration}};
 
 use async_std::{task};
 use bevy_ecs::prelude::*;
-use futures::{channel::mpsc::{UnboundedSender, UnboundedReceiver, unbounded, self, TrySendError}, SinkExt, StreamExt, FutureExt};
+use futures::{channel::mpsc::{UnboundedSender, UnboundedReceiver, unbounded, TrySendError}, SinkExt, StreamExt, FutureExt};
 use rkyv::{Deserialize, Archived};
 use thiserror::Error;
 
@@ -72,8 +72,10 @@ impl<Net: Network> Session<Net> {
 			log::warn!("Tried to send SessionAction: {:?} but session was closed", err);
 		}
 	}
-	pub fn send_packet(&self, packet: NodePacket<Net>) -> Result<(), mpsc::TrySendError<SessionAction<Net>>> {
-		self.action_sender.unbounded_send(SessionAction::Packet(packet))
+	pub fn send_packet(&self, packet: NodePacket<Net>) {
+		if let Err(err) = self.action_sender.unbounded_send(SessionAction::Packet(packet)) {
+			log::warn!("Tried to send NodePacket: {:?} but session was closed", err);
+		}
 	}
 }
 

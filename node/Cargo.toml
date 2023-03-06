@@ -30,3 +30,4 @@ derive_more = "0.99.17"
 nnmf_nalgebra = "0.1.0"
 argmin = { version = "0.8.1" }
 argmin-math = { version = "0.3", features = ["nalgebra_latest-serde"] }
+rand = "0.8.5"

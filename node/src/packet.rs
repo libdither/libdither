@@ -7,7 +7,7 @@ use futures::SinkExt;
 use rkyv::{AlignedVec, Archive, Archived, Deserialize, Infallible, Serialize};
 use rkyv_codec::{RkyvCodecError, RkyvWriter, VarintLength, archive_stream};
 
-use crate::{net::Network, NetworkCoord, NodeID, nc_system::NCSystemPacket, session::PingID, discovery::DiscoveryPacket};
+use crate::{net::Network, NetworkCoord, nc_system::NCSystemPacket, session::PingID, discovery::DiscoveryPacket};
 
 /// Acknowledging node packet
 #[derive(Debug, Archive, Serialize, Deserialize, Clone)]
