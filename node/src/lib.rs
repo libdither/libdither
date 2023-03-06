@@ -5,6 +5,7 @@
 #![feature(generic_const_exprs)]
 #![feature(drain_filter)]
 #![feature(associated_type_defaults)]
+#![feature(generic_arg_infer)]
 
 pub mod session;
 mod net;

@@ -26,17 +26,27 @@ network:
 
 hosts:
   # a host with the hostname 'server'
-  node1:
+  start:
     network_node_id: 0
+    ip_addr: "200.0.0.0"
     processes:
     - path: ../../target/debug/sim_bin
-      args: [ '../../../node_instructions.json', '8080' ]
-      start_time: 3s
+      args: [ '../../../start_node.json', '8080' ]
+      start_time: 0s
       environment: "RUST_BACKTRACE=1"
+    
   # three hosts with hostnames 'client1', 'client2', and 'client3'
-  node2:
+  normal1:
     network_node_id: 0
+    ip_addr: "200.0.0.1"
     processes:
     - path: ../../target/debug/sim_bin
-      args: [ '../../../node_instructions.json', '8081' ]
-      start_time: 3s
+      args: [ '../../../normal_node.json', '8081' ]
+      start_time: 0s
+  normal2:
+    network_node_id: 0
+    ip_addr: "200.0.0.2"
+    processes:
+    - path: ../../target/debug/sim_bin
+      args: [ '../../../normal_node.json', '8082' ]
+      start_time: 1s

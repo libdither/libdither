@@ -62,7 +62,7 @@ impl<Net: Network> Session<Net> {
 		// Spawn session task with connection
 		task::spawn(async move {
 			if let Err(err) = SessionState::run(connection, entity_id, session_event_sender, action_receiver).await {
-				log::warn!("Session closed with error: {err}");
+				log::warn!("Session for node {entity_id:?} closed with error: {err}");
 			}
 		});
 		Session { action_sender }
@@ -81,7 +81,7 @@ impl<Net: Network> Session<Net> {
 
 struct SessionState<Net: Network> {
 	packet_write: PacketWrite<Net>,
-	ping_tracker: PingTracker<16>,
+	ping_tracker: PingTracker<64>,
 	event_sender: UnboundedSender<EntitySessionEvent<Net>>,
 	entity_id: Entity,
 	ping_countdown: usize,
@@ -93,7 +93,7 @@ impl<Net: Network> SessionState<Net> {
 
 		let mut state = SessionState {
 			packet_write: PacketWrite::<Net>::new(conn.write),
-			ping_tracker: PingTracker::<16>::default(),
+			ping_tracker: PingTracker::default(),
 			event_sender,
 			entity_id,
 			ping_countdown: 0,
@@ -133,7 +133,9 @@ impl<Net: Network> SessionState<Net> {
 		if let Some(ack_ping) = pinging_packet.ping_id {
 			// Gen ping id if session NEEDS MORE PINGS
 			let ping_id = (self.ping_countdown != 0).then(||self.ping_tracker.gen_unique_id());
-			self.packet_write.write_packet(&PingingNodePacket { packet: None, ping_id, ack_ping: Some(ack_ping) }).await?;
+			let packet = PingingNodePacket { packet: None, ping_id, ack_ping: Some(ack_ping) };
+			log::debug!("Sending ping: {packet:?}");
+			self.packet_write.write_packet(&packet).await?;
 		}
 
 		// Send packet event if received
@@ -158,9 +160,8 @@ impl<Net: Network> SessionState<Net> {
 			SessionAction::SetDesiredPingCount(ping_count) => {
 				self.ping_countdown = ping_count;
 				if self.ping_countdown != 0 {
-					log::debug!("sending ping packet");
 					self.ping_countdown = self.ping_countdown.saturating_sub(1);
-					self.packet_write.write_packet(&PingingNodePacket { packet: None, ping_id: Some(self.ping_tracker.gen_unique_id()), ack_ping: None }).await?;
+					log::debug!("Set new needed ping count: {:?}", self.ping_countdown);
 				}
 			},
 		}
@@ -182,11 +183,11 @@ struct PingTracker<const MAX_PENDING: u8>
 	next_free_slot: u8,
 }
 impl<const MAX_PENDING: u8> Default for PingTracker<MAX_PENDING>
-	where [(); MAX_PENDING as usize]: Sized + std::fmt::Debug + std::default::Default 
+	where [(); MAX_PENDING as usize]: Sized + std::fmt::Debug
 {
-		fn default() -> Self {
-				Self { ping_queue: [Default::default(); MAX_PENDING as usize], next_free_slot: Default::default() }
-		}
+	fn default() -> Self {
+		Self { ping_queue: [(PingSlot::default(), 0); MAX_PENDING as usize], next_free_slot: Default::default() }
+	}
 }
 /// Unique identifier for a ping. Used with `PingTracker`
 #[derive(Debug, Clone, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
@@ -203,7 +204,7 @@ enum PingSlot {
 	NextSlot(u8),
 }
 impl<const MAX_PENDING: u8> PingTracker<MAX_PENDING>
-	where [(); MAX_PENDING as usize]: Sized + std::fmt::Debug + std::default::Default 
+	where [(); MAX_PENDING as usize]: Sized + std::fmt::Debug 
 {
 	// Generate a unique id for this ping. Records the current time and waits for call to record_unique_id with the returned id.
 	pub fn gen_unique_id(&mut self) -> PingID {
