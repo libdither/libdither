@@ -10,11 +10,8 @@
 pub mod session;
 mod net;
 mod packet;
-pub mod nc_system;
-mod latency_metrics;
-mod discovery;
-use discovery::DiscoverySystem;
-use latency_metrics::*;
+mod systems;
+pub use systems::*;
 
 use std::{collections::HashMap};
 
@@ -22,13 +19,11 @@ use bevy_ecs::prelude::*;
 use futures::{channel::mpsc::{unbounded, self, UnboundedSender, TrySendError}, StreamExt};
 
 use nalgebra::DMatrix;
-use nc_system::{LatencyMatrix, Coordinates, NCSystem};
 use session::*;
 pub use net::*;
 pub use packet::*;
 
 type Latency = u64;
-pub use nc_system::NetworkCoord;
 use thiserror::Error;
 
 /// Multihash that uniquely identifying a node (represents the Multihash of the node's Public Key)

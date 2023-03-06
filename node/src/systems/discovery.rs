@@ -5,7 +5,7 @@ use rand::Rng;
 use rkyv::{Archive, Serialize, Deserialize};
 use bytecheck::CheckBytes;
 
-use crate::{NodeSystem, session::{SessionInfo, Session}, Remote, NodePacket, Network, NodeID, nc_system::LatencyMatrix};
+use crate::{NodeSystem, session::{SessionInfo, Session}, Remote, NodePacket, Network, NodeID, LatencyMatrix};
 
 #[derive(Debug, Clone, Archive, Serialize, Deserialize, serde::Serialize, serde::Deserialize)]
 #[archive_attr(derive(CheckBytes))]
