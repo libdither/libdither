@@ -1,10 +1,11 @@
 //! Defines all the generic components of a node interacting with an internet structure.
 //! A Node should be able to work in any kind of network. simulated or not. This file provides the basic structures that any network implementation will use to interact with a Node, in addition to any structures a User will use to interact with the network implementation and by extension, the Node.
 
-use std::fmt;
+use std::{fmt, net::{SocketAddr, SocketAddrV4, Ipv4Addr}};
+use async_std::net::{TcpStream, ToSocketAddrs, UdpSocket};
 use bevy_ecs::{prelude::Component, system::Resource};
 use bytecheck::CheckBytes;
-use futures::{AsyncRead, AsyncWrite, Stream, stream::FusedStream};
+use futures::{AsyncRead, AsyncWrite, Stream, stream::FusedStream, Sink};
 use rkyv::{Serialize, Archive, ser::{serializers::{CompositeSerializer, AlignedSerializer, FallbackScratch, HeapScratch, AllocScratch, SharedSerializeMap}}, Deserialize, AlignedVec, validation::validators::DefaultValidator, Infallible};
 
 use crate::NodeID;
@@ -65,4 +66,75 @@ pub struct Connection<Net: Network> {
 }
 impl<Net: Network> fmt::Debug for Connection<Net> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { f.debug_struct("Connection").field("net_address", &self.net_address).finish() }
+}
+
+
+trait Transport {
+	type InitData;
+	type InitError;
+	type TransportError;
+	async fn create(data: Self::InitData) -> Result<Self, Self::InitError>;
+}
+struct TcpTransport {
+	read: TcpStream,
+	write: TcpStream,
+}
+impl Transport for TcpTransport {
+	type InitData = impl ToSocketAddrs;
+	type InitError = async_std::io::Error;
+	type TransportError = async_std::io::Error;
+
+	async fn create(data: Self::InitData) {
+		let stream = TcpStream::connect(data).await?;
+		TcpTransport { read: stream.clone(), write: stream }
+    }
+}
+struct UdpTransport {
+
+}
+impl Transport for UdpTransport {
+	type InitData = impl ToSocketAddrs;
+	type InitError = async_std::io::Error;
+	async fn create(data: Self::InitData) -> Result<Self, Self::InitError> {
+		let local_addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 0));
+		let socket = UdpSocket::bind(local_addr).await?;
+		socket.connect(data).await?;
+	}
+}
+
+/// Represents a Transport that may lose or corrupt data in the process of transport.
+trait LossyTransport: Transport {
+	/// Sends `data` along socket. Returns amount of data sent.
+	fn lossy_send(&self, data: &[u8]) -> Result<usize, Self::TransportError>;
+	/// Receives from socket into `data`. Returns amount of data received.
+	fn lossy_recv(&self, data: &mut [u8]) -> Result<usize, Self::TransportError>;
+}
+
+/// A Transport that labels each packet with a number.
+trait SequencingTransport: LossyTransport {
+	/// Sends `data` along socket. Returns amount of data sent.
+	fn send(&self, data: &[u8]) -> Result<usize, Self::TransportError>;
+	/// Receives from socket into `data`. Returns amount of data received.
+	fn recv(&self, data: &mut [u8]) -> Result<usize, Self::TransportError>;
+}
+
+/// A Transport that acknoledges received data.
+trait ByzantineTransport: LossyTransport {
+
+}
+
+/// A Transport that checks for corrupted data by providing a checksum.
+trait CheckingTransport: LossyTransport {
+
+}
+
+trait ReliableTransport: SequencingTransport + ByzantineTransport + CheckingTransport {
+
+}
+
+
+
+
+trait DataTransport: Transport {
+
 }
