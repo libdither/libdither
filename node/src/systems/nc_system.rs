@@ -154,6 +154,8 @@ impl LatencyMatrix {
 		}
 		self.index_map.get_mut(&entity).unwrap().1 = pending;
 
+		log::debug!("new latency matrix: {}", self.latency_matrix);
+
 	}
 	// Remove entity from the matrix
 	fn remove_entity_latencies(&mut self, entity: Entity) {

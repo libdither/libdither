@@ -85,6 +85,7 @@ struct SessionState<Net: Network> {
 	event_sender: UnboundedSender<EntitySessionEvent<Net>>,
 	entity_id: Entity,
 	ping_countdown: usize,
+	last_ping: Option<Instant>,
 }
 impl<Net: Network> SessionState<Net> {
 	/// Run `Session` with network `Connection`
@@ -97,6 +98,7 @@ impl<Net: Network> SessionState<Net> {
 			event_sender,
 			entity_id,
 			ping_countdown: 0,
+			last_ping: None,
 		};
 
 		loop {
@@ -136,6 +138,7 @@ impl<Net: Network> SessionState<Net> {
 			let packet = PingingNodePacket { packet: None, ping_id, ack_ping: Some(ack_ping) };
 			log::debug!("Sending ping: {packet:?}");
 			self.packet_write.write_packet(&packet).await?;
+			self.last_ping = Some(Instant::now());
 		}
 
 		// Send packet event if received
@@ -162,6 +165,13 @@ impl<Net: Network> SessionState<Net> {
 				if self.ping_countdown != 0 {
 					self.ping_countdown = self.ping_countdown.saturating_sub(1);
 					log::debug!("Set new needed ping count: {:?}", self.ping_countdown);
+					if self.last_ping.is_none() || self.last_ping.unwrap().elapsed() > Duration::from_millis(200) {
+						let ping_id = (self.ping_countdown != 0).then(||self.ping_tracker.gen_unique_id());
+						let packet = PingingNodePacket { packet: None, ping_id, ack_ping: None };
+						log::debug!("Sending ping: {packet:?}");
+						self.last_ping = Some(Instant::now());
+						self.packet_write.write_packet(&packet).await?;
+					}
 				}
 			},
 		}

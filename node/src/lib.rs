@@ -305,6 +305,9 @@ impl<Net: Network> Node<Net> {
 		let session = Session::spawn(connection, entity_id, session_event_sender);
 		// Set need more pings to true
 		session.send_action(SessionAction::SetDesiredPingCount(10));
+		// Request peers from each other
+		session.send_packet(NodePacket::DiscoveryPacket(DiscoveryPacket::RequestPeers));
+
 		entity_mut.insert(session);
 		entity_mut.insert(LatencyMetrics::default());
 		
