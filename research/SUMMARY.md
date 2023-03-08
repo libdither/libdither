@@ -30,3 +30,4 @@
   - [Copyright is Cancer](./copyright-is-cancer.md)
 - [Articles]()
   - [What is a Monad?](./what-is-a-monad.md)
+  - [How to do Node Discovery while Limiting Structural Data Leakage?](./node_discovery_ideas.md)
