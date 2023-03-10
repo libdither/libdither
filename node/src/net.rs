@@ -1,8 +1,7 @@
 //! Defines all the generic components of a node interacting with an internet structure.
 //! A Node should be able to work in any kind of network. simulated or not. This file provides the basic structures that any network implementation will use to interact with a Node, in addition to any structures a User will use to interact with the network implementation and by extension, the Node.
 
-use std::{fmt, net::{SocketAddr, SocketAddrV4, Ipv4Addr}};
-use async_std::net::{TcpStream, ToSocketAddrs, UdpSocket};
+use std::fmt;
 use bevy_ecs::{prelude::Component, system::Resource};
 use bytecheck::CheckBytes;
 use futures::{AsyncRead, AsyncWrite, Stream, stream::FusedStream, Sink};

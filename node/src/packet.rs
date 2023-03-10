@@ -3,7 +3,8 @@
 use std::fmt;
 
 use bytecheck::CheckBytes;
-use futures::SinkExt;
+use futures::Sink;
+use pin_project::pin_project;
 use rkyv::{AlignedVec, Archive, Archived, Deserialize, Infallible, Serialize};
 use rkyv_codec::{RkyvCodecError, RkyvWriter, VarintLength, archive_stream};
 
@@ -27,6 +28,9 @@ pub enum NodePacket<Net: Network> {
 	DiscoveryPacket(DiscoveryPacket<Net>),
 	// Subpacket for all things network-coordinate-system
 	NCSystemPacket(NCSystemPacket),
+
+	// Request a peering relationship
+	Peer(Net::Address),
 
 	/// Raw Data Packet
 	Data(Vec<u8>),
@@ -54,7 +58,9 @@ where <Net::Address as Archive>::Archived: Deserialize<Net::Address, Infallible>
 	}
 }
 
+#[pin_project]
 pub struct PacketRead<Net: Network> {
+	#[pin]
 	reader: Net::Read,
 	stream_buffer: AlignedVec,
 }
@@ -68,7 +74,10 @@ impl<'b, Net: Network> PacketRead<Net> {
 		Ok(packet)
 	}
 }
+
+#[pin_project]
 pub struct PacketWrite<Net: Network> {
+	#[pin]
 	writer: RkyvWriter<Net::Write, VarintLength>,
 }
 
@@ -77,7 +86,29 @@ impl<Net: Network> std::fmt::Debug for PacketWrite<Net> {
 }
 impl<Net: Network> PacketWrite<Net> {
 	pub fn new(writer: Net::Write) -> Self { Self { writer: RkyvWriter::new(writer) } }
-	pub async fn write_packet<'a>(&mut self, packet: &PingingNodePacket<Net>) -> Result<(), RkyvCodecError> {
+	/* pub async fn write_packet<'a>(&mut self, packet: &PingingNodePacket<Net>) -> Result<(), RkyvCodecError> {
 		Ok(self.writer.send(packet).await?)
-	}
+	} */
+}
+impl<Net: Network> Sink<&PingingNodePacket<Net>> for PacketWrite<Net>
+where
+	RkyvWriter<Net::Write, VarintLength>: for<'a> Sink<&'a PingingNodePacket<Net>, Error = RkyvCodecError>,
+{
+    type Error = RkyvCodecError;
+
+    fn poll_ready(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+        self.project().writer.poll_ready(cx)
+    }
+
+    fn start_send(self: std::pin::Pin<&mut Self>, item: &PingingNodePacket<Net>) -> Result<(), Self::Error> {
+		self.project().writer.start_send(item)
+    }
+
+    fn poll_flush(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+        self.project().writer.poll_flush(cx)
+    }
+
+    fn poll_close(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+        self.project().writer.poll_close(cx)
+    }
 }

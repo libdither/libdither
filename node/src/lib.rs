@@ -11,6 +11,7 @@ pub mod session;
 mod net;
 mod packet;
 mod systems;
+mod transport;
 pub use systems::*;
 
 use std::{collections::HashMap};
@@ -107,6 +108,19 @@ impl<Net: Network> From<&NodeConfig<Net>> for NetConfig<Net> {
 	}
 }
 
+/// A peer address
+#[derive(Debug, Component)]
+pub struct PeerAddr<Net: Network> {
+	addr: Net::Address,
+}
+
+/* #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
+enum NodeState {
+	#[default]
+	Joining,
+	Initialized
+} */
+
 /// Easy way to modularize different sub-systems of a node. This doesn't prevent system interdependencies, it just streamlines world and schedule initialization. (and a few other things)
 pub trait NodeSystem {
 	fn register_resources(world: &mut World);
@@ -198,8 +212,9 @@ impl<Net: Network> Node<Net> {
 		match event {
 			SessionEvent::Packet(packet) => match packet {
 				NodePacket::DiscoveryPacket(packet) => DiscoverySystem::handle_packet(world, entity, packet),
-				NodePacket::NCSystemPacket(packet) => {
-					NCSystem::<Net>::handle_packet(world, entity, packet);
+				NodePacket::NCSystemPacket(packet) => NCSystem::<Net>::handle_packet(world, entity, packet),
+				NodePacket::Peer(pub_addr) => {
+					world.entity_mut(entity).insert(PeerAddr::<Net> { addr: pub_addr });
 				}
 				_ => unimplemented!(),
 			}
@@ -300,16 +315,19 @@ impl<Net: Network> Node<Net> {
 			self.world.spawn((Remote { id: remote_id }, session_info)).id()
 		};
 
+		let listen_addr = self.world.resource::<NodeConfig<Net>>().listen_addrs[0].clone();
+
 		// Spawn session
 		let mut entity_mut = self.world.entity_mut(entity_id);
 		let session = Session::spawn(connection, entity_id, session_event_sender);
 		// Set need more pings to true
 		session.send_action(SessionAction::SetDesiredPingCount(10));
 		// Request peers from each other
-		session.send_packet(NodePacket::DiscoveryPacket(DiscoveryPacket::RequestPeers));
+		session.send_packet(NodePacket::DiscoveryPacket(DiscoveryPacket::PeerListDiscovery(PeerListDiscovery::RequestPeers)));
+
+		session.send_packet(NodePacket::Peer(listen_addr));
 
 		entity_mut.insert(session);
 		entity_mut.insert(LatencyMetrics::default());
-		
 	}
 }

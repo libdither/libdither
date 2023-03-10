@@ -137,7 +137,9 @@ impl<Net: Network> SessionState<Net> {
 			let ping_id = (self.ping_countdown != 0).then(||self.ping_tracker.gen_unique_id());
 			let packet = PingingNodePacket { packet: None, ping_id, ack_ping: Some(ack_ping) };
 			log::debug!("Sending ping: {packet:?}");
-			self.packet_write.write_packet(&packet).await?;
+			self.packet_write.send(&packet).await?;
+			self.packet_write.flush().await?;
+			
 			self.last_ping = Some(Instant::now());
 		}
 
@@ -146,7 +148,6 @@ impl<Net: Network> SessionState<Net> {
 			let event = SessionEvent::Packet(packet);
 			self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event }).await?;
 		}
-
 
 		Ok(())
 	}
@@ -158,7 +159,7 @@ impl<Net: Network> SessionState<Net> {
 					ping_id: None,
 					ack_ping: None,
 				};
-				self.packet_write.write_packet(&ping_packet).await?;
+				self.packet_write.send(&ping_packet).await?;
 			},
 			SessionAction::SetDesiredPingCount(ping_count) => {
 				self.ping_countdown = ping_count;
@@ -167,10 +168,11 @@ impl<Net: Network> SessionState<Net> {
 					log::debug!("Set new needed ping count: {:?}", self.ping_countdown);
 					if self.last_ping.is_none() || self.last_ping.unwrap().elapsed() > Duration::from_millis(200) {
 						let ping_id = (self.ping_countdown != 0).then(||self.ping_tracker.gen_unique_id());
-						let packet = PingingNodePacket { packet: None, ping_id, ack_ping: None };
+						let packet = PingingNodePacket::<Net> { packet: None, ping_id, ack_ping: None };
 						log::debug!("Sending ping: {packet:?}");
 						self.last_ping = Some(Instant::now());
-						self.packet_write.write_packet(&packet).await?;
+						self.packet_write.send(&packet).await?;
+						self.packet_write.flush().await?;
 					}
 				}
 			},

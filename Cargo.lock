@@ -1325,6 +1325,7 @@ dependencies = [
  "nalgebra",
  "nnmf_nalgebra",
  "num",
+ "pin-project 1.0.12",
  "rand",
  "rkyv",
  "rkyv_codec",

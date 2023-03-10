@@ -31,3 +31,4 @@ nnmf_nalgebra = "0.1.0"
 argmin = { version = "0.8.1" }
 argmin-math = { version = "0.3", features = ["nalgebra_latest-serde"] }
 rand = "0.8.5"
+pin-project = "1.0.12"
