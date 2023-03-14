@@ -1,6 +1,6 @@
 //! Non-encrypted encryption TODO: Implement real encryption with noise protocol & perhaps https/tls
 
-use std::net::SocketAddr;
+use std::net::{SocketAddr, SocketAddrV4, Ipv4Addr};
 use bevy_ecs::system::Resource;
 use rkyv::{AlignedVec, Infallible, Deserialize, to_bytes};
 use rkyv_codec::{RkyvCodecError, VarintLength};
@@ -9,7 +9,21 @@ use thiserror::Error;
 use async_std::{net::{TcpStream, TcpListener}, task};
 use futures::{StreamExt, channel::mpsc::{channel, self, unbounded, SendError, Sender}, SinkExt, FutureExt};
 
-use node::{NodeID, Connection, Network, NetConfig};
+use node::{NodeID, Connection, Network, EncryptionKeys};
+
+#[derive(Debug, Clone, Resource)]
+pub struct ListenerConfig {
+	listen_addrs: Vec<SocketAddr>,
+}
+impl ListenerConfig {
+	pub fn local(port: u16) -> Self {
+		let listen_addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port));
+		Self {
+			listen_addrs: vec![listen_addr],
+		}
+	}
+}
+
 
 enum NetRequest<Net: Network> {
 	Connect {
@@ -37,7 +51,7 @@ pub enum TcpNoencError {
 struct TcpNoencState {
 	conn_sender: Sender<Result<Connection<TcpNoenc>, TcpNoencError>>,
 	listener: TcpListener,
-	net_config: NetConfig<TcpNoenc>,
+	keys: EncryptionKeys<TcpNoenc>,
 }
 impl TcpNoencState {
 	async fn handle_request(&mut self, request: NetRequest<TcpNoenc>) -> Result<(), SendError> {
@@ -48,7 +62,7 @@ impl TcpNoencState {
 					(TcpStream::connect(net_address).await?, net_address)
 				};
 				
-				self.handle_connection(tcp_stream).await?;
+				self.handle_connection(tcp_stream, true).await?;
 			}
 			NetRequest::Listen(socket_addrs) => {
 				if let Ok(new_listener) = TcpListener::bind(&socket_addrs[..]).await {
@@ -61,12 +75,12 @@ impl TcpNoencState {
 		}
 		Ok(())
 	}
-	async fn handle_connection(&mut self, tcp_stream: Result<(TcpStream, SocketAddr), TcpNoencError>) -> Result<(), SendError> {
+	async fn handle_connection(&mut self, tcp_stream: Result<(TcpStream, SocketAddr), TcpNoencError>, requested: bool) -> Result<(), SendError> {
 		let conn_result: Result<Connection<TcpNoenc>, TcpNoencError> = try {
 			let (mut tcp_stream, net_address) = tcp_stream?;
 
 			// Send own public key to remote
-			let archived = to_bytes::<_, 64>(&self.net_config.public_key).map_err(|_|RkyvCodecError::SerializeError)?;
+			let archived = to_bytes::<_, 64>(&self.keys.public_key).map_err(|_|RkyvCodecError::SerializeError)?;
 			rkyv_codec::archive_sink::<_, VarintLength>(&mut tcp_stream, &archived).await?;
 
 			// Read remote public key from stream before passing back connection
@@ -75,11 +89,12 @@ impl TcpNoencState {
 			let remote_pub_key: Vec<u8> = archive.deserialize(&mut Infallible).unwrap();
 
 			Connection {
-				net_address,
+				incoming_address: net_address,
 				remote_pub_key,
 				persistent_state: (),
 				read: tcp_stream.clone(),
 				write: tcp_stream,
+				requested,
 			}
 		};
 		self.conn_sender.send(conn_result).await
@@ -103,15 +118,17 @@ impl Network for TcpNoenc {
 
     type ConnectionError = TcpNoencError;
 
-	async fn init(config: node::NetConfig<Self>) -> Result<(Self, impl futures::Stream<Item = Result<Connection<Self>, Self::ConnectionError>> + Unpin + futures::stream::FusedStream), Self::ConnectionError> {
+	type ListenerConfig = ListenerConfig;
+
+	async fn init(keys: EncryptionKeys<Self>, listener_config: &ListenerConfig) -> Result<(Self, impl futures::Stream<Item = Result<Connection<Self>, Self::ConnectionError>> + Unpin + futures::stream::FusedStream), Self::ConnectionError> {
         let (request_sender, mut request_receiver) = unbounded::<NetRequest<Self>>();
 		
 		let (conn_sender, conn_stream) = channel::<Result<Connection<Self>, Self::ConnectionError>>(20);
 
 		let mut state = TcpNoencState {
-			listener: TcpListener::bind(&config.listen_addrs[..]).await?,
+			listener: TcpListener::bind(&listener_config.listen_addrs[..]).await?, // Bind listener to all listening addresses
 			conn_sender,
-			net_config: config,
+			keys,
 		};
 
 		// Spawn task that listens for incoming connections
@@ -126,7 +143,7 @@ impl Network for TcpNoenc {
 							}
 						},
 						tcp_stream = state.listener.accept().fuse() => {
-							if let Err(err) = state.handle_connection(tcp_stream.map_err(TcpNoencError::from)).await {
+							if let Err(err) = state.handle_connection(tcp_stream.map_err(TcpNoencError::from), false).await {
 								log::error!("net: connection sender closed: {err}");
 								break
 							}
@@ -167,5 +184,13 @@ impl Network for TcpNoenc {
     fn listen(&self, addrs: impl Iterator<Item = Self::Address>) {
         let _ = self.conn_req_sender.unbounded_send(NetRequest::Listen(addrs.collect::<Vec<Self::Address>>()));
     }
+
+    fn predict_public_addresses<'a>(addr: &'a Self::Address, config: &'a Self::ListenerConfig) -> impl Iterator<Item = Self::Address> + 'a {
+        config.listen_addrs.iter().map(|listen_addr| {
+			let mut addr = addr.clone();
+			addr.set_port(listen_addr.port());
+			addr
+		})
+    }	
 }
 

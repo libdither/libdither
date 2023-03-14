@@ -4,10 +4,6 @@
         "time": { "secs": 0, "nanos": 10 }
     },
     {
-        "action": { "GetRemoteInfo": { "index": 0, "generation": 0 } },
-        "time": { "secs": 0, "nanos": 10 }
-    },
-    {
         "action": "GetInfo",
         "time": { "secs": 20, "nanos": 10 }
     },

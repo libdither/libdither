@@ -4,9 +4,10 @@
 #![feature(str_split_remainder)]
 #![feature(async_fn_in_trait)]
 #![feature(type_alias_impl_trait)]
+#![feature(return_position_impl_trait_in_trait)]
 
 use std::{net::{Ipv4Addr, SocketAddr}, time::Duration};
-use futures_delay_queue::{DelayQueue, delay_queue};
+use futures_delay_queue::delay_queue;
 use log::LevelFilter;
 use serde::{Serialize, Deserialize};
 
@@ -14,11 +15,11 @@ use anyhow::anyhow;
 use async_std::{task};
 use futures::{SinkExt, StreamExt, FutureExt, channel::mpsc};
 
-use node::{NodeID, NodeAction, Node, NodeConfig, Network};
+use node::{NodeID, NodeAction, Node, NodeConfig, Network, NodeEvent, EncryptionKeys};
 
 mod net_tcp_noenc;
 use net_tcp_noenc::*;
-use simplelog::{Config, SimpleLogger, TerminalMode, TermLogger, ColorChoice};
+use simplelog::{Config, TerminalMode, TermLogger, ColorChoice};
 
 type DitherNet = TcpNoenc;
 type Address = <DitherNet as Network>::Address;
@@ -62,14 +63,14 @@ async fn main() -> anyhow::Result<()> {
     }
 
 	// Generate fake private key for testing because I haven't implemented encryption yet
-	let mut private_key = listen_addr.to_string().as_bytes().to_vec();
+	let private_key = listen_addr.to_string().as_bytes().to_vec();
 
 	// Generate node_config
 	let node_config = NodeConfig::<DitherNet> {
-		private_key: private_key.clone(),
-		public_key: private_key.clone(), // WARN: Using private key as public key for testing purposes
+		// WARN: Using private key as public key for testing purposes
+		keys: EncryptionKeys { private_key: private_key.clone(), public_key: private_key.clone() },
 		node_id: NodeID::hash(&private_key),
-		listen_addrs: vec![listen_addr],
+		listener_config: net_tcp_noenc::ListenerConfig::local(listen_port),
 	};
 	// Create node & channels
 	let (event_sender, mut event_receiver) = mpsc::unbounded();
@@ -90,7 +91,14 @@ async fn main() -> anyhow::Result<()> {
 				action_sender.send(command).await?;
 			},
 			event = event_receiver.next() => if let Some(event) = event {
-				log::info!("Received Node Event: {:#?}", event);
+				match event {
+					NodeEvent::Info(id, addrs, coords, entities, lat_matrix) => {
+						log::info!("Received Node Info: \nID: {id:?}\nAddrs: {addrs:?}\nCoords: {coords:?}\nEntities: {entities:?}");
+						if let Some(lat_matrix) = lat_matrix { println!("Latency Matrix: {lat_matrix}") }
+					}
+					event => log::info!("Received Node Event: {:#?}", event),
+				}
+				
 			},
 			join = node_join => match join {
 				Ok(_) => {

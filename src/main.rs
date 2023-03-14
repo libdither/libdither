@@ -4,6 +4,7 @@
 #![feature(str_split_remainder)]
 #![feature(async_fn_in_trait)]
 #![feature(type_alias_impl_trait)]
+#![feature(return_position_impl_trait_in_trait)]
 
 use std::{net::{Ipv4Addr, SocketAddr}, io::Write};
 
@@ -13,7 +14,7 @@ use bevy_ecs::prelude::Entity;
 use futures::{SinkExt, StreamExt, FutureExt, channel::mpsc};
 use chumsky::prelude::*;
 
-use node::{NodeID, NodePacket, NodeAction, Node, NodeConfig, Network};
+use node::{NodeID, NodePacket, NodeAction, Node, NodeConfig, Network, EncryptionKeys};
 use rustyline_async::{Readline, ReadlineError, SharedWriter};
 
 mod net_tcp_noenc;
@@ -35,14 +36,13 @@ async fn main() -> anyhow::Result<()> {
 	let listen_addr = SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), listen_port);
 
 	// Generate fake private key for testing because I haven't implemented encryption yet
-	let mut private_key = listen_addr.to_string().as_bytes().to_vec();
+	let private_key = listen_addr.to_string().as_bytes().to_vec();
 
 	// Generate node_config
 	let node_config = NodeConfig::<DitherNet> {
-		private_key: private_key.clone(),
-		public_key: private_key.clone(), // WARN: Using private key as public key for testing purposes
+		keys: EncryptionKeys { private_key: private_key.clone(), public_key: private_key.clone() }, // WARN: Using private key as public key for testing purposes
 		node_id: NodeID::hash(&private_key),
-		listen_addrs: vec![listen_addr],
+		listener_config: ListenerConfig::local(listen_port),
 	};
 	// Create node & channels
 	let (event_sender, mut event_receiver) = mpsc::unbounded();

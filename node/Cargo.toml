@@ -16,7 +16,8 @@ eyre = "0.6.8"
 bevy_ecs = "0.10"
 
 # Serialization
-rkyv = { version = "0.7.40", features = ["validation"] } # Zero-Copy Serialization
+# Important: rkyv endianness must be little-endian everywhere
+rkyv = { version = "0.7.40", features = ["validation", "archive_le"] } # Zero-Copy Serialization
 bytecheck = "0.6.10"
 rkyv_codec = "0.3.1"
 serde = "1.0.152"

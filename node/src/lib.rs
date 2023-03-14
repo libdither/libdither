@@ -14,7 +14,7 @@ mod systems;
 mod transport;
 pub use systems::*;
 
-use std::{collections::HashMap};
+use std::{collections::HashMap, marker::PhantomData};
 
 use bevy_ecs::prelude::*;
 use futures::{channel::mpsc::{unbounded, self, UnboundedSender, TrySendError}, StreamExt};
@@ -64,7 +64,7 @@ pub enum NodeEvent<Net: Network> {
 	NewConnection(NodeID, Net::Address),
 	
 	// Event returned for GetRemoteList, return list of remotes.
-	Info(NodeID, Vec<Net::Address>, Coordinates, Vec<(NodeID, Entity)>, Option<DMatrix<f64>>),
+	Info(NodeID, Net::ListenerConfig, Coordinates, Vec<(NodeID, Entity)>, Option<DMatrix<f64>>),
 	// Event returned for GetRemoteInfo
 	RemoteInfo(Entity, NodeID, LatencyMetrics)
 }
@@ -78,7 +78,7 @@ pub enum NodeError<Net: Network> {
 /// Contains ECS and Network implementation
 pub struct Node<Net: Network> {
 	world: World,
-	_listen_addr: Net::Address,
+	_net: PhantomData<Net>,
 }
 
 #[derive(Debug, Default, Resource)]
@@ -88,29 +88,19 @@ pub struct RemoteIDMap {
 
 #[derive(Resource)]
 pub struct NodeConfig<Net: Network> {
-	pub private_key: Net::NodePrivKey,
-	pub public_key: Net::NodePubKey,
+	pub keys: EncryptionKeys<Net>,
 	pub node_id: NodeID,
-	pub listen_addrs: Vec<Net::Address>,
+	pub listener_config: Net::ListenerConfig,
 }
 
 #[derive(Resource)]
 pub struct EventSender<Net: Network> {
 	sender: UnboundedSender<NodeEvent<Net>>,
 }
-impl<Net: Network> From<&NodeConfig<Net>> for NetConfig<Net> {
-	fn from(value: &NodeConfig<Net>) -> Self {
-		NetConfig {
-			private_key: value.private_key.clone(),
-			public_key: value.public_key.clone(),
-			listen_addrs: value.listen_addrs.clone(),
-		}
-	}
-}
 
-/// A peer address
+/// Public address of another node
 #[derive(Debug, Component)]
-pub struct PeerAddr<Net: Network> {
+pub struct PublicAddress<Net: Network> {
 	addr: Net::Address,
 }
 
@@ -126,19 +116,18 @@ pub trait NodeSystem {
 	fn register_resources(world: &mut World);
 	fn register_systems(schedule: &mut Schedule);
 	type Packet = ();
-	/// Entity must contain valid Session<Net> in world otherwise this function may panic.
+	/// Entity passed must be valid in World and must contain components: `Session<Net>`, `SessionInfo<Net>` otherwise this function may panic.
 	#[allow(unused_variables)]
 	fn handle_packet(world: &mut World, entity: Entity, packet: Self::Packet) {}
 }
 
 impl<Net: Network> Node<Net> {
 	pub fn new(config: NodeConfig<Net>, event_sender: UnboundedSender<NodeEvent<Net>>) -> Self {
-		let _listen_addr = config.listen_addrs[0].clone();
-
 		let mut world = World::new();
 		world.init_resource::<RemoteIDMap>();
 		world.insert_resource::<NodeConfig<Net>>(config);
 		world.insert_resource::<EventSender<Net>>(EventSender { sender: event_sender });
+		
 
 		DiscoverySystem::<Net>::register_resources(&mut world);
 		LatencyMetricsSystem::<Net>::register_resources(&mut world);
@@ -146,16 +135,17 @@ impl<Net: Network> Node<Net> {
 
 		Self {
 			world,
-			_listen_addr
+			_net: Default::default(),
 		}
 	}
 	/// Runs the event loop of the node. This should be spawned in its own task.
 	pub async fn run(mut self, mut action_receiver: mpsc::UnboundedReceiver<NodeAction<Net>>) -> Result<Self, Net::ConnectionError> {
 		let config = self.world.resource::<NodeConfig<Net>>();
 		
-		log::info!("listening on address: {:?}", config.listen_addrs);
+		log::info!("listener config: {:?}", config.listener_config);
 
-		let (network, mut connection_stream) = Net::init(config.into()).await?;
+		let (network, mut connection_stream) = Net::init(config.keys.clone(), &config.listener_config).await?;
+		self.world.insert_resource::<Net::ListenerConfig>(config.listener_config.clone());
 		self.world.insert_resource(network);
 
 		// Create a new Schedule, which defines an execution strategy for Systems
@@ -174,7 +164,7 @@ impl<Net: Network> Node<Net> {
 			futures::select! {
 				// Handle events from sessions (i.e. remote packets or latency measurements)
 				event = entity_event_receiver.next() => if let Some(event) = event {
-					log::debug!("received SessionEvent: {event:?}");
+					log::debug!("received from {:?}. SessionEvent: {:?}", event.entity, event.event);
 					Self::handle_session_events(&mut self.world, event);
 				},
 				// Handle actions
@@ -192,8 +182,7 @@ impl<Net: Network> Node<Net> {
 						Some(Ok(conn)) => self.handle_connection(conn, entity_event_sender.clone()),
 						Some(Err(err)) => log::error!("failed to establish connection: {err}"),
 						_ => { log::info!("Connection Stream closed."); break },
-					}
-					
+					}	
 				}
 				complete => break,
 			}
@@ -213,9 +202,6 @@ impl<Net: Network> Node<Net> {
 			SessionEvent::Packet(packet) => match packet {
 				NodePacket::DiscoveryPacket(packet) => DiscoverySystem::handle_packet(world, entity, packet),
 				NodePacket::NCSystemPacket(packet) => NCSystem::<Net>::handle_packet(world, entity, packet),
-				NodePacket::Peer(pub_addr) => {
-					world.entity_mut(entity).insert(PeerAddr::<Net> { addr: pub_addr });
-				}
 				_ => unimplemented!(),
 			}
 			SessionEvent::LatencyMeasurement(measurement) => {
@@ -265,7 +251,7 @@ impl<Net: Network> Node<Net> {
 				let node_config = self.world.resource::<NodeConfig<Net>>();
 				let coords = self.world.resource::<Coordinates>();
 				let latency_matrix = self.world.get_resource::<LatencyMatrix>().map(|res|res.latency_matrix.clone());
-				self.send_event(NodeEvent::Info(node_config.node_id.clone(), node_config.listen_addrs.clone(), coords.clone(), remotes, latency_matrix))?;
+				self.send_event(NodeEvent::Info(node_config.node_id.clone(), node_config.listener_config.clone(), coords.clone(), remotes, latency_matrix))?;
 			},
 			NodeAction::GetRemoteInfo(entity) => {
 				if self.world.get_entity(entity).is_none() {
@@ -294,14 +280,14 @@ impl<Net: Network> Node<Net> {
 		// Derive remote ID
 		let remote_id = NodeID::hash(connection.remote_pub_key.as_ref());
 
-		log::info!("received connection from {remote_id:?} from address: {:?}", connection.net_address);
+		log::info!("received connection from {remote_id:?} from address: {:?}", connection.incoming_address);
 
 		// Search RemoteIDMap for entity given NodeID
 		let entity = self.world.resource::<RemoteIDMap>().map.get(&remote_id).cloned();
 
 		// Create Session info
 		let session_info = SessionInfo::<Net> {
-			net_address: connection.net_address.clone(),
+			net_address: connection.incoming_address.clone(),
 			remote_pub_key: Some(connection.remote_pub_key.clone()),
 			persistent_state: Some(connection.persistent_state.clone()),
 		};
@@ -315,19 +301,23 @@ impl<Net: Network> Node<Net> {
 			self.world.spawn((Remote { id: remote_id }, session_info)).id()
 		};
 
-		let listen_addr = self.world.resource::<NodeConfig<Net>>().listen_addrs[0].clone();
-
 		// Spawn session
 		let mut entity_mut = self.world.entity_mut(entity_id);
+
+		let connection_requested = connection.requested;
 		let session = Session::spawn(connection, entity_id, session_event_sender);
 		// Set need more pings to true
 		session.send_action(SessionAction::SetDesiredPingCount(10));
 		// Request peers from each other
 		session.send_packet(NodePacket::DiscoveryPacket(DiscoveryPacket::PeerListDiscovery(PeerListDiscovery::RequestPeers)));
 
-		session.send_packet(NodePacket::Peer(listen_addr));
-
 		entity_mut.insert(session);
 		entity_mut.insert(LatencyMetrics::default());
+
+		// If I am the initiator of the connection, I should send a public address if possible
+		if connection_requested {
+			// Add component marking the entity that is the receiver of the connection.
+			entity_mut.insert(ConnReceiver);
+		}
 	}
 }

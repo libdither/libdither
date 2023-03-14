@@ -29,9 +29,6 @@ pub enum NodePacket<Net: Network> {
 	// Subpacket for all things network-coordinate-system
 	NCSystemPacket(NCSystemPacket),
 
-	// Request a peering relationship
-	Peer(Net::Address),
-
 	/// Raw Data Packet
 	Data(Vec<u8>),
 

@@ -4,10 +4,17 @@
 use std::fmt;
 use bevy_ecs::{prelude::Component, system::Resource};
 use bytecheck::CheckBytes;
-use futures::{AsyncRead, AsyncWrite, Stream, stream::FusedStream, Sink};
+use futures::{AsyncRead, AsyncWrite, Stream, stream::FusedStream};
 use rkyv::{Serialize, Archive, ser::{serializers::{CompositeSerializer, AlignedSerializer, FallbackScratch, HeapScratch, AllocScratch, SharedSerializeMap}}, Deserialize, AlignedVec, validation::validators::DefaultValidator, Infallible};
 
 use crate::NodeID;
+
+/// Configures the encryption of the network.
+#[derive(Clone)]
+pub struct EncryptionKeys<Net: Network> {
+	pub private_key: Net::NodePrivKey,
+	pub public_key: Net::NodePubKey,
+}
 
 /// Trait that establishes encrypted connection to another computer
 pub trait Network: fmt::Debug + Resource + Clone + 'static {
@@ -19,21 +26,24 @@ pub trait Network: fmt::Debug + Resource + Clone + 'static {
 	type ArchivedAddress: fmt::Debug + Deserialize<Self::Address, Infallible> + for<'v> CheckBytes<DefaultValidator<'v>> + Send + Sync;
 
 	/// Public key of a node, optionally passed to connect(). 
-	type NodePubKey: AsRef<[u8]> + Send + Sync + Clone + fmt::Debug + serde::Serialize + for<'d> serde::Deserialize<'d>;
+	type NodePubKey: AsRef<[u8]> + fmt::Debug + serde::Serialize + for<'d> serde::Deserialize<'d> + Send + Sync + Clone;
 	/// Private key of local node
-	type NodePrivKey: Send + Sync + Clone;
+	type NodePrivKey: Clone + Send + Sync;
 	/// Persistent state can be optionally passed to connect(), stores stuff like symmetric keys, forward secrecy stuff, etc.
-	type PersistentState: Send + Sync + Clone;
+	type PersistentState: Clone + Send + Sync;
 
 	/// Bidirectional byte stream for sending and receiving NodePackets
-	type Read: AsyncRead + Send + Sync + Unpin;
-	type Write: AsyncWrite + Send + Sync + Unpin;
+	type Read: AsyncRead + Unpin + Send + Sync;
+	type Write: AsyncWrite + Unpin + Send + Sync;
 
 	/// Error emitted by encrypted transport protocol when establishing connection
-	type ConnectionError: std::error::Error + Send + Sync + fmt::Debug + fmt::Display;
+	type ConnectionError: std::error::Error + fmt::Debug + fmt::Display + Send + Sync;
+
+	/// Configuration type for how the network receives connections.
+	type ListenerConfig: Resource + fmt::Debug + Clone + Send + Sync;
 
 	/// Initiates the network with some Config. Returns Self as a handle as well as a stream of `Connection`s. If the stream is dropped, the implementation must ensure everything is cleaned up.
-	async fn init(config: NetConfig<Self>) -> Result<(Self, impl Stream<Item = Result<Connection<Self>, Self::ConnectionError>> + Unpin + FusedStream), Self::ConnectionError>;
+	async fn init(keys: EncryptionKeys<Self>, listener_config: &Self::ListenerConfig) -> Result<(Self, impl Stream<Item = Result<Connection<Self>, Self::ConnectionError>> + Unpin + FusedStream), Self::ConnectionError>;
 
 	/// Establish two-way connection with remote, returns immediately.
 	fn connect(
@@ -46,23 +56,22 @@ pub trait Network: fmt::Debug + Resource + Clone + 'static {
 
 	/// Listen to some new set of addresses
 	fn listen(&self, addrs: impl Iterator<Item = Self::Address>);
-}
 
-pub struct NetConfig<Net: Network> {
-	pub private_key: Net::NodePrivKey,
-	pub public_key: Net::NodePubKey,
-	pub listen_addrs: Vec<Net::Address>,
+	/// Given a public address reported back by a connected node, try to figure out what addresses this node could be listening publically on.
+	fn predict_public_addresses<'a>(addr: &'a Self::Address, config: &'a Self::ListenerConfig) -> impl Iterator<Item = Self::Address> + 'a;
 }
 
 /// Represents an encrypted two-way bytestream to another computer, identified by its NodeID and arbitrary network address.
 #[derive(Component)]
 pub struct Connection<Net: Network> {
-	pub net_address: Net::Address,
+	pub incoming_address: Net::Address,
 	pub remote_pub_key: Net::NodePubKey,
 	pub persistent_state: Net::PersistentState,
 	pub read: Net::Read,
 	pub write: Net::Write,
+	/// Whether or not the connection was requested via connect() or was incoming.
+	pub requested: bool,
 }
 impl<Net: Network> fmt::Debug for Connection<Net> {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { f.debug_struct("Connection").field("net_address", &self.net_address).finish() }
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { f.debug_struct("Connection").field("net_address", &self.incoming_address).finish() }
 }

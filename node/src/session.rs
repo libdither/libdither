@@ -135,10 +135,11 @@ impl<Net: Network> SessionState<Net> {
 		if let Some(ack_ping) = pinging_packet.ping_id {
 			// Gen ping id if session NEEDS MORE PINGS
 			let ping_id = (self.ping_countdown != 0).then(||self.ping_tracker.gen_unique_id());
+			log::debug!("pinging: {:?} w/ ID: {:?}, ACK: {:?}", self.entity_id, ping_id, ack_ping);
+
 			let packet = PingingNodePacket { packet: None, ping_id, ack_ping: Some(ack_ping) };
-			log::debug!("Sending ping: {packet:?}");
-			self.packet_write.send(&packet).await?;
-			self.packet_write.flush().await?;
+			self.packet_write.send(&packet).await?; // Send packet to remote
+			self.packet_write.flush().await?; // Immediately send packet (bypassing nagle's algorithm)
 			
 			self.last_ping = Some(Instant::now());
 		}
@@ -165,11 +166,11 @@ impl<Net: Network> SessionState<Net> {
 				self.ping_countdown = ping_count;
 				if self.ping_countdown != 0 {
 					self.ping_countdown = self.ping_countdown.saturating_sub(1);
-					log::debug!("Set new needed ping count: {:?}", self.ping_countdown);
+					log::debug!("{:?} needed ping count: {:?}", self.entity_id, self.ping_countdown);
 					if self.last_ping.is_none() || self.last_ping.unwrap().elapsed() > Duration::from_millis(200) {
 						let ping_id = (self.ping_countdown != 0).then(||self.ping_tracker.gen_unique_id());
 						let packet = PingingNodePacket::<Net> { packet: None, ping_id, ack_ping: None };
-						log::debug!("Sending ping: {packet:?}");
+						log::debug!("{:?} sending ping: {packet:?}", self.entity_id);
 						self.last_ping = Some(Instant::now());
 						self.packet_write.send(&packet).await?;
 						self.packet_write.flush().await?;
