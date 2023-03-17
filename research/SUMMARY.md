@@ -2,9 +2,9 @@
 
 - [Dither](./dither.md)
   - [Structure](./dither/structure.md)
-  - [Distance-Based Routing](./dither/routing/distance-based-routing.md)
-  - [Directional Trail Search](./dither/routing/directional-trail-search.md)
-  - [Reverse Hash Lookup](./dither/data/reverse-hash-lookup.md)
+  - [Anonymous Routing](./dither/routing.md)
+  - [Data Trail Search](./dither/directional-trail-search.md)
+  - [Reverse Hash Lookup](./dither/reverse-hash-lookup.md)
   - [User Management - WIP]()
   - [Consensus - WIP]()
 - [Disp](./disp/disp.md)
