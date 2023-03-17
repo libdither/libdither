@@ -1,12 +1,10 @@
-# Distance Based Routing
+# Dither Anonymous Routing
 
-Distance Based Routing (DBR) is a protocol for efficiently obfuscating connections between computers.
+Dither Anonymous Routing (DAR) is a protocol for efficiently obfuscating connections between computers.
 
-It improves on speed and flexibility over existing solutions (i.e. I2P and TOR) by taking into account the latency between nodes on the network. Instead of having to randomly choose nodes from a global list to route through, by knowing the relative latencies of nodes, routing paths between nodes can be chosen to optimize for low-latency or anonymity, or a balance of both.
+It improves on speed and flexibility over existing solutions (I2P and TOR) by taking into account the latency between nodes on the network. Instead of having to randomly choose nodes from a global list to route through, by knowing the relative latencies of nodes, routing paths between nodes can be chosen to optimize for low-latency or anonymity, or a balance of both.
 
-Note: There is a [research paper](https://www.dither.link/papers/distance-based-routing-whitepaper.pdf) comparing DBR to existing random-route solutions, for a somewhat amateurish comparison.
-
-## The Main Idea
+## Distance-Based Routing (DBR)
 
 To figure out the relative latencies between nodes so as to establish low-latency paths to a destination, DBR makes the observation that the **latency between nodes roughly correlates with the physical distance between them**. This means coordinates can be assigned to nodes such that the communication latency between nodes can be estimated as the euclidian distance between coordinates. These coordinates will be referred to as "routing coordinates".
 
@@ -94,11 +92,34 @@ Ideas:
  - There is more to theorize about here for future research :)
 
 
-## Inspirations / Similar Work
+## Research, Inspirations & Similar Work
 
-(If anyone knows of any similar work not listed here, please tell me on Matrix!)
+(List in rough order of reading of notable articles I am using to implement Dither Routing. If anyone knows of any similar work not listed here, please let me know on Matrix!)
 
-Vivaldi - [pdf](https://pdos.csail.mit.edu/papers/vivaldi:sigcomm/paper.pdf), [video](https://www.youtube.com/watch?v=AszPoJjWK9Q&t=1690s)
+[1] [HORNET: High-speed Onion Routing at the Network Layer](https://arxiv.org/pdf/1507.05724v3.pdf)
 
-[Coordinate-Based Routing for High Performance Anonymity](https://boonloo.cis.upenn.edu/papers/msherr-dissertation.pdf)
+ - Stateless Onion Routing, improves establishment of onion routes as well as speed of forwarding.
 
+[2] Vivaldi - [pdf](https://pdos.csail.mit.edu/papers/vivaldi:sigcomm/paper.pdf), [video](https://www.youtube.com/watch?v=AszPoJjWK9Q&t=1690s)
+ - The paper that pretty much started the distributed Network Coodinate System field of research.
+
+[3] [Coordinate-Based Routing for High Performance Anonymity](https://boonloo.cis.upenn.edu/papers/msherr-dissertation.pdf)
+
+ - Applying Vivaldi to Anonymous Routing
+
+[4] [Phoenix: A Weight-Based Network Coordinate
+System Using Matrix Factorization](https://user.informatik.uni-goettingen.de/~ychen/papers/Phoenix_TNSM.pdf)
+
+ - Improvements on Vivaldi, uses Matrix Factorization instead of Euclidian Embedding
+
+[5] [NCShield: Protecting Decentralized, Matrix
+Factorization-Based Network Coordinate Systems](https://ix.cs.uoregon.edu/~lijun/pubs/pdfs/chen15ncshield.pdf)
+
+ - Threat modeling on Network Coordinate Systems. Prevents Frog-Boiling attacks.
+
+[6] [DMFSGD: A Decentralized Matrix Factorization Algorithm for Network Distance Prediction](https://arxiv.org/pdf/1201.1174.pdf)
+ - Improvements on Phoenix paper's algorithm.
+
+[7] [Application-Aware Anonymity, Sherr et al.](https://netdb.cis.upenn.edu/papers/a3-ndss.pdf)
+
+ - 
