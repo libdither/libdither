@@ -1,6 +1,6 @@
 use std::{time::{Duration, Instant}, collections::VecDeque, marker::PhantomData};
 
-use bevy_ecs::prelude::*;
+use bevy_ecs::{prelude::*, world::EntityMut};
 
 use crate::{NodeSystem, Network, Latency, session::{Session, SessionAction}};
 
@@ -10,18 +10,28 @@ pub struct LatencyMetricsSystem<Net: Network> {
 }
 
 impl<Net: Network> NodeSystem for LatencyMetricsSystem<Net> {
-    fn register_resources(world: &mut World) {}
-
     fn register_systems(schedule: &mut Schedule) {
+		schedule.add_system(session_setup::<Net>);
         schedule
 			.add_system(latencies_update::<Net>);
     }
+
+	fn register_components(entity_mut: &mut EntityMut) {
+		entity_mut.insert(LatencyMetrics::default());
+	}
 
     type Packet = Duration;
 
     fn handle_packet(world: &mut World, entity: Entity, packet: Self::Packet) {
 		world.entity_mut(entity).insert(LatestMeasuredLatency(packet));
 	}	
+}
+
+fn session_setup<Net: Network>(query: Query<&Session<Net>, Added<Session<Net>>>) {
+	// Set need more pings to true
+	for session in &query {
+		session.send_action(SessionAction::SetDesiredPingCount(10));
+	}
 }
 
 /// Latest latency measurement
@@ -48,6 +58,9 @@ impl LatencyMetrics {
 	pub fn min_latency(&self) -> Latency {
 		self.latencies.iter().cloned().min().unwrap_or(Latency::MAX)
 	}
+	pub fn latest_latency(&self) -> Option<Latency> {
+		self.latencies.back().cloned()
+	}
 	pub fn remaining_pings(&self) -> usize {
 		// Need 1 ping if more than 5 seconds have passed, otherwise 0
 		let timeout_pings = self.last_update.map(|i|Instant::now().duration_since(i) >= Duration::from_secs(5)).unwrap_or(false) as usize;
@@ -57,6 +70,9 @@ impl LatencyMetrics {
 
 		// Return max of required pings of the various counts
 		usize::max(timeout_pings, count_pings)
+	}
+	pub fn last_update(&self) -> Option<Instant> {
+		self.last_update
 	}
 }
 

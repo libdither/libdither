@@ -1,24 +1,25 @@
-use std::{collections::HashMap, time::Instant, marker::PhantomData};
+use std::{time::{Duration}, marker::PhantomData};
 
+use argmin::{core::{CostFunction, Gradient, IterState, Solver, Problem, State, SerializeAlias, DeserializeOwnedAlias, ArgminFloat}, solver::{linesearch::MoreThuenteLineSearch, gradientdescent::SteepestDescent}};
+use argmin_math::{ArgminDot, ArgminScaledAdd, ArgminMul, ArgminAdd};
 use bevy_ecs::prelude::*;
 
 use bytecheck::CheckBytes;
-use nalgebra::{DMatrix};
+
 use rkyv::{Serialize, Archive, Deserialize};
 
-use crate::{NodeID, Latency, LatencyMetrics, Remote, session::Session, NodePacket, Network, RemoteIDMap, NodeSystem};
+use crate::{LatencyMetrics, session::Session, NodePacket, Network, NodeSystem};
 
-const EARLY_HOSTS_THRESHOLD: usize = 20;
-const COORDINATE_DIMENSIONS: usize = 7;
+const COORDINATE_DIMENSIONS: usize = 5;
 
-pub type NetworkCoord = nalgebra::SVector<i64, COORDINATE_DIMENSIONS>;
+pub type NetworkCoord = nalgebra::SVector<f64, COORDINATE_DIMENSIONS>;
 
 #[derive(Debug, Clone, Archive, Serialize, Deserialize, serde::Serialize, serde::Deserialize)]
 #[archive_attr(derive(CheckBytes, Debug))]
 pub enum NCSystemPacket {
     // If network is new, request latencies
-	RequestLatencies,
-	Latencies(Vec<(NodeID, Latency)>),
+	RequestNetworkCoordinates,
+	NotifyNetworkCoordinates(Coordinates),
 }
 
 pub struct NCSystem<Net: Network> {
@@ -27,185 +28,309 @@ pub struct NCSystem<Net: Network> {
 impl<Net: Network> NodeSystem for NCSystem<Net> {
     fn register_resources(world: &mut World) {
         // Init NC Resources
-		world.init_resource::<Coordinates>();
-		world.insert_resource::<LatencyMatrix>(LatencyMatrix::new());
+		world.insert_resource(Coordinates::new());
+		world.insert_resource(CoordinateSolver::new());
+		world.insert_resource(CoordinateSolverState::default());
+		world.insert_resource(CoordinateSolverProblem::default());
     }
 
     fn register_systems(schedule: &mut Schedule) {
-        schedule.add_system(nc_system_controller::<Net>);
-		schedule.add_system(early_hosts_system.run_if(resource_exists::<LatencyMatrix>()));
-		schedule.add_system(network_coordinate_system.run_if(|r: Option<Res<LatencyMatrix>>|r.is_none()));
-    }
+		// Register NC Systems
+		schedule.add_system(setup_session::<Net>);
+
+		schedule.add_systems((
+			nc_system_controller,
+			calculate_weights,
+			network_coordinate_system,
+			push_coordinates::<Net>.run_if(resource_changed::<Coordinates>()),
+		).chain());
+	}
+
+	fn register_components(entity_mut: &mut bevy_ecs::world::EntityMut) {
+		entity_mut.insert(ShouldUpdate::default());
+		entity_mut.insert(CoordinateWeight::default());
+	}
 
     type Packet = NCSystemPacket;
 
     fn handle_packet(world: &mut World, entity: Entity, packet: Self::Packet) {
 		match packet {
-			NCSystemPacket::RequestLatencies => {
-				// Send back latencies if the network this node knows about is "small".
-				if world.get_resource::<LatencyMatrix>().is_some() {
-					let latencies = world.query::<(Entity, &LatencyMetrics)>()
-						.iter(world)
-						.map(|(e, l)|(world.entity(e).get::<Remote>().unwrap().id.clone(), l.min_latency()))
-						.collect::<Vec<(NodeID, Latency)>>();
-	
-					// Send response latencies packet
-					let packet = NodePacket::NCSystemPacket(NCSystemPacket::Latencies(latencies));
-					world.entity(entity).get::<Session<Net>>().unwrap().send_packet(packet);
-				}
-			}
-			NCSystemPacket::Latencies(latencies) => {
-				// Received latencies, make sure request is not active.
-				world.entity_mut(entity).remove::<RequestLatenciesActive>();
-				// If receive latencies, and in a small network, store them
-				if world.get_resource_mut::<LatencyMatrix>().is_some() {
-					let own_id = &world.get_resource::<crate::NodeConfig<Net>>().unwrap().node_id;
-	
-					let remote_map = world.get_resource::<RemoteIDMap>().unwrap();
-					let mut incoming_direct_latency: Option<Latency> = Default::default();
-	
-					let latencies = latencies.iter().flat_map(|(id, latency)|{
-						match remote_map.map.get(id) {
-							Some(entity) => Some((entity.clone(), *latency)),
-							None if incoming_direct_latency.is_none() => {
-								if id == own_id { incoming_direct_latency = Some(*latency) }
-								None
-							}
-							_ => None,
-						}
-					}).collect();
-	
-					let outgoing_direct_latency = world.entity(entity).get::<LatencyMetrics>().unwrap().min_latency();
-					let direct_latencies = (outgoing_direct_latency, incoming_direct_latency.unwrap_or(outgoing_direct_latency));
-					log::debug!("registering latencies of {:?} in latency matrix: {:?}", entity, latencies);
-					world.resource_mut::<LatencyMatrix>().add_entity_latencies(entity, latencies, direct_latencies)
-				}
-			}
+			// My network coordinates have been requested, make sure to send them back
+			NCSystemPacket::RequestNetworkCoordinates => {
+				let coords = world.resource::<Coordinates>();
+				world.entity(entity).get::<Session<Net>>().unwrap().send_packet(NodePacket::NCSystemPacket(NCSystemPacket::NotifyNetworkCoordinates(coords.clone())));
+			},
+			// Received a remote's network coordinates, make sure to record them.
+			NCSystemPacket::NotifyNetworkCoordinates(coords) => {
+				log::debug!("received coordinates from {:?}: {:?}", entity, coords);
+				world.entity_mut(entity).insert(coords);
+			},
 		}
 	}
 	
 }
 
-// Status of entity if RequestLatencies is pending.
-#[derive(Debug, Component)]
-pub struct RequestLatenciesActive(Instant);
-
-#[derive(Debug, Resource)]
-pub struct LatencyMatrix {
-	// Set of entities that are registered in the latency_matrix. If when registered there are left-over measurements not added to the matrix, they are stored here.
-	index_map: HashMap<Entity, (usize, Vec<(Entity, Latency)>)>,
-	// Each row represents a node, each column of each row represents a latency measured from Row # -> Column #
-	pub latency_matrix: DMatrix<f64>,
-}
-impl LatencyMatrix {
-	/// Create a new latency matrix
-	fn new() -> Self {
-		Self {
-			index_map: Default::default(),
-			// Starts out as a 1x1 matrix with 1 value representing the latency between this node and itself.
-			latency_matrix: DMatrix::zeros(1, 1),
-		}
-	}
-	// When the network is small, and this node receives a limited set of measured latencies, each associated with a specific known entity
-	fn add_entity_latencies(&mut self, entity: Entity, latencies: Vec<(Entity, Latency)>, direct_latencies: (Latency, Latency)) {
-		let index = if let Some((index, _)) = self.index_map.get_mut(&entity) {
-			*index
-		} else {
-			let num_matching_latencies = latencies.iter().filter(|(entity, _)|self.index_map.contains_key(&*entity)).count();
-
-			// Check if latency measurements contained in `latencies` cover the entirety of index_map
-			if num_matching_latencies != self.index_map.len() {
-				return
-			}
-			
-			// Get new index and resize latency_matrix
-			let new_index = self.latency_matrix.nrows();
-			self.latency_matrix.resize_mut(new_index + 1, new_index + 1, 0.0);
-
-			// Register new index and pending measurements
-			self.index_map.insert(entity, (new_index, vec![]));
-
-			new_index
-		};
-
-		// Register direct latency measurements
-		self.latency_matrix[(index, 0)] = direct_latencies.0 as f64;
-		self.latency_matrix[(0, index)] = direct_latencies.1 as f64;
-
-		// Pending list of latency measurements from `entity` to nodes that are not registered in the matrix.
-		// These are stored as pending to be added later when those nodes' latency lists are requessted
-		let mut pending = Vec::<(Entity, Latency)>::new();
-
-		// Add latencies to row `index` and column `index`
-		for (remote_entity, outgoing_latency) in latencies {
-			// If `remote_entity` is not registered in the index, add measurement to pending list.
-			let Some((remote_index, remote_pending)) = self.index_map.get(&remote_entity) else {
-				pending.push((entity, outgoing_latency));
-				continue;
-			};
-			// Once I have the index:
-
-			// Set outgoing row -> column latency
-			self.latency_matrix[(index, *remote_index)] = outgoing_latency as f64;
-
-			// Look for incoming latency on the pending list if available, otherwise use outgoing latency measurement from index node
-			let incoming = remote_pending.iter().find_map(|(e, l)|(*e == entity).then_some(*l)).unwrap_or(outgoing_latency);
-			self.latency_matrix[(*remote_index, index)] = incoming as f64;
-		}
-		self.index_map.get_mut(&entity).unwrap().1 = pending;
-
-		log::debug!("new latency matrix: {}", self.latency_matrix);
-
-	}
-	// Remove entity from the matrix
-	fn remove_entity_latencies(&mut self, entity: Entity) {
-		if let Some((index, _)) = self.index_map.remove(&entity) {
-			self.latency_matrix = self.latency_matrix.clone()
-				.remove_row(index)
-				.remove_column(index);
-		}
-	}
-}
-
-#[derive(Debug, Clone, Default, Component, Resource)]
+#[derive(Debug, Clone, Default, Component, Resource, Archive, Serialize, Deserialize, serde::Serialize, serde::Deserialize)]
+#[archive_attr(derive(CheckBytes, Debug))]
 pub struct Coordinates {
+	out_coord: NetworkCoord, // Outgoing coord for this node dot incoming coord for remote = predicted RTT latency from this node to remote
 	in_coord: NetworkCoord,
-	out_coord: NetworkCoord,
+}
+impl Coordinates {
+	pub fn new() -> Self {
+		Coordinates { out_coord: NetworkCoord::new_random(), in_coord: NetworkCoord::new_random() }
+	}
+}
+impl ArgminDot<Coordinates, f64> for Coordinates {
+    fn dot(&self, other: &Coordinates) -> f64 {
+		self.out_coord.dot(&other.out_coord) + self.in_coord.dot(&other.in_coord)
+    }
+}
+impl ArgminMul<f64, Coordinates> for Coordinates {
+    fn mul(&self, other: &f64) -> Coordinates {
+        Coordinates {
+			out_coord: self.out_coord * *other,
+			in_coord: self.in_coord * *other
+		}
+    }
+}
+impl ArgminAdd<Coordinates, Coordinates> for Coordinates {
+    fn add(&self, other: &Coordinates) -> Coordinates {
+        Coordinates {
+			out_coord: self.out_coord + other.out_coord,
+			in_coord: self.in_coord + other.in_coord,
+		}
+    }
+}
+impl ArgminScaledAdd<Coordinates, f64, Coordinates> for Coordinates {
+    fn scaled_add(&self, factor: &f64, vec: &Coordinates) -> Coordinates {
+        self.add(&vec.mul(factor))
+    }
 }
 
-
+/// Changes when there is a new latency measurement and coordinate to use to update own coordinates
+#[derive(Component, Default)]
+struct ShouldUpdate {
+	last_changed: u32,
+}
 // Manages the state of the NC System and initiates state changes
-pub fn nc_system_controller<Net: Network>(mut commands: Commands, latency_metrics: Query<(Entity, &LatencyMetrics, &Session<Net>, Option<&RequestLatenciesActive>), Changed<LatencyMetrics>>) {
-	for (entity, metrics, session, request_active) in latency_metrics.iter() {
-		if request_active.is_none() && metrics.remaining_pings() == 0 {
-			let _ = session.send_packet(NodePacket::NCSystemPacket(NCSystemPacket::RequestLatencies));
-			// Mark that request was already sent
-			commands.entity(entity).insert(RequestLatenciesActive(Instant::now()));
+fn nc_system_controller(
+	mut query: Query<(Ref<LatencyMetrics>, Ref<Coordinates>, &mut ShouldUpdate)>) {
+	for (metrics, coords, mut update) in query.iter_mut() {
+		// if both metrics and coords changed, update ShouldUpdate
+		// state.last_changed is initialized at zero, so as soon as LatencyMetrics and Coordinates are inserted as Components, ShouldUpdate will change
+		if metrics.last_changed() > update.last_changed && coords.last_changed() > update.last_changed && metrics.latest_latency().is_some() {
+			log::debug!("metrics: {:?}, coords: {:?}, state: {:?}", metrics.last_changed(), coords.last_changed(), update.last_changed);
+			update.last_changed = u32::max(metrics.last_changed(), coords.last_changed());
 		}
 	}
 }
 
-/// Do non-negative matrix factorization for early host coordinates (this function should only run if LatencyMatrix exists as a resource)
-pub fn early_hosts_system(mut coordinates: ResMut<Coordinates>, latency_matrix: Res<LatencyMatrix>) {
-	let matrix = &latency_matrix.latency_matrix;
-	let (w, h) = nnmf_nalgebra::non_negative_matrix_factorization_generic(
-		matrix, 
-		1000, 
-		1.0, 
-		nalgebra::Dyn(matrix.nrows()), 
-		nalgebra::Dyn(matrix.ncols()), 
-		nalgebra::Const::<COORDINATE_DIMENSIONS>);
-
-	// Extract coordinates from latency_matrix
-	coordinates.in_coord = w.row(0).clone().transpose().map(|m|m as i64);
-	coordinates.out_coord = h.column(0).clone_owned().map(|m|m as i64);
+// When a new session is established, send coordinates
+fn setup_session<Net: Network>(
+	coords: Res<Coordinates>,
+	query: Query<&Session<Net>, Added<Session<Net>>>
+) {
+	for session in &query {
+		session.send_packet(NodePacket::NCSystemPacket(NCSystemPacket::NotifyNetworkCoordinates(coords.clone())));
+	}
 }
 
 /// Uses latency measurements to iteratively update network coordinates
 /// Current implementation: Uses a weight-based update algorithm as outlined in [Phoenix](https://user.informatik.uni-goettingen.de/~ychen/papers/Phoenix_TNSM.pdf)
-pub fn network_coordinate_system(coordinates: ResMut<Coordinates>, mut query: Query<(&mut Coordinates, &LatencyMetrics)>) {
-	// If regular size network use update strategy as outlined in Phoenix paper.
-	for (mut remote_coords, metrics) in query.iter_mut() {
-		
+
+/// Better algorithm: [DMFSGD](https://arxiv.org/pdf/1201.1174.pdf) - Uses Stochastic Gradient Descent
+/// Even better algorithm: https://orbi.uliege.be/bitstream/2268/136727/1/phdthesis.pdf#page=36
+
+#[derive(Debug, Component, Default)]
+struct CoordinateWeight {
+	value: f64,
+}
+fn calculate_weights(mut query: Query<(&LatencyMetrics, &mut CoordinateWeight), Changed<ShouldUpdate>>) {
+	let mut a_max = Duration::new(0, 0);
+	// calculate last received measurement from nodes (a_max)
+	for (metrics, _) in query.iter_mut() {
+		if let Some(last_update) = metrics.last_update() {
+			let since_update = last_update.elapsed();
+			a_max = a_max.max(since_update);
+		}
 	}
+
+	// calculate duration_sum: sum (a_max - a_j) where a_j is a given peer's time since last measurement
+	let duration_sum = query.iter()
+		.flat_map(|(metrics, _)|metrics.last_update())
+		.map(|i|i.elapsed())
+		.map(|a_j|a_max - a_j)
+		.sum::<Duration>();
+
+	if duration_sum == Duration::ZERO { return }
+
+	// calculate weights: w_j = (a_max - a_j) / duration_sum )
+	for (metrics, mut weight) in query.iter_mut() {
+		if let Some(update) = metrics.last_update() {
+			let elapsed = update.elapsed();
+			weight.value = ((a_max.as_millis() - elapsed.as_millis()) / duration_sum.as_millis()) as f64;
+		} else {
+			weight.value = 0.0;
+		}
+	}
+}
+
+#[derive(Resource, Default)]
+struct CoordinateSolverState {
+	state: IterState<Coordinates, Coordinates, (), (), f64>
+}
+#[derive(Resource)]
+struct CoordinateSolverProblem {
+	problem: Problem<CoordinateProblem>,
+}
+impl Default for CoordinateSolverProblem {
+    fn default() -> Self {
+        Self { problem: Problem { problem: None, counts: Default::default() } }
+    }
+}
+
+fn network_coordinate_system(
+	mut commands: Commands,
+	mut coordinates: ResMut<Coordinates>,
+	mut solver: ResMut<CoordinateSolver>,
+	mut solver_state: ResMut<CoordinateSolverState>,
+	mut solver_problem: ResMut<CoordinateSolverProblem>,
+	mut query: Query<(Entity, &Coordinates, &LatencyMetrics, &CoordinateWeight), Changed<ShouldUpdate>>
+) {
+	for (entity, coordinates, metrics, weight) in query.iter_mut() {
+		log::debug!("running coordinate update using data from {:?}: coord: {:?}, lat: {:?}, weight: {:?}", entity, coordinates, metrics.latest_latency(), weight);
+		let problem = CoordinateProblem {
+			remote_measurement: Duration::from_micros(metrics.latest_latency().unwrap()).as_secs_f64() * 1000.0,
+			remote_coords: coordinates.clone(),
+			remote_weight: weight.value,
+			incoming: false,
+		};
+		let mut state = solver_state.state.clone();
+		state.param = Some(coordinates.clone());
+		solver_problem.problem.problem = Some(problem);
+
+		if state.get_iter() == 0 {
+			state = solver.solver.init(&mut solver_problem.problem, state).unwrap().0;
+			state.update();
+			state.func_counts(&solver_problem.problem);
+		}
+
+		match solver.solver.next_iter(&mut solver_problem.problem, state.clone()) {
+			Ok(new_state) => {
+				state = new_state.0;
+				state.func_counts(&solver_problem.problem);
+				state.update();
+			},
+			Err(err) => log::error!("error running coordinate solver: {err:?}"),
+		}
+		solver_state.state = state;
+
+		commands.entity(entity).remove::<ShouldUpdate>();
+	}
+	if !query.is_empty() {
+		// Update personal coordinates
+		if let Some(coords) = solver_state.state.get_param() {
+			log::debug!("Updating coordinates: {:?} -> {:?}, cost: {:?}", &*coordinates, coords, solver_state.state.get_cost());
+			*coordinates = coords.clone();
+		} else {
+			log::debug!("Failed to fetch parameter, current coords: {:?}, state: {:?}", &*coordinates, solver_state.state);
+		}
+	}
+}
+
+// When coordinate is updated, send coordinate to all peers (TODO: Make this lazy and use timeout to prevent flooding)
+fn push_coordinates<Net: Network>(
+	coordinates: ResMut<Coordinates>,
+	peers: Query<&Session<Net>, (With<Coordinates>, With<LatencyMetrics>)>
+) {
+	for peer in &peers {
+		peer.send_packet(NodePacket::NCSystemPacket(NCSystemPacket::NotifyNetworkCoordinates(coordinates.clone())));
+	}
+}
+
+
+/// Custom solver for CoordinateProblem
+#[derive(Resource)]
+struct CoordinateSolver {
+	solver: SteepestDescent<MoreThuenteLineSearch<Coordinates, Coordinates, f64>>,
+}
+impl Solver<CoordinateProblem, IterState<Coordinates, Coordinates, (), (), f64>> for CoordinateSolver
+where
+    CoordinateProblem: CostFunction<Param = Coordinates, Output = f64> + Gradient<Param = Coordinates, Gradient = Coordinates>,
+    Coordinates: Clone + SerializeAlias + DeserializeOwnedAlias + ArgminDot<Coordinates, f64> + ArgminScaledAdd<Coordinates, f64, Coordinates>,
+    Coordinates: Clone + SerializeAlias + DeserializeOwnedAlias + ArgminDot<Coordinates, f64> + ArgminMul<f64, Coordinates>,
+    f64: ArgminFloat,
+{
+    const NAME: &'static str = "coordinate_solver";
+
+    fn next_iter(&mut self, problem: &mut Problem<CoordinateProblem>, state: IterState<Coordinates, Coordinates, (), (), f64>) -> Result<(IterState<Coordinates, Coordinates, (), (), f64>, Option<argmin::core::KV>), argmin::core::Error> {
+        self.solver.next_iter(problem, state)
+    }
+}
+impl CoordinateSolver {
+	fn new() -> Self {
+		Self {
+			solver: SteepestDescent::new(MoreThuenteLineSearch::new())
+		}
+	}
+}
+
+/// Defines the CostFunction and Gradient for the coordinate estimation problem (i.e. decentralized matrix completion)
+struct CoordinateProblem {
+	remote_measurement: f64,
+	remote_coords: Coordinates,
+	remote_weight: f64,
+	/// Whether or not the measurement was initiated from the remote (incoming = true), or initiated locally to the remote (incoming = false)
+	incoming: bool,
+}
+
+// Currently using L2 Norm as loss function
+fn loss(predicted: f64, expected: f64) -> f64 {
+	let out = predicted - expected;
+	out * out
+}
+
+const REGULARIZATION_COEFF: f64 = 5.0;
+
+// Cost function and gradients given by: https://orbi.uliege.be/bitstream/2268/136727/1/phdthesis.pdf#page=36
+impl CostFunction for CoordinateProblem {
+    type Param = Coordinates;
+
+    type Output = f64;
+
+    fn cost(&self, param: &Self::Param) -> Result<Self::Output, argmin::core::Error> {
+		let mut cost = 0.0f64;
+		// Penalize differences between predicted and actual latency measurements
+		// Predictions & coordinates are directional (Out_a * In_b) = predicted rtt from a -> b.
+		let outgoing_prediction = param.out_coord.dot(&self.remote_coords.in_coord);
+		let incoming_prediction = param.in_coord.dot(&self.remote_coords.out_coord);
+        cost += loss(incoming_prediction, self.remote_measurement);
+		cost += loss(outgoing_prediction, self.remote_measurement);
+
+		// Penalize large norms of (local) in and out coords (to prevent coordinates from overfitting or becoming larger than necessary)
+		cost += REGULARIZATION_COEFF * param.in_coord.norm_squared();
+		cost += REGULARIZATION_COEFF * param.out_coord.norm_squared();
+
+		Ok(cost)
+    }
+}
+impl Gradient for CoordinateProblem {
+    type Param = Coordinates;
+
+	// These aren't actually "coordinates", just directional vectors, but they use the same type :P
+    type Gradient = Coordinates;
+
+    fn gradient(&self, param: &Self::Param) -> Result<Self::Gradient, argmin::core::Error> {
+        // Calculate change in loss over out_coord and in_coord
+		let mut gradient_out = NetworkCoord::zeros();
+		let mut gradient_in = NetworkCoord::zeros();
+
+		let outgoing_prediction = param.out_coord.dot(&self.remote_coords.in_coord);
+		let incoming_prediction = param.in_coord.dot(&self.remote_coords.out_coord);
+
+		gradient_out += -(self.remote_measurement - outgoing_prediction) * self.remote_coords.in_coord + REGULARIZATION_COEFF * param.out_coord;
+		gradient_in  += -(self.remote_measurement - incoming_prediction) * self.remote_coords.out_coord + REGULARIZATION_COEFF * param.in_coord;
+		Ok(Coordinates { out_coord: gradient_out, in_coord: gradient_in })
+    }
 }

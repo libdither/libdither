@@ -13,7 +13,7 @@ use serde::{Serialize, Deserialize};
 
 use anyhow::anyhow;
 use async_std::{task};
-use futures::{SinkExt, StreamExt, FutureExt, channel::mpsc};
+use futures::{SinkExt, StreamExt, FutureExt, channel::mpsc::{self, UnboundedSender}};
 
 use node::{NodeID, NodeAction, Node, NodeConfig, Network, NodeEvent, EncryptionKeys};
 
@@ -91,14 +91,7 @@ async fn main() -> anyhow::Result<()> {
 				action_sender.send(command).await?;
 			},
 			event = event_receiver.next() => if let Some(event) = event {
-				match event {
-					NodeEvent::Info(id, addrs, coords, entities, lat_matrix) => {
-						log::info!("Received Node Info: \nID: {id:?}\nAddrs: {addrs:?}\nCoords: {coords:?}\nEntities: {entities:?}");
-						if let Some(lat_matrix) = lat_matrix { println!("Latency Matrix: {lat_matrix}") }
-					}
-					event => log::info!("Received Node Event: {:#?}", event),
-				}
-				
+				handle_node_event(&action_sender, event);
 			},
 			join = node_join => match join {
 				Ok(_) => {
@@ -113,4 +106,16 @@ async fn main() -> anyhow::Result<()> {
 		}
     }
 	Ok(())
+}
+
+fn handle_node_event<Net: Network>(action_sender: &UnboundedSender<NodeAction<Net>>, event: NodeEvent<Net>) {
+	match event {
+		NodeEvent::Info(id, addrs, coords, entities) => {
+			log::info!("Received Node Info: \nID: {id:?}\nAddrs: {addrs:?}\nCoords: {coords:?}\nEntities: {entities:?}");
+			for (_, entity) in entities {
+				action_sender.unbounded_send(NodeAction::GetRemoteInfo(entity)).unwrap();
+			}
+		}
+		event => log::info!("Received Node Event: {:#?}", event),
+	}
 }

@@ -14,12 +14,11 @@ mod systems;
 mod transport;
 pub use systems::*;
 
-use std::{collections::HashMap, marker::PhantomData};
+use std::{collections::HashMap, marker::PhantomData, time::Duration};
 
-use bevy_ecs::prelude::*;
+use bevy_ecs::{prelude::*, world::EntityMut};
 use futures::{channel::mpsc::{unbounded, self, UnboundedSender, TrySendError}, StreamExt};
 
-use nalgebra::DMatrix;
 use session::*;
 pub use net::*;
 pub use packet::*;
@@ -64,9 +63,9 @@ pub enum NodeEvent<Net: Network> {
 	NewConnection(NodeID, Net::Address),
 	
 	// Event returned for GetRemoteList, return list of remotes.
-	Info(NodeID, Net::ListenerConfig, Coordinates, Vec<(NodeID, Entity)>, Option<DMatrix<f64>>),
+	Info(NodeID, Net::ListenerConfig, Coordinates, Vec<(NodeID, Entity)>),
 	// Event returned for GetRemoteInfo
-	RemoteInfo(Entity, NodeID, LatencyMetrics)
+	RemoteInfo(Entity, NodeID, LatencyMetrics, Option<Coordinates>)
 }
 
 #[derive(Debug, Error)]
@@ -112,9 +111,11 @@ enum NodeState {
 } */
 
 /// Easy way to modularize different sub-systems of a node. This doesn't prevent system interdependencies, it just streamlines world and schedule initialization. (and a few other things)
+#[allow(unused_variables)]
 pub trait NodeSystem {
-	fn register_resources(world: &mut World);
-	fn register_systems(schedule: &mut Schedule);
+	fn register_resources(world: &mut World) {}
+	fn register_systems(schedule: &mut Schedule) {}
+	fn register_components(entity_mut: &mut EntityMut) {}
 	type Packet = ();
 	/// Entity passed must be valid in World and must contain components: `Session<Net>`, `SessionInfo<Net>` otherwise this function may panic.
 	#[allow(unused_variables)]
@@ -128,7 +129,6 @@ impl<Net: Network> Node<Net> {
 		world.insert_resource::<NodeConfig<Net>>(config);
 		world.insert_resource::<EventSender<Net>>(EventSender { sender: event_sender });
 		
-
 		DiscoverySystem::<Net>::register_resources(&mut world);
 		LatencyMetricsSystem::<Net>::register_resources(&mut world);
 		NCSystem::<Net>::register_resources(&mut world);
@@ -158,6 +158,8 @@ impl<Net: Network> Node<Net> {
 		// Session threads send events to main ECS thread through this channel
 		let (entity_event_sender, mut entity_event_receiver) = unbounded::<EntitySessionEvent<Net>>();
 
+		let mut timer_500_millis = async_std::stream::interval(Duration::from_millis(500)).fuse();
+
 		// Main event loop, awaits multiple futures (timers, session events, etc.) and runs the ECS schedule once
 		loop {
 			// Wait for events and handle them by updating world.
@@ -184,6 +186,9 @@ impl<Net: Network> Node<Net> {
 						_ => { log::info!("Connection Stream closed."); break },
 					}	
 				}
+				_ = timer_500_millis.next() => {
+					// self.handle_timer();
+				}
 				complete => break,
 			}
 
@@ -194,6 +199,15 @@ impl<Net: Network> Node<Net> {
 		log::info!("node: shutting down");
 
 		Ok(self)
+	}
+	fn handle_timer(&mut self) {
+		/* for coord_update in &self.world.query::<(&ShouldUpdate<Net>)>().iter(&self.world) {
+
+		} */
+		// All entities that have an active connection
+		/* if let Some((rand_session, _rand_metrics)) =  {
+			rand_session.send_packet(NodePacket::NCSystemPacket(NCSystemPacket::RequestNetworkCoordinates));
+		} */
 	}
 	// Update the world based on events from active session threads.
 	fn handle_session_events(world: &mut World, session_event: EntitySessionEvent<Net>) {
@@ -250,19 +264,19 @@ impl<Net: Network> Node<Net> {
 				
 				let node_config = self.world.resource::<NodeConfig<Net>>();
 				let coords = self.world.resource::<Coordinates>();
-				let latency_matrix = self.world.get_resource::<LatencyMatrix>().map(|res|res.latency_matrix.clone());
-				self.send_event(NodeEvent::Info(node_config.node_id.clone(), node_config.listener_config.clone(), coords.clone(), remotes, latency_matrix))?;
+				self.send_event(NodeEvent::Info(node_config.node_id.clone(), node_config.listener_config.clone(), coords.clone(), remotes))?;
 			},
 			NodeAction::GetRemoteInfo(entity) => {
 				if self.world.get_entity(entity).is_none() {
 					log::error!("unknown entity: {entity:?}");
 					return Ok(());
 				}
-				if let Ok((entity, remote, latency_metrics)) = self.world.query::<(Entity, &Remote, &LatencyMetrics)>().get(&self.world, entity) {
+				if let Ok((entity, remote, latency_metrics, coords)) = self.world.query::<(Entity, &Remote, &LatencyMetrics, Option<&Coordinates>)>().get(&self.world, entity) {
 					self.send_event(NodeEvent::RemoteInfo(
 						entity,
 						remote.id.clone(),
 						latency_metrics.clone(),
+						coords.cloned(),
 					))?;
 				} else {
 					log::error!("entity {entity:?} exists but has components: {:?}", self.world.inspect_entity(entity).iter().map(|info|info.name()).collect::<Vec<&str>>());
@@ -298,7 +312,9 @@ impl<Net: Network> Node<Net> {
 			entity.insert(session_info);
 			entity_id
 		} else {
-			self.world.spawn((Remote { id: remote_id }, session_info)).id()
+			let entity = self.world.spawn((Remote { id: remote_id.clone() }, session_info)).id();
+			self.world.resource_mut::<RemoteIDMap>().map.insert(remote_id, entity);
+			entity
 		};
 
 		// Spawn session
@@ -306,13 +322,10 @@ impl<Net: Network> Node<Net> {
 
 		let connection_requested = connection.requested;
 		let session = Session::spawn(connection, entity_id, session_event_sender);
-		// Set need more pings to true
-		session.send_action(SessionAction::SetDesiredPingCount(10));
-		// Request peers from each other
-		session.send_packet(NodePacket::DiscoveryPacket(DiscoveryPacket::PeerListDiscovery(PeerListDiscovery::RequestPeers)));
 
 		entity_mut.insert(session);
-		entity_mut.insert(LatencyMetrics::default());
+		LatencyMetricsSystem::<Net>::register_components(&mut entity_mut);
+		NCSystem::<Net>::register_components(&mut entity_mut);
 
 		// If I am the initiator of the connection, I should send a public address if possible
 		if connection_requested {

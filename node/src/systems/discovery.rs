@@ -79,6 +79,7 @@ impl<Net: Network> NodeSystem for DiscoverySystem<Net> {
 
 	fn register_systems(schedule: &mut Schedule) {
 		// schedule.add_system(handle_peer_request::<Net>);
+		schedule.add_system(session_setup::<Net>);
 		schedule.add_system(handle_conn_request::<Net>);
 	}
 
@@ -151,6 +152,14 @@ impl<Net: Network> NodeSystem for DiscoverySystem<Net> {
 				world.entity_mut(entity).insert(SeenAddr::<Net> { addr: seen_addr });
 			}
 		}
+	}
+}
+
+fn session_setup<Net: Network>(query: Query<&Session<Net>, Added<Session<Net>>>) {
+	// Set need more pings to true
+	for session in &query {
+		// Request peers from each other
+		session.send_packet(NodePacket::DiscoveryPacket(DiscoveryPacket::PeerListDiscovery(PeerListDiscovery::RequestPeers)));
 	}
 }
 
