@@ -1,6 +1,6 @@
-use std::{time::{Duration}, marker::PhantomData, ops::DerefMut};
+use std::{time::{Duration}, marker::PhantomData};
 
-use argmin::{core::{CostFunction, Gradient, IterState, Solver, Problem, State, SerializeAlias, DeserializeOwnedAlias, ArgminFloat}, solver::{linesearch::MoreThuenteLineSearch, gradientdescent::SteepestDescent}};
+use argmin::{core::{CostFunction, Gradient, IterState, Solver, Problem, State}, solver::{linesearch::MoreThuenteLineSearch, gradientdescent::SteepestDescent}};
 use argmin_math::{ArgminDot, ArgminScaledAdd, ArgminMul, ArgminAdd};
 use bevy_ecs::prelude::*;
 
@@ -227,6 +227,7 @@ fn network_coordinate_system(
 		solver_problem.problem.problem = Some(problem);
 
 		if state.get_iter() == 0 {
+			log::debug!("Initiating state");
 			state = solver.solver.init(&mut solver_problem.problem, state).unwrap().0;
 			state.update();
 			state.func_counts(&solver_problem.problem);
@@ -246,7 +247,8 @@ fn network_coordinate_system(
 	if !query.is_empty() {
 		// Update personal coordinates
 		if let Some(coords) = solver_state.state.get_best_param() {
-			log::debug!("Updating coordinates: {:?} -> {:?}, cost: {:?}", &*coordinates, coords, solver_state.state);
+			log::debug!("Updating coordinates: {:?} -> {:?}, state: {:?}", &*coordinates, coords, solver_state.state);
+			log::debug!("Gradient: {:?}", solver_state.state.get_gradient());
 			*coordinates = coords.clone();
 		} else {
 			log::debug!("Failed to fetch parameter, current coords: {:?}, state: {:?}", &*coordinates, solver_state.state);
@@ -291,6 +293,10 @@ struct CoordinateProblem {
 fn loss(predicted: f64, expected: f64) -> f64 {
 	let out = predicted - expected;
 	out * out
+}
+// Gradient of L2 Norm. Gradient is positive if predicted < expected. 
+fn loss_gradient(predicted: f64, expected: f64) -> f64 {
+	predicted - expected
 }
 
 const REGULARIZATION_COEFF: f64 = 5.0;

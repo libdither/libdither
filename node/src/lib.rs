@@ -103,12 +103,9 @@ pub struct PublicAddress<Net: Network> {
 	addr: Net::Address,
 }
 
-/* #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
-enum NodeState {
-	#[default]
-	Joining,
-	Initialized
-} */
+pub struct EntityEventSender<Net: Network> {
+	sender: UnboundedSender<EntitySessionEvent<Net>>
+}
 
 /// Easy way to modularize different sub-systems of a node. This doesn't prevent system interdependencies, it just streamlines world and schedule initialization. (and a few other things)
 #[allow(unused_variables)]
@@ -157,6 +154,8 @@ impl<Net: Network> Node<Net> {
 
 		// Session threads send events to main ECS thread through this channel
 		let (entity_event_sender, mut entity_event_receiver) = unbounded::<EntitySessionEvent<Net>>();
+
+		// self.world.insert_resource::<EntityEventSender<Net>>(EntityEventSender { sender: entity_event_sender.clone() });
 
 		let mut timer_500_millis = async_std::stream::interval(Duration::from_millis(500)).fuse();
 
@@ -214,6 +213,25 @@ impl<Net: Network> Node<Net> {
 			SessionEvent::Packet(packet) => match packet {
 				NodePacket::DiscoveryPacket(packet) => DiscoverySystem::handle_packet(world, entity, packet),
 				NodePacket::NCSystemPacket(packet) => NCSystem::<Net>::handle_packet(world, entity, packet),
+				NodePacket::Traversal { destination, encrypted_packet } => {
+					// TODO: decrypt encrypted packet using relevant EncryptionProtocol
+					// If receive a traversal packet, check if its destined for me. Otherwise, forward it to the routing system.
+					/* if packet.recipient == config.node_id {
+						// If so, interpret as regular packet.
+						entity_event_sender.sender.unbounded_send(EntitySessionEvent { entity, event  });
+						return
+					} else {
+						// TODO: Replace this linear search with some kind of kd-tree but for dot products. (Ball tree? Cone tree?) - https://arxiv.org/pdf/1202.6101.pdf
+						if let (sess, coord) = peers.iter().min_by(|(_, coord)|coord.dot(&packet.coord)) {
+							// Forward Traversal Packet to nearest peer
+							sess.send_packet(NodePacket::RoutingPacket(RoutingPacket::Traversal(packet)));
+						} else {
+							log::error!("received traversal packet: {packet:?}, but there are no active peers to forward it to, something weird is going on here");
+						}
+					} */
+					
+					
+				}
 				_ => unimplemented!(),
 			}
 			SessionEvent::LatencyMeasurement(measurement) => {

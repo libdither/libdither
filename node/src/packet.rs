@@ -37,7 +37,7 @@ pub enum NodePacket<Net: Network> {
 		/// Place to Route Packet to
 		destination: NetworkCoord,
 		/// Packet to traverse to destination node
-		#[omit_bounds] #[archive_attr(omit_bounds)] session_packet: Box<NodePacket<Net>>, // Must be type Init or Session packet
+		#[omit_bounds] #[archive_attr(omit_bounds)] encrypted_packet: Vec<u8>,
 	},
 
 	/// Packet representing an origin location

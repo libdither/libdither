@@ -3,7 +3,7 @@ use std::{time::{Instant, Duration}};
 use async_std::{task};
 use bevy_ecs::prelude::*;
 use futures::{channel::mpsc::{UnboundedSender, UnboundedReceiver, unbounded, TrySendError}, SinkExt, StreamExt, FutureExt};
-use rkyv::{Deserialize, Archived};
+use rkyv::{Deserialize, Archived, Infallible, option::ArchivedOption};
 use thiserror::Error;
 
 use crate::{Network, packet::{PacketRead, PacketWrite}, NodePacket, PingingNodePacket, Connection};
@@ -116,11 +116,10 @@ impl<Net: Network> SessionState<Net> {
 		}
 		Ok(())
 	}
-	pub async fn handle_packet(&mut self, packet: &Archived<PingingNodePacket<Net>>) -> Result<(), SessionError<Net>> {
-		let pinging_packet: PingingNodePacket<Net> = packet.deserialize(&mut rkyv::Infallible).unwrap();
-
+	pub async fn handle_packet(&mut self, pinging_packet: &Archived<PingingNodePacket<Net>>) -> Result<(), SessionError<Net>> {
+		
 		// Record acknowledged ping
-		if let Some(ack) = pinging_packet.ack_ping {
+		if let Some(ack) = pinging_packet.ack_ping.deserialize(&mut Infallible).unwrap() {
 			if let Some(duration) = self.ping_tracker.record_unique_id(ack) {
 				// Return latency measurement to main thread
 				self.ping_countdown = self.ping_countdown.saturating_sub(1);
@@ -132,7 +131,7 @@ impl<Net: Network> SessionState<Net> {
 
 		// Send back sent ping_id as acknowledgement
 		// TODO: Implement some kind of delayed packet queue so this can be made more efficient (i.e. optionally queue certain outgoing packets so they may be sent with a ping acknowledgement)
-		if let Some(ack_ping) = pinging_packet.ping_id {
+		if let Some(ack_ping) = pinging_packet.ping_id.deserialize(&mut Infallible).unwrap() {
 			// Gen ping id if session NEEDS MORE PINGS
 			let ping_id = (self.ping_countdown != 0).then(||self.ping_tracker.gen_unique_id());
 			log::debug!("pinging: {:?} w/ ID: {:?}, ACK: {:?}", self.entity_id, ping_id, ack_ping);
@@ -145,9 +144,11 @@ impl<Net: Network> SessionState<Net> {
 		}
 
 		// Send packet event if received
-		if let Some(packet) = pinging_packet.packet {
-			let event = SessionEvent::Packet(packet);
-			self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event }).await?;
+		if let ArchivedOption::Some(packet) = &pinging_packet.packet {
+			let packet: NodePacket<Net> = packet.deserialize(&mut rkyv::Infallible).unwrap();
+			
+			// Notify main event thread of packet
+			self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event: SessionEvent::Packet(packet) }).await?;
 		}
 
 		Ok(())
