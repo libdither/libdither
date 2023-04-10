@@ -1,6 +1,6 @@
-# [[Disp]] compiling to 6402 Bytecode
+# [[Disp]] compiling to 6502 Bytecode
 
-6402 assembly has a relatively small number of instructions so it is a good starting point when looking at how compiling works in Disp.
+6502 assembly has a relatively small number of instructions so it is a good starting point when looking at how compiling works in Disp.
 
 # Instruction Abstraction
 

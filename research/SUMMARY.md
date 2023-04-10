@@ -19,6 +19,8 @@
   - [Specification](./disp/implementation.md)
     - [Bind Trees](./disp/bind-trees.md)
   - [GPT4-Spec](./disp/gpt4-spec.md)
+  - [Examples]()
+    - [Category Theory Definitions](./disp/examples/category_theory.md)
 - [Applications](./applications.md)
   - [[WIP] Chat Client - Dither Chat](./applications/dither-chat.md)
   - [Comment System - Dithca]()
