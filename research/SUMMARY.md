@@ -18,6 +18,7 @@
   - [Self-Defined Types]()
   - [Specification](./disp/implementation.md)
     - [Bind Trees](./disp/bind-trees.md)
+  - [GPT4-Spec](./disp/gpt4-spec.md)
 - [Applications](./applications.md)
   - [[WIP] Chat Client - Dither Chat](./applications/dither-chat.md)
   - [Comment System - Dithca]()

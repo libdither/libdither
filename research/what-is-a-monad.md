@@ -63,7 +63,7 @@ set Endofunctor { F : { A : Type } -> Type } -> {
 	// Returns F(B). Can be partially applied by passing either the ordered set or F(A) first. 
 	// If passing the ordered set first, the function resolves to F(A) -> F(B).
 	// If passing F(A), the function resolves to some kind of generic constant parameterized by a type and a function. [B : Type, m : A -> B] -> F(B).
-	type map : { [ B : Type, morphism : A -> B ], a : F(A) } -> F(B);
+	map : { [ B : Type, morphism : A -> B ], a : F(A) } -> F(B);
 }
 ```
 

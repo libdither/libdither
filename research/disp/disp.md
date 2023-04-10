@@ -3,17 +3,17 @@
 *What is a program? What is data? Why, they are one of the same.*
 
 Inspired by:
- - Lisp for its flexibility
+ - Lisp for treating programs-as-data.
  - Idris & Coq for the infinite expressiveness of dependent types
- - Rust for its speed
- - IPFS for deduplication
+ - Rust for its safe & fast zero-cost abstractions.
+ - IPFS for deduplication of shared code
 
 ## Goals
 
 A general outline of the (very lofty) goals of Disp.
-
+ - Absolute flexibility & configurability
  - Most efficient language to run
- - Support for any cpu or interpreter
+ - Support for compilation to any cpu / interpreter
  - Most efficient language to write
    - Projectional Editing
      - Localization-agnostic naming
@@ -23,10 +23,9 @@ A general outline of the (very lofty) goals of Disp.
 
 ## Core Ideas
 
+ - 
  - [Universal System of Types](universal-system-of-types.md)
  - [Binding Trees]
-
-
 
 ## Ideas
  - Objects are stored in self-defining data structures, i.e. they link to data that describes the format of the object (whether that be structurally, in-memory, or symbolically).
