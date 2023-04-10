@@ -65,7 +65,7 @@ pub enum NodeEvent<Net: Network> {
 	// Event returned for GetRemoteList, return list of remotes.
 	Info(NodeID, Net::ListenerConfig, Coordinates, Vec<(NodeID, Entity)>),
 	// Event returned for GetRemoteInfo
-	RemoteInfo(Entity, NodeID, LatencyMetrics, Option<Coordinates>)
+	RemoteInfo(Entity, NodeID, LatencyMetrics, Option<Coordinates>, Option<(Latency, Latency)>)
 }
 
 #[derive(Debug, Error)]
@@ -187,7 +187,7 @@ impl<Net: Network> Node<Net> {
 					}	
 				}
 				_ = timer_500_millis.next() => {
-					// self.handle_timer();
+					self.handle_timer();
 				}
 				complete => break,
 			}
@@ -201,9 +201,7 @@ impl<Net: Network> Node<Net> {
 		Ok(self)
 	}
 	fn handle_timer(&mut self) {
-		/* for coord_update in &self.world.query::<(&ShouldUpdate<Net>)>().iter(&self.world) {
-
-		} */
+		change_should_update(&mut self.world);
 		// All entities that have an active connection
 		/* if let Some((rand_session, _rand_metrics)) =  {
 			rand_session.send_packet(NodePacket::NCSystemPacket(NCSystemPacket::RequestNetworkCoordinates));
@@ -272,11 +270,14 @@ impl<Net: Network> Node<Net> {
 					return Ok(());
 				}
 				if let Ok((entity, remote, latency_metrics, coords)) = self.world.query::<(Entity, &Remote, &LatencyMetrics, Option<&Coordinates>)>().get(&self.world, entity) {
+					let own_coords = self.world.resource::<Coordinates>();
+					
 					self.send_event(NodeEvent::RemoteInfo(
 						entity,
 						remote.id.clone(),
 						latency_metrics.clone(),
 						coords.cloned(),
+						coords.map(|coords|own_coords.predict_latencies(coords))
 					))?;
 				} else {
 					log::error!("entity {entity:?} exists but has components: {:?}", self.world.inspect_entity(entity).iter().map(|info|info.name()).collect::<Vec<&str>>());

@@ -1,4 +1,4 @@
-use std::{time::{Duration}, marker::PhantomData};
+use std::{time::{Duration}, marker::PhantomData, ops::DerefMut};
 
 use argmin::{core::{CostFunction, Gradient, IterState, Solver, Problem, State, SerializeAlias, DeserializeOwnedAlias, ArgminFloat}, solver::{linesearch::MoreThuenteLineSearch, gradientdescent::SteepestDescent}};
 use argmin_math::{ArgminDot, ArgminScaledAdd, ArgminMul, ArgminAdd};
@@ -8,7 +8,7 @@ use bytecheck::CheckBytes;
 
 use rkyv::{Serialize, Archive, Deserialize};
 
-use crate::{LatencyMetrics, session::Session, NodePacket, Network, NodeSystem};
+use crate::{LatencyMetrics, session::Session, NodePacket, Network, NodeSystem, Latency};
 
 const COORDINATE_DIMENSIONS: usize = 5;
 
@@ -70,6 +70,16 @@ impl<Net: Network> NodeSystem for NCSystem<Net> {
 	
 }
 
+// When a new session is established, send coordinates
+fn setup_session<Net: Network>(
+	coords: Res<Coordinates>,
+	query: Query<&Session<Net>, Added<Session<Net>>>
+) {
+	for session in &query {
+		session.send_packet(NodePacket::NCSystemPacket(NCSystemPacket::NotifyNetworkCoordinates(coords.clone())));
+	}
+}
+
 #[derive(Debug, Clone, Default, Component, Resource, Archive, Serialize, Deserialize, serde::Serialize, serde::Deserialize)]
 #[archive_attr(derive(CheckBytes, Debug))]
 pub struct Coordinates {
@@ -79,6 +89,11 @@ pub struct Coordinates {
 impl Coordinates {
 	pub fn new() -> Self {
 		Coordinates { out_coord: NetworkCoord::new_random(), in_coord: NetworkCoord::new_random() }
+	}
+	pub fn predict_latencies(&self, other: &Coordinates) -> (Latency, Latency) {
+		let outgoing = (self.out_coord.dot(&other.in_coord) * 1000.0) as Latency;
+		let incoming = (self.in_coord.dot(&other.out_coord) * 1000.0) as Latency;
+		(outgoing, incoming)
 	}
 }
 impl ArgminDot<Coordinates, f64> for Coordinates {
@@ -110,14 +125,14 @@ impl ArgminScaledAdd<Coordinates, f64, Coordinates> for Coordinates {
 
 /// Changes when there is a new latency measurement and coordinate to use to update own coordinates
 #[derive(Component, Default)]
-struct ShouldUpdate {
+pub struct ShouldUpdate {
 	last_changed: u32,
 }
 // Manages the state of the NC System and initiates state changes
 fn nc_system_controller(
 	mut query: Query<(Ref<LatencyMetrics>, Ref<Coordinates>, &mut ShouldUpdate)>) {
 	for (metrics, coords, mut update) in query.iter_mut() {
-		// if both metrics and coords changed, update ShouldUpdate
+		// if both metrics and coords changed (and there is at least 1 latency measurement), update ShouldUpdate
 		// state.last_changed is initialized at zero, so as soon as LatencyMetrics and Coordinates are inserted as Components, ShouldUpdate will change
 		if metrics.last_changed() > update.last_changed && coords.last_changed() > update.last_changed && metrics.latest_latency().is_some() {
 			log::debug!("metrics: {:?}, coords: {:?}, state: {:?}", metrics.last_changed(), coords.last_changed(), update.last_changed);
@@ -125,15 +140,12 @@ fn nc_system_controller(
 		}
 	}
 }
-
-// When a new session is established, send coordinates
-fn setup_session<Net: Network>(
-	coords: Res<Coordinates>,
-	query: Query<&Session<Net>, Added<Session<Net>>>
-) {
-	for session in &query {
-		session.send_packet(NodePacket::NCSystemPacket(NCSystemPacket::NotifyNetworkCoordinates(coords.clone())));
-	}
+pub fn change_should_update(world: &mut World) {
+	let mut query = world.query::<(Entity, &mut ShouldUpdate)>();
+	query.for_each_mut(world, |(entity, mut update)| {
+		log::debug!("Set ShouldUpdate for {:?}", entity);
+		update.set_changed();
+	})
 }
 
 /// Uses latency measurements to iteratively update network coordinates
@@ -176,9 +188,14 @@ fn calculate_weights(mut query: Query<(&LatencyMetrics, &mut CoordinateWeight), 
 	}
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 struct CoordinateSolverState {
 	state: IterState<Coordinates, Coordinates, (), (), f64>
+}
+impl Default for CoordinateSolverState {
+    fn default() -> Self {
+        Self { state: IterState::new() }
+    }
 }
 #[derive(Resource)]
 struct CoordinateSolverProblem {
@@ -191,7 +208,6 @@ impl Default for CoordinateSolverProblem {
 }
 
 fn network_coordinate_system(
-	mut commands: Commands,
 	mut coordinates: ResMut<Coordinates>,
 	mut solver: ResMut<CoordinateSolver>,
 	mut solver_state: ResMut<CoordinateSolverState>,
@@ -217,21 +233,20 @@ fn network_coordinate_system(
 		}
 
 		match solver.solver.next_iter(&mut solver_problem.problem, state.clone()) {
-			Ok(new_state) => {
-				state = new_state.0;
+			Ok((new_state, _)) => {
+				state = new_state;
 				state.func_counts(&solver_problem.problem);
 				state.update();
+				state.increment_iter();
 			},
 			Err(err) => log::error!("error running coordinate solver: {err:?}"),
 		}
 		solver_state.state = state;
-
-		commands.entity(entity).remove::<ShouldUpdate>();
 	}
 	if !query.is_empty() {
 		// Update personal coordinates
-		if let Some(coords) = solver_state.state.get_param() {
-			log::debug!("Updating coordinates: {:?} -> {:?}, cost: {:?}", &*coordinates, coords, solver_state.state.get_cost());
+		if let Some(coords) = solver_state.state.get_best_param() {
+			log::debug!("Updating coordinates: {:?} -> {:?}, cost: {:?}", &*coordinates, coords, solver_state.state);
 			*coordinates = coords.clone();
 		} else {
 			log::debug!("Failed to fetch parameter, current coords: {:?}, state: {:?}", &*coordinates, solver_state.state);
@@ -254,19 +269,6 @@ fn push_coordinates<Net: Network>(
 #[derive(Resource)]
 struct CoordinateSolver {
 	solver: SteepestDescent<MoreThuenteLineSearch<Coordinates, Coordinates, f64>>,
-}
-impl Solver<CoordinateProblem, IterState<Coordinates, Coordinates, (), (), f64>> for CoordinateSolver
-where
-    CoordinateProblem: CostFunction<Param = Coordinates, Output = f64> + Gradient<Param = Coordinates, Gradient = Coordinates>,
-    Coordinates: Clone + SerializeAlias + DeserializeOwnedAlias + ArgminDot<Coordinates, f64> + ArgminScaledAdd<Coordinates, f64, Coordinates>,
-    Coordinates: Clone + SerializeAlias + DeserializeOwnedAlias + ArgminDot<Coordinates, f64> + ArgminMul<f64, Coordinates>,
-    f64: ArgminFloat,
-{
-    const NAME: &'static str = "coordinate_solver";
-
-    fn next_iter(&mut self, problem: &mut Problem<CoordinateProblem>, state: IterState<Coordinates, Coordinates, (), (), f64>) -> Result<(IterState<Coordinates, Coordinates, (), (), f64>, Option<argmin::core::KV>), argmin::core::Error> {
-        self.solver.next_iter(problem, state)
-    }
 }
 impl CoordinateSolver {
 	fn new() -> Self {
