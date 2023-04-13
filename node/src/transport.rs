@@ -1,11 +1,9 @@
 mod encryption;
 
-use std::{net::{SocketAddr, SocketAddrV4, Ipv4Addr}, error, fmt, sync::Arc, pin::pin, task::Poll, io::{Write, Read}};
+use std::{net::{SocketAddr, SocketAddrV4, Ipv4Addr}, error, fmt};
 
-use async_std::{net::{TcpStream, UdpSocket}, io::WriteExt};
-use either::Either;
-use futures::{AsyncRead, AsyncWrite, lock::Mutex, ready, future::ok};
-use snow::params::NoiseParams;
+use async_std::{net::{TcpStream, UdpSocket}};
+use futures::{AsyncRead, AsyncWrite};
 
 /// A transport takes some data and establishes a connection using that data.
 pub trait Transport: Sized {
@@ -17,18 +15,10 @@ pub trait Transport: Sized {
 	type TransportError: fmt::Debug + error::Error + Send + Sync;
 	async fn create(data: Self::InitData) -> Result<Self, Self::InitError>;
 }
-/* /// Any kind of transport that send data packet-by-packet
-pub trait PacketTransport: Transport {
-	/// Sends `data` along socket. Returns amount of data sent.
-	async fn send(&self, data: &[u8]) -> Result<usize, Self::TransportError>;
-	/// Receives from socket into `data`. Returns amount of data received.
-	async fn recv(&self, data: &mut [u8]) -> Result<usize, Self::TransportError>;
-} */
 
 /// Any kind of transport that uses AsyncRead & AsyncWrite to send data.
 pub trait AsyncTransport: Transport + AsyncRead + AsyncWrite + Unpin {}
 impl<T: Transport + AsyncRead + AsyncWrite + Unpin> AsyncTransport for T {}
-
 
 pub struct TcpTransport {
 	read: TcpStream,
@@ -58,7 +48,7 @@ impl Transport for UdpSocket {
 	}
 }
 
-/// Represents a Transport that may lose or corrupt data in the process of transport.
+/* /// Represents a Transport that may lose or corrupt data in the process of transport.
 trait LossyTransport: Transport {
 	/// Sends `data` along socket. Returns amount of data sent.
 	fn lossy_send(&self, data: &[u8]) -> Result<usize, Self::TransportError>;
@@ -91,4 +81,4 @@ trait ReliableTransport: SequencingTransport + ByzantineTransport + CheckingTran
 
 trait DataTransport: Transport {
 
-}
+} */

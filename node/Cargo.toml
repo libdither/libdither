@@ -34,5 +34,10 @@ argmin-math = { version = "0.3", features = ["nalgebra_latest-serde"] }
 rand = "0.8.5"
 pin-project = "1.0.12"
 either = "1.8.1"
-snow = "0.9.2"
 bytes = "1.4.0"
+
+# Encryption
+snow = "0.9.2"
+rustls = "0.21.0"
+buf_redux = { version = "0.8.4", features = ["slice-deque"] }
+slice-ring-buffer = "0.3.2"
