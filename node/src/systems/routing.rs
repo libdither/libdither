@@ -2,9 +2,13 @@
 //! The goal is to facilitate multiple types of routing based on the goals of the application.
 //! It takes connection requests from the application and establishes a routed connection of some type.
 
-use bevy_ecs::system::ResMut;
+use std::{marker::PhantomData, time::Instant};
 
-use crate::{NodePacket, EntityEventSender, session::EntitySessionEvent};
+use bevy_ecs::prelude::*;
+use rkyv::{Archive, Serialize, Deserialize};
+use bytecheck::CheckBytes;
+
+use crate::{NodePacket, EntityEventSender, session::{EntitySessionEvent, Session}, NetworkCoord, Network, NodeSystem, NodeID, NodeConfig, Coordinates, Remote};
 
 /// Request for an entity to act as an onion route.
 /// Requires `Remote` and `Coordinates` components.
@@ -46,6 +50,7 @@ impl<Net: Network> NodeSystem for RoutingSystem<Net> {
 /// Requires entity to have `Remote` and `Coordinates` components
 #[derive(Debug, Component, Default)]
 pub enum TraversalSessionRequest {
+	#[default]
 	Requested,
 	/// TraversalSession is waiting for a response to the initiation packet sent at Instant,
 	WaitingForResponse(Instant),
@@ -69,15 +74,15 @@ fn establish_traversal_session(mut commands: Commands, requests: Query<(Entity, 
 	}
 }
 
+// Handle incoming traversal packets
 fn handle_traversal_packets<Net: Network>(
-	packets: EventReader<TraversalPacket>,
+	mut packets: EventReader<TraversalPacket>,
 	entity_event_sender: ResMut<EntityEventSender<Net>>,
 	config: Res<NodeConfig<Net>>,
 	peers: Query<(&Session<Net>, &Coordinates)>
 ) {
 	for packet in packets.iter() {
 		// Check if traversal packet is destined for me
-		
 		
 	}
 }

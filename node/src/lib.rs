@@ -103,6 +103,7 @@ pub struct PublicAddress<Net: Network> {
 	addr: Net::Address,
 }
 
+#[derive(Resource)]
 pub struct EntityEventSender<Net: Network> {
 	sender: UnboundedSender<EntitySessionEvent<Net>>
 }
