@@ -83,8 +83,8 @@ fn setup_session<Net: Network>(
 #[derive(Debug, Clone, Default, Component, Resource, Archive, Serialize, Deserialize, serde::Serialize, serde::Deserialize)]
 #[archive_attr(derive(CheckBytes, Debug))]
 pub struct Coordinates {
-	out_coord: NetworkCoord, // Outgoing coord for this node dot incoming coord for remote = predicted RTT latency from this node to remote
-	in_coord: NetworkCoord,
+	pub out_coord: NetworkCoord, // Outgoing coord for this node dot incoming coord for remote = predicted RTT latency from this node to remote
+	pub in_coord: NetworkCoord,
 }
 impl Coordinates {
 	pub fn new() -> Self {

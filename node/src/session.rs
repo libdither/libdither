@@ -6,7 +6,7 @@ use futures::{channel::mpsc::{UnboundedSender, UnboundedReceiver, unbounded, Try
 use rkyv::{Deserialize, Archived, Infallible, option::ArchivedOption};
 use thiserror::Error;
 
-use crate::{Network, packet::{PacketRead, PacketWrite}, NodePacket, PingingNodePacket, Connection};
+use crate::{Network, packet::{PacketRead, PacketWrite}, NodePacket, PingingNodePacket, Connection, ArchivedNodePacket};
 
 #[derive(Debug)]
 pub struct EntitySessionEvent<Net: Network> {
@@ -16,9 +16,10 @@ pub struct EntitySessionEvent<Net: Network> {
 
 #[derive(Debug)]
 pub enum SessionEvent<Net: Network> {
-	// TODO: Get rid of these stupid allocations
+	// TODO: Get rid of these stupid allocations by passing the buffers around
 	Packet(NodePacket<Net>),
-	LatencyMeasurement(Duration)
+	/// Notify main thread of latency measurement
+	LatencyMeasurement(Duration),
 }
 
 /// Interact with remote Session
@@ -104,7 +105,7 @@ impl<Net: Network> SessionState<Net> {
 		loop {
 			futures::select! {
 				packet = packet_read.read_packet().fuse() => {
-					state.handle_packet(packet?).await?;
+					state.handle_ping_packet(packet?).await?;
 				}
 				action = action_receiver.next() => {
 					if let Some(action) = action {
@@ -116,8 +117,7 @@ impl<Net: Network> SessionState<Net> {
 		}
 		Ok(())
 	}
-	pub async fn handle_packet(&mut self, pinging_packet: &Archived<PingingNodePacket<Net>>) -> Result<(), SessionError<Net>> {
-		
+	pub async fn handle_ping_packet(&mut self, pinging_packet: &Archived<PingingNodePacket<Net>>) -> Result<(), SessionError<Net>> {
 		// Record acknowledged ping
 		if let Some(ack) = pinging_packet.ack_ping.deserialize(&mut Infallible).unwrap() {
 			if let Some(duration) = self.ping_tracker.record_unique_id(ack) {
@@ -145,14 +145,26 @@ impl<Net: Network> SessionState<Net> {
 
 		// Send packet event if received
 		if let ArchivedOption::Some(packet) = &pinging_packet.packet {
-			let packet: NodePacket<Net> = packet.deserialize(&mut rkyv::Infallible).unwrap();
-			
-			// Notify main event thread of packet
-			self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event: SessionEvent::Packet(packet) }).await?;
+			self.handle_packet(packet).await?;
 		}
 
 		Ok(())
 	}
+	pub async fn handle_packet(&mut self, packet: &Archived<NodePacket<Net>>) -> Result<(), SessionError<Net>> {
+		match packet {
+			// Possibly Handle Traversal Packet search on session thread
+			/* ArchivedNodePacket::Traversal { destination, encrypted_packet } => {
+				self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event: SessionEvent::Traversal });
+				Ok(())
+			}, */
+			packet => {
+				let packet = packet.deserialize(&mut Infallible).unwrap();
+				self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event: SessionEvent::Packet(packet) }).await?;
+			}
+		}
+		Ok(())
+	}
+
 	pub async fn handle_session_action(&mut self, action: SessionAction<Net>) -> Result<(), SessionError<Net>> {
 		match action {
 			SessionAction::Packet(packet) => {

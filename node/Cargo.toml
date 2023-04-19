@@ -41,3 +41,4 @@ snow = "0.9.2"
 rustls = "0.21.0"
 buf_redux = { version = "0.8.4", features = ["slice-deque"] }
 slice-ring-buffer = "0.3.2"
+thingbuf = "0.1.3"

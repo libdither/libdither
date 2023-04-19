@@ -6,6 +6,7 @@
 #![feature(drain_filter)]
 #![feature(associated_type_defaults)]
 #![feature(generic_arg_infer)]
+#![feature(read_buf)]
 
 pub mod session;
 mod net;
