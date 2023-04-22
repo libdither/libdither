@@ -8,7 +8,7 @@ use pin_project::pin_project;
 use rkyv::{AlignedVec, Archive, Archived, Deserialize, Infallible, Serialize};
 use rkyv_codec::{RkyvCodecError, RkyvWriter, VarintLength, archive_stream};
 
-use crate::{net::Network, NetworkCoord, NCSystemPacket, session::PingID, DiscoveryPacket};
+use crate::{net::Network, NetworkCoord, NCSystemPacket, session::PingID, DiscoveryPacket, TraversalPacket};
 
 /// Acknowledging node packet
 #[derive(Debug, Archive, Serialize, Deserialize, Clone)]
@@ -33,12 +33,7 @@ pub enum NodePacket<Net: Network> {
 	Data(Vec<u8>),
 
 	/// Traversing packet
-	Traversal {
-		/// Place to Route Packet to
-		destination: NetworkCoord,
-		/// Packet to traverse to destination node
-		#[omit_bounds] #[archive_attr(omit_bounds)] encrypted_packet: Vec<u8>,
-	},
+	Traversal(TraversalPacket),
 
 	/// Packet representing an origin location
 	Return {

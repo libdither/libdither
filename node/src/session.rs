@@ -6,7 +6,7 @@ use futures::{channel::mpsc::{UnboundedSender, UnboundedReceiver, unbounded, Try
 use rkyv::{Deserialize, Archived, Infallible, option::ArchivedOption};
 use thiserror::Error;
 
-use crate::{Network, packet::{PacketRead, PacketWrite}, NodePacket, PingingNodePacket, Connection, ArchivedNodePacket};
+use crate::{Network, packet::{PacketRead, PacketWrite}, NodePacket, PingingNodePacket, Connection, ArchivedNodePacket, TraversalPacket};
 
 #[derive(Debug)]
 pub struct EntitySessionEvent<Net: Network> {
@@ -20,6 +20,8 @@ pub enum SessionEvent<Net: Network> {
 	Packet(NodePacket<Net>),
 	/// Notify main thread of latency measurement
 	LatencyMeasurement(Duration),
+	/// Send Traversal Packet to main thread to be sent
+	Traversal(TraversalPacket),
 }
 
 /// Interact with remote Session
@@ -153,10 +155,10 @@ impl<Net: Network> SessionState<Net> {
 	pub async fn handle_packet(&mut self, packet: &Archived<NodePacket<Net>>) -> Result<(), SessionError<Net>> {
 		match packet {
 			// Possibly Handle Traversal Packet search on session thread
-			/* ArchivedNodePacket::Traversal { destination, encrypted_packet } => {
-				self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event: SessionEvent::Traversal });
-				Ok(())
-			}, */
+			ArchivedNodePacket::Traversal(packet) => {
+				let traversal_packet = packet.deserialize(&mut Infallible).unwrap();
+				self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event: SessionEvent::Traversal(traversal_packet) });
+			},
 			packet => {
 				let packet = packet.deserialize(&mut Infallible).unwrap();
 				self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event: SessionEvent::Packet(packet) }).await?;

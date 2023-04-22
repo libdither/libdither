@@ -215,24 +215,29 @@ impl<Net: Network> Node<Net> {
 			SessionEvent::Packet(packet) => match packet {
 				NodePacket::DiscoveryPacket(packet) => DiscoverySystem::handle_packet(world, entity, packet),
 				NodePacket::NCSystemPacket(packet) => NCSystem::<Net>::handle_packet(world, entity, packet),
-				NodePacket::Traversal { destination, encrypted_packet } => {
-					// TODO: decrypt encrypted packet using relevant EncryptionProtocol
-					// If receive a traversal packet, check if its destined for me. Otherwise, forward it to the routing system.
-					/* if packet.recipient == config.node_id {
-						// If so, interpret as regular packet.
-						entity_event_sender.sender.unbounded_send(EntitySessionEvent { entity, event  });
-						return
-					} else {
-						// TODO: Replace this linear search with some kind of kd-tree but for dot products. (Ball tree? Cone tree?) - https://arxiv.org/pdf/1202.6101.pdf
-						if let (sess, coord) = peers.iter().min_by(|(_, coord)|coord.dot(&packet.coord)) {
-							// Forward Traversal Packet to nearest peer
-							sess.send_packet(NodePacket::RoutingPacket(RoutingPacket::Traversal(packet)));
-						} else {
-							log::error!("received traversal packet: {packet:?}, but there are no active peers to forward it to, something weird is going on here");
+				NodePacket::Traversal(packet) => {
+					// let system = handle_traversal_packet::<Net>(packet);
+					// system.run(world., param_value)
+					/* // If traversal packet is destined for me (either as a relay, or as actual recipient)
+					// decrypt it and send as normal packet using entity_event_sender
+					if receiver == world.resource::<NodeConfig<Net>>().node_id {
+						if let Some(entity) = world.resource::<RemoteIDMap>().map.get(&receiver) {
+							let packet = rkyv::check_archived_root::<'_, NodePacket<Net>>(&encrypted_packet).expect("failed to unarchive traversed packet");
+							let packet = packet.deserialize(&mut rkyv::Infallible).unwrap();
+							world.resource::<EntityEventSender<Net>>().sender.unbounded_send(EntitySessionEvent {
+								entity: entity.clone(),
+								event: SessionEvent::Packet(packet),
+							}).ok();
+						}
+					} else { // Otherwise, send it to nearest peer that has coordinates closest to the destination.
+						if let Some((sess, _)) = world.query::<(&Session<Net>, &Coordinates)>().iter(&world)
+							.map(|(s, c)|(s, c.out_coord.dot(&destination)))
+							.min_by(|(_, c1), (_, c2)| f64::partial_cmp(c1, c2).unwrap_or(Ordering::Equal)) {
+							// Send packet
+							// TODO: Should do buffer reuse here
+							sess.send_packet(NodePacket::Traversal { destination, receiver, encrypted_packet })
 						}
 					} */
-					
-					
 				}
 				_ => unimplemented!(),
 			}

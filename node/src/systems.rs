@@ -7,3 +7,4 @@ mod routing;
 pub use discovery::*;
 pub use latency_metrics::*;
 pub use nc_system::*;
+pub use routing::*;
