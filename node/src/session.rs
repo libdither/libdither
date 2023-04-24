@@ -1,12 +1,13 @@
-use std::{time::{Instant, Duration}};
+use std::{time::{Instant, Duration}, marker::PhantomData, sync::Arc};
 
+use arc_swap::ArcSwap;
 use async_std::{task};
 use bevy_ecs::prelude::*;
 use futures::{channel::mpsc::{UnboundedSender, UnboundedReceiver, unbounded, TrySendError}, SinkExt, StreamExt, FutureExt};
 use rkyv::{Deserialize, Archived, Infallible, option::ArchivedOption};
 use thiserror::Error;
 
-use crate::{Network, packet::{PacketRead, PacketWrite}, NodePacket, PingingNodePacket, Connection, ArchivedNodePacket, TraversalPacket};
+use crate::{Network, packet::{PacketRead, PacketWrite}, NodePacket, PingingNodePacket, Connection, ArchivedNodePacket, TraversalPacket, NodeID};
 
 #[derive(Debug)]
 pub struct EntitySessionEvent<Net: Network> {
@@ -58,13 +59,13 @@ pub struct Session<Net: Network> {
 }
 
 impl<Net: Network> Session<Net> {
-	pub fn spawn(connection: Connection<Net>, entity_id: Entity, session_event_sender: UnboundedSender<EntitySessionEvent<Net>>) -> Session<Net> {
+	pub fn spawn(connection: Connection<Net>, shared: Arc<ArcSwap<SessionSharedState<Net>>>, entity_id: Entity, session_event_sender: UnboundedSender<EntitySessionEvent<Net>>) -> Session<Net> {
 		
 		// Session action sender
 		let (action_sender, action_receiver) = unbounded();
 		// Spawn session task with connection
 		task::spawn(async move {
-			if let Err(err) = SessionState::run(connection, entity_id, session_event_sender, action_receiver).await {
+			if let Err(err) = SessionState::run(connection, shared, entity_id, session_event_sender, action_receiver).await {
 				log::warn!("Session for node {entity_id:?} closed with error: {err}");
 			}
 		});
@@ -89,10 +90,17 @@ struct SessionState<Net: Network> {
 	entity_id: Entity,
 	ping_countdown: usize,
 	last_ping: Option<Instant>,
+	shared: Arc<ArcSwap<SessionSharedState<Net>>>,
 }
+
+pub struct SessionSharedState<Net: Network> {
+	pub self_node_id: NodeID,
+	pub _net: PhantomData<Net>,
+}
+
 impl<Net: Network> SessionState<Net> {
 	/// Run `Session` with network `Connection`
-	async fn run(conn: Connection<Net>, entity_id: Entity, event_sender: UnboundedSender<EntitySessionEvent<Net>>, mut action_receiver: UnboundedReceiver<SessionAction<Net>>) -> Result<(), SessionError<Net>> {
+	async fn run(conn: Connection<Net>, shared: Arc<ArcSwap<SessionSharedState<Net>>>, entity_id: Entity, event_sender: UnboundedSender<EntitySessionEvent<Net>>, mut action_receiver: UnboundedReceiver<SessionAction<Net>>) -> Result<(), SessionError<Net>> {
 		let mut packet_read = PacketRead::<Net>::new(conn.read);
 
 		let mut state = SessionState {
@@ -102,6 +110,7 @@ impl<Net: Network> SessionState<Net> {
 			entity_id,
 			ping_countdown: 0,
 			last_ping: None,
+			shared,
 		};
 
 		loop {
@@ -136,7 +145,7 @@ impl<Net: Network> SessionState<Net> {
 		if let Some(ack_ping) = pinging_packet.ping_id.deserialize(&mut Infallible).unwrap() {
 			// Gen ping id if session NEEDS MORE PINGS
 			let ping_id = (self.ping_countdown != 0).then(||self.ping_tracker.gen_unique_id());
-			log::debug!("pinging: {:?} w/ ID: {:?}, ACK: {:?}", self.entity_id, ping_id, ack_ping);
+			// log::debug!("pinging: {:?} w/ ID: {:?}, ACK: {:?}", self.entity_id, ping_id, ack_ping);
 
 			let packet = PingingNodePacket { packet: None, ping_id, ack_ping: Some(ack_ping) };
 			self.packet_write.send(&packet).await?; // Send packet to remote
@@ -157,7 +166,11 @@ impl<Net: Network> SessionState<Net> {
 			// Possibly Handle Traversal Packet search on session thread
 			ArchivedNodePacket::Traversal(packet) => {
 				let traversal_packet = packet.deserialize(&mut Infallible).unwrap();
-				self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event: SessionEvent::Traversal(traversal_packet) });
+				let shared = self.shared.load();
+				if packet.recipient == shared.self_node_id {
+
+				}
+				self.event_sender.send(EntitySessionEvent { entity: self.entity_id, event: SessionEvent::Traversal(traversal_packet) }).await?;
 			},
 			packet => {
 				let packet = packet.deserialize(&mut Infallible).unwrap();
@@ -181,11 +194,11 @@ impl<Net: Network> SessionState<Net> {
 				self.ping_countdown = ping_count;
 				if self.ping_countdown != 0 {
 					self.ping_countdown = self.ping_countdown.saturating_sub(1);
-					log::debug!("{:?} needed ping count: {:?}", self.entity_id, self.ping_countdown);
+					// log::debug!("{:?} needed ping count: {:?}", self.entity_id, self.ping_countdown);
 					if self.last_ping.is_none() || self.last_ping.unwrap().elapsed() > Duration::from_millis(200) {
 						let ping_id = (self.ping_countdown != 0).then(||self.ping_tracker.gen_unique_id());
 						let packet = PingingNodePacket::<Net> { packet: None, ping_id, ack_ping: None };
-						log::debug!("{:?} sending ping: {packet:?}", self.entity_id);
+						// log::debug!("{:?} sending ping: {packet:?}", self.entity_id);
 						self.last_ping = Some(Instant::now());
 						self.packet_write.send(&packet).await?;
 						self.packet_write.flush().await?;

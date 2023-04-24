@@ -13,9 +13,10 @@ mod net;
 mod packet;
 mod systems;
 mod transport;
+use arc_swap::ArcSwap;
 pub use systems::*;
 
-use std::{collections::HashMap, marker::PhantomData, time::Duration};
+use std::{collections::HashMap, marker::PhantomData, time::Duration, cmp::Ordering, sync::Arc};
 
 use bevy_ecs::{prelude::*, world::EntityMut};
 use futures::{channel::mpsc::{unbounded, self, UnboundedSender, TrySendError}, StreamExt};
@@ -109,6 +110,11 @@ pub struct EntityEventSender<Net: Network> {
 	sender: UnboundedSender<EntitySessionEvent<Net>>
 }
 
+#[derive(Resource)]
+pub struct SharedSessionState<Net: Network> {
+	state: Arc<ArcSwap<SessionSharedState<Net>>>
+}
+
 /// Easy way to modularize different sub-systems of a node. This doesn't prevent system interdependencies, it just streamlines world and schedule initialization. (and a few other things)
 #[allow(unused_variables)]
 pub trait NodeSystem {
@@ -124,10 +130,21 @@ pub trait NodeSystem {
 impl<Net: Network> Node<Net> {
 	pub fn new(config: NodeConfig<Net>, event_sender: UnboundedSender<NodeEvent<Net>>) -> Self {
 		let mut world = World::new();
+		
+		// Setup state that is shared between session handlers, i.e. encryption info.
+		world.insert_resource(SharedSessionState {
+			state: Arc::new(ArcSwap::new(Arc::new(SessionSharedState::<Net> {
+				self_node_id: config.node_id.clone(),
+				_net: Default::default(),
+			})))
+		});
+		
+		// Setup other important resources
 		world.init_resource::<RemoteIDMap>();
 		world.insert_resource::<NodeConfig<Net>>(config);
 		world.insert_resource::<EventSender<Net>>(EventSender { sender: event_sender });
-		
+
+		// Setup resources defined by NodeSystems
 		DiscoverySystem::<Net>::register_resources(&mut world);
 		LatencyMetricsSystem::<Net>::register_resources(&mut world);
 		NCSystem::<Net>::register_resources(&mut world);
@@ -153,6 +170,7 @@ impl<Net: Network> Node<Net> {
 		DiscoverySystem::<Net>::register_systems(&mut schedule);
 		LatencyMetricsSystem::<Net>::register_systems(&mut schedule);
 		NCSystem::<Net>::register_systems(&mut schedule);
+		LoggingSystem::<Net>::register_systems(&mut schedule);
 
 		// Session threads send events to main ECS thread through this channel
 		let (entity_event_sender, mut entity_event_receiver) = unbounded::<EntitySessionEvent<Net>>();
@@ -215,35 +233,22 @@ impl<Net: Network> Node<Net> {
 			SessionEvent::Packet(packet) => match packet {
 				NodePacket::DiscoveryPacket(packet) => DiscoverySystem::handle_packet(world, entity, packet),
 				NodePacket::NCSystemPacket(packet) => NCSystem::<Net>::handle_packet(world, entity, packet),
-				NodePacket::Traversal(packet) => {
-					// let system = handle_traversal_packet::<Net>(packet);
-					// system.run(world., param_value)
-					/* // If traversal packet is destined for me (either as a relay, or as actual recipient)
-					// decrypt it and send as normal packet using entity_event_sender
-					if receiver == world.resource::<NodeConfig<Net>>().node_id {
-						if let Some(entity) = world.resource::<RemoteIDMap>().map.get(&receiver) {
-							let packet = rkyv::check_archived_root::<'_, NodePacket<Net>>(&encrypted_packet).expect("failed to unarchive traversed packet");
-							let packet = packet.deserialize(&mut rkyv::Infallible).unwrap();
-							world.resource::<EntityEventSender<Net>>().sender.unbounded_send(EntitySessionEvent {
-								entity: entity.clone(),
-								event: SessionEvent::Packet(packet),
-							}).ok();
-						}
-					} else { // Otherwise, send it to nearest peer that has coordinates closest to the destination.
-						if let Some((sess, _)) = world.query::<(&Session<Net>, &Coordinates)>().iter(&world)
-							.map(|(s, c)|(s, c.out_coord.dot(&destination)))
-							.min_by(|(_, c1), (_, c2)| f64::partial_cmp(c1, c2).unwrap_or(Ordering::Equal)) {
-							// Send packet
-							// TODO: Should do buffer reuse here
-							sess.send_packet(NodePacket::Traversal { destination, receiver, encrypted_packet })
-						}
-					} */
-				}
+				NodePacket::Traversal(_) => panic!("Traversal Packet"),
 				_ => unimplemented!(),
 			}
 			SessionEvent::LatencyMeasurement(measurement) => {
 				LatencyMetricsSystem::<Net>::handle_packet(world, entity, measurement);
-			},  
+			}
+			// Packet that should be routed
+			SessionEvent::Traversal(packet) => {
+				if let Some((sess, _)) = world.query::<(&Session<Net>, &Coordinates)>().iter(&world)
+					.map(|(s, c)|(s, c.out_coord.dot(&packet.destination)))
+					.min_by(|(_, c1), (_, c2)| f64::partial_cmp(c1, c2).unwrap_or(Ordering::Equal)) {
+					// Send packet
+					// TODO: Should do some kind of buffer re-use here
+					sess.send_packet(NodePacket::Traversal(packet))
+				}
+			}
 		}
 	}
 	async fn handle_node_action(&mut self, action: NodeAction<Net>) -> Result<(), NodeError<Net>> {
@@ -343,11 +348,13 @@ impl<Net: Network> Node<Net> {
 			entity
 		};
 
+		let shared = self.world.resource::<SharedSessionState<Net>>().state.clone();
+
 		// Spawn session
 		let mut entity_mut = self.world.entity_mut(entity_id);
 
 		let connection_requested = connection.requested;
-		let session = Session::spawn(connection, entity_id, session_event_sender);
+		let session = Session::spawn(connection, shared, entity_id, session_event_sender);
 
 		entity_mut.insert(session);
 		LatencyMetricsSystem::<Net>::register_components(&mut entity_mut);

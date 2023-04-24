@@ -66,11 +66,11 @@ pub struct TraversalSession;
 #[archive_attr(derive(Debug, CheckBytes))]
 pub struct TraversalPacket {
 	// In-coord of destination node
-	destination: NetworkCoord,
+	pub destination: NetworkCoord,
 	// TODO: Its probably not a good idea in the future to have recipient IDs attached to traversal packets because then anyone along the traversal path can figure out the coordinates of a given NodeID
-	recipient: NodeID,
+	pub recipient: NodeID,
 	// Encrypted packet that should be forwarded
-	encrypted_packet: Vec<u8>,
+	pub encrypted_packet: Vec<u8>,
 }
 
 /// if a traversal session is requested, establish it (if it does not already exist)
@@ -86,9 +86,10 @@ pub struct TraversalPacketReceiver {
 	receiver: mpsc::Receiver<TraversalPacket>
 }
 
-// Handle incoming traversal packets
+// This was moved to 
+/* // Handle incoming traversal packets
 pub fn handle_traversal_packet<Net: Network>(
-	packet_receiver: Res<TraversalPacketReceiver>,
+	mut packet_receiver: ResMut<TraversalPacketReceiver>,
 	entity_event_sender: ResMut<EntityEventSender<Net>>,
 	config: Res<NodeConfig<Net>>,
 	id_map: Res<RemoteIDMap>,
@@ -117,4 +118,4 @@ pub fn handle_traversal_packet<Net: Network>(
 			}
 		}
 	}
-}
+} */
