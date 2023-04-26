@@ -172,6 +172,8 @@ impl<Net: Network> Node<Net> {
 		NCSystem::<Net>::register_systems(&mut schedule);
 		LoggingSystem::<Net>::register_systems(&mut schedule);
 
+		schedule.add_system(check_closed_session::<Net>);
+
 		// Session threads send events to main ECS thread through this channel
 		let (entity_event_sender, mut entity_event_receiver) = unbounded::<EntitySessionEvent<Net>>();
 
@@ -185,7 +187,7 @@ impl<Net: Network> Node<Net> {
 			futures::select! {
 				// Handle events from sessions (i.e. remote packets or latency measurements)
 				event = entity_event_receiver.next() => if let Some(event) = event {
-					log::debug!("received from {:?}. SessionEvent: {:?}", event.entity, event.event);
+					// log::debug!("received from {:?}. SessionEvent: {:?}", event.entity, event.event);
 					Self::handle_session_events(&mut self.world, event);
 				},
 				// Handle actions
@@ -220,11 +222,14 @@ impl<Net: Network> Node<Net> {
 		Ok(self)
 	}
 	fn handle_timer(&mut self) {
-		change_should_update(&mut self.world);
+		// change_should_update(&mut self.world);
 		// All entities that have an active connection
 		/* if let Some((rand_session, _rand_metrics)) =  {
 			rand_session.send_packet(NodePacket::NCSystemPacket(NCSystemPacket::RequestNetworkCoordinates));
 		} */
+		/* self.world.query::<&Session<Net>>().iter(&self.world).for_each(|sess| {
+			sess.send_action(SessionAction::SetDesiredPingCount(1));
+		}); */
 	}
 	// Update the world based on events from active session threads.
 	fn handle_session_events(world: &mut World, session_event: EntitySessionEvent<Net>) {
@@ -364,6 +369,15 @@ impl<Net: Network> Node<Net> {
 		if connection_requested {
 			// Add component marking the entity that is the receiver of the connection.
 			entity_mut.insert(ConnReceiver);
+		}
+	}
+}
+
+// remove closed sessions
+fn check_closed_session<Net: Network>(mut commands: Commands, sessions: Query<(Entity, &Session<Net>)>) {
+	for (entity, sess) in sessions.iter() {
+		if sess.action_sender.is_closed() {
+			commands.entity(entity).remove::<Session<Net>>();
 		}
 	}
 }

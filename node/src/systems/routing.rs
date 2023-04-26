@@ -85,37 +85,3 @@ fn establish_traversal_session(mut commands: Commands, requests: Query<(Entity, 
 pub struct TraversalPacketReceiver {
 	receiver: mpsc::Receiver<TraversalPacket>
 }
-
-// This was moved to 
-/* // Handle incoming traversal packets
-pub fn handle_traversal_packet<Net: Network>(
-	mut packet_receiver: ResMut<TraversalPacketReceiver>,
-	entity_event_sender: ResMut<EntityEventSender<Net>>,
-	config: Res<NodeConfig<Net>>,
-	id_map: Res<RemoteIDMap>,
-	peers: Query<(&Session<Net>, &Coordinates)>
-	
-) {
-	while let Ok(Some(packet)) = packet_receiver.receiver.try_next() {
-		// If traversal packet is destined for me (either as a relay, or as actual recipient)
-		// decrypt it and send as normal packet using entity_event_sender
-		if packet.recipient == config.node_id {
-			if let Some(entity) = id_map.map.get(&packet.recipient) {
-				let packet = rkyv::check_archived_root::<'_, NodePacket<Net>>(&packet.encrypted_packet).expect("failed to unarchive traversed packet");
-				let packet = packet.deserialize(&mut Infallible).unwrap();
-				entity_event_sender.sender.unbounded_send(EntitySessionEvent {
-					entity: entity.clone(),
-					event: SessionEvent::Packet(packet),
-				}).ok();
-			}
-		} else { // Otherwise, send it to nearest peer that has coordinates closest to the destination.
-			if let Some((sess, _)) = peers.iter()
-				.map(|(s, c)|(s, c.out_coord.dot(&packet.destination)))
-				.min_by(|(_, c1), (_, c2)| f64::partial_cmp(c1, c2).unwrap_or(Ordering::Equal)) {
-				// Send packet
-				// TODO: Should do buffer reuse here
-				sess.send_packet(NodePacket::Traversal(packet))
-			}
-		}
-	}
-} */

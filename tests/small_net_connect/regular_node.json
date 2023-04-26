@@ -10,5 +10,9 @@
     {
         "action": { "GetRemoteInfo": { "index": 0, "generation": 0 } },
         "time": { "secs": 4, "nanos": 0 }
+    },
+    {
+        "action": { "GetRemoteInfo": { "index": 0, "generation": 0 } },
+        "time": { "secs": 50, "nanos": 0 }
     }
 ]

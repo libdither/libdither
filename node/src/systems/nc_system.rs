@@ -1,4 +1,4 @@
-use std::{time::{Duration}, marker::PhantomData};
+use std::{time::{Duration, Instant}, marker::PhantomData};
 
 use argmin::{core::{CostFunction, Gradient, IterState, Solver, Problem, State}, solver::{linesearch::MoreThuenteLineSearch, gradientdescent::SteepestDescent}};
 use argmin_math::{ArgminDot, ArgminScaledAdd, ArgminMul, ArgminAdd};
@@ -62,7 +62,7 @@ impl<Net: Network> NodeSystem for NCSystem<Net> {
 			},
 			// Received a remote's network coordinates, make sure to record them.
 			NCSystemPacket::NotifyNetworkCoordinates(coords) => {
-				log::debug!("received coordinates from {:?}: {:?}", entity, coords);
+				// log::debug!("received coordinates from {:?}: {:?}", entity, coords);
 				world.entity_mut(entity).insert(coords);
 			},
 		}
@@ -129,49 +129,46 @@ pub struct ShouldUpdate {
 	last_changed: u32,
 }
 // Manages the state of the NC System and initiates state changes
-fn nc_system_controller(
-	mut query: Query<(Ref<LatencyMetrics>, Ref<Coordinates>, &mut ShouldUpdate)>) {
+fn nc_system_controller(mut query: Query<(Ref<LatencyMetrics>, Ref<Coordinates>, &mut ShouldUpdate)>) {
 	for (metrics, coords, mut update) in query.iter_mut() {
 		// if both metrics and coords changed (and there is at least 1 latency measurement), update ShouldUpdate
 		// state.last_changed is initialized at zero, so as soon as LatencyMetrics and Coordinates are inserted as Components, ShouldUpdate will change
-		if metrics.last_changed() > update.last_changed && coords.last_changed() > update.last_changed && metrics.latest_latency().is_some() {
-			log::debug!("metrics: {:?}, coords: {:?}, state: {:?}", metrics.last_changed(), coords.last_changed(), update.last_changed);
+		if metrics.last_changed() > update.last_changed && coords.last_changed() > update.last_changed {
+			// log::debug!("metrics: {:?}, coords: {:?}, state: {:?}", metrics.last_changed(), coords.last_changed(), update.last_changed);
 			update.last_changed = u32::max(metrics.last_changed(), coords.last_changed());
 		}
 	}
 }
 pub fn change_should_update(world: &mut World) {
 	let mut query = world.query::<(Entity, &mut ShouldUpdate)>();
-	query.for_each_mut(world, |(entity, mut update)| {
-		log::debug!("Set ShouldUpdate for {:?}", entity);
+	query.for_each_mut(world, |(_, mut update)| {
+		// log::debug!("Set ShouldUpdate for {:?}", entity);
 		update.set_changed();
 	})
 }
 
 /// Uses latency measurements to iteratively update network coordinates
-/// Current implementation: Uses a weight-based update algorithm as outlined in [Phoenix](https://user.informatik.uni-goettingen.de/~ychen/papers/Phoenix_TNSM.pdf)
-
-/// Better algorithm: [DMFSGD](https://arxiv.org/pdf/1201.1174.pdf) - Uses Stochastic Gradient Descent
-/// Even better algorithm: https://orbi.uliege.be/bitstream/2268/136727/1/phdthesis.pdf#page=36
+/// 
+/// Current implementation: https://orbi.uliege.be/bitstream/2268/136727/1/phdthesis.pdf#page=36
+/// 
+/// Other inspirations: [Phoenix](https://user.informatik.uni-goettingen.de/~ychen/papers/Phoenix_TNSM.pdf), [DMFSGD](https://arxiv.org/pdf/1201.1174.pdf)
 
 #[derive(Debug, Component, Default)]
 struct CoordinateWeight {
 	value: f64,
 }
 fn calculate_weights(mut query: Query<(&LatencyMetrics, &mut CoordinateWeight), Changed<ShouldUpdate>>) {
-	let mut a_max = Duration::new(0, 0);
+	let mut a_max = Duration::from_micros(1);
 	// calculate last received measurement from nodes (a_max)
 	for (metrics, _) in query.iter_mut() {
-		if let Some(last_update) = metrics.last_update() {
-			let since_update = last_update.elapsed();
-			a_max = a_max.max(since_update);
-		}
+		let since_update = metrics.last_update().elapsed();
+		a_max = a_max.max(since_update);
 	}
 
+	let now = Instant::now();
 	// calculate duration_sum: sum (a_max - a_j) where a_j is a given peer's time since last measurement
 	let duration_sum = query.iter()
-		.flat_map(|(metrics, _)|metrics.last_update())
-		.map(|i|i.elapsed())
+		.map(|(metrics, _)|metrics.last_update().duration_since(now))
 		.map(|a_j|a_max - a_j)
 		.sum::<Duration>();
 
@@ -179,12 +176,8 @@ fn calculate_weights(mut query: Query<(&LatencyMetrics, &mut CoordinateWeight), 
 
 	// calculate weights: w_j = (a_max - a_j) / duration_sum )
 	for (metrics, mut weight) in query.iter_mut() {
-		if let Some(update) = metrics.last_update() {
-			let elapsed = update.elapsed();
-			weight.value = ((a_max.as_millis() - elapsed.as_millis()) / duration_sum.as_millis()) as f64;
-		} else {
-			weight.value = 0.0;
-		}
+		let elapsed = metrics.last_update().duration_since(now);
+		weight.value = (a_max.as_millis() as f64 - elapsed.as_millis() as f64) / duration_sum.as_millis() as f64;
 	}
 }
 
@@ -215,9 +208,9 @@ fn network_coordinate_system(
 	mut query: Query<(Entity, &Coordinates, &LatencyMetrics, &CoordinateWeight), Changed<ShouldUpdate>>
 ) {
 	for (entity, coordinates, metrics, weight) in query.iter_mut() {
-		log::debug!("running coordinate update using data from {:?}: coord: {:?}, lat: {:?}, weight: {:?}", entity, coordinates, metrics.latest_latency(), weight);
+		// log::debug!("running coordinate update using data from {:?}: coord: {:?}, lat: {:?}, weight: {:?}", entity, coordinates, metrics.latest_latency(), weight);
 		let problem = CoordinateProblem {
-			remote_measurement: Duration::from_micros(metrics.latest_latency().unwrap()).as_secs_f64() * 1000.0,
+			remote_measurement: Duration::from_micros(metrics.latest_latency()).as_secs_f64() * 1000.0,
 			remote_coords: coordinates.clone(),
 			remote_weight: weight.value,
 			incoming: false,
@@ -227,7 +220,7 @@ fn network_coordinate_system(
 		solver_problem.problem.problem = Some(problem);
 
 		if state.get_iter() == 0 {
-			log::debug!("Initiating state");
+			// log::debug!("Initiating state");
 			state = solver.solver.init(&mut solver_problem.problem, state).unwrap().0;
 			state.update();
 			state.func_counts(&solver_problem.problem);
@@ -248,10 +241,10 @@ fn network_coordinate_system(
 		// Update personal coordinates
 		if let Some(coords) = solver_state.state.get_best_param() {
 			log::debug!("Updating coordinates: {:?} -> {:?}, state: {:?}", &*coordinates, coords, solver_state.state);
-			log::debug!("Gradient: {:?}", solver_state.state.get_gradient());
+			// log::debug!("Gradient: {:?}. Dist moved: {:?}", solver_state.state.get_gradient(), coordinates.out_coord.metric_distance(&coords.out_coord));
 			*coordinates = coords.clone();
 		} else {
-			log::debug!("Failed to fetch parameter, current coords: {:?}, state: {:?}", &*coordinates, solver_state.state);
+			log::warn!("Failed to fetch parameter, current coords: {:?}, state: {:?}", &*coordinates, solver_state.state);
 		}
 	}
 }
@@ -259,7 +252,7 @@ fn network_coordinate_system(
 // When coordinate is updated, send coordinate to all peers (TODO: Make this lazy and use timeout to prevent flooding)
 fn push_coordinates<Net: Network>(
 	coordinates: ResMut<Coordinates>,
-	peers: Query<&Session<Net>, (With<Coordinates>, With<LatencyMetrics>)>
+	peers: Query<&Session<Net>, With<Coordinates>>
 ) {
 	for peer in &peers {
 		peer.send_packet(NodePacket::NCSystemPacket(NCSystemPacket::NotifyNetworkCoordinates(coordinates.clone())));
@@ -299,7 +292,7 @@ fn loss_gradient(predicted: f64, expected: f64) -> f64 {
 	predicted - expected
 }
 
-const REGULARIZATION_COEFF: f64 = 5.0;
+const REGULARIZATION_COEFF: f64 = 2.0;
 
 // Cost function and gradients given by: https://orbi.uliege.be/bitstream/2268/136727/1/phdthesis.pdf#page=36
 impl CostFunction for CoordinateProblem {

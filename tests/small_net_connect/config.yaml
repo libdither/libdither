@@ -1,6 +1,6 @@
 general:
   # stop after 10 simulated seconds
-  stop_time: 30s
+  stop_time: 100s
   # old versions of cURL use a busy loop, so to avoid spinning in this busy
   # loop indefinitely, we add a system call latency to advance the simulated
   # time when running non-blocking system calls
@@ -9,23 +9,11 @@ general:
 network:
   graph:
     type: gml
-    inline: |
-      graph [
-        node [
-          id 0
-          host_bandwidth_down "140 Mbit"
-          host_bandwidth_up "18 Mbit"
-        ]
-        edge [
-          source 0
-          target 0
-          latency "21 ms"
-          packet_loss 0.01
-        ]
-      ]
+    file:
+      path: 20_node_graph.gml
 
 hosts:
-  # a host with the hostname 'server'
+  # public bootstrap node
   start:
     network_node_id: 0
     ip_addr: "200.0.0.0"
@@ -35,61 +23,111 @@ hosts:
       start_time: 0s
       environment: "RUST_BACKTRACE=1"
     
-  # three hosts with hostnames 'client1', 'client2', and 'client3'
+  # all the other nodes
   normal1:
-    network_node_id: 0
+    network_node_id: 1
     ip_addr: "200.0.0.1"
     processes:
     - path: ../../target/debug/sim_bin
       args: [ '../../../regular_node.json', '8081' ]
       start_time: 0s
   normal2:
-    network_node_id: 0
+    network_node_id: 2
     ip_addr: "200.0.0.2"
     processes:
     - path: ../../target/debug/sim_bin
       args: [ '../../../regular_node.json', '8082' ]
       start_time: 1s
   normal3:
-    network_node_id: 0
+    network_node_id: 3
     ip_addr: "200.0.0.3"
     processes:
     - path: ../../target/debug/sim_bin
       args: [ '../../../regular_node.json', '8083' ]
       start_time: 2s
   normal4:
-    network_node_id: 0
+    network_node_id: 4
     ip_addr: "200.0.0.4"
     processes:
     - path: ../../target/debug/sim_bin
       args: [ '../../../regular_node.json', '8084' ]
       start_time: 3s
   normal5:
-    network_node_id: 0
+    network_node_id: 5
     ip_addr: "200.0.0.5"
     processes:
     - path: ../../target/debug/sim_bin
       args: [ '../../../regular_node.json', '8085' ]
       start_time: 4s
   normal6:
-    network_node_id: 0
+    network_node_id: 6
     ip_addr: "200.0.0.6"
     processes:
     - path: ../../target/debug/sim_bin
       args: [ '../../../regular_node.json', '8086' ]
       start_time: 5s
   normal7:
-    network_node_id: 0
+    network_node_id: 7
     ip_addr: "200.0.0.7"
     processes:
     - path: ../../target/debug/sim_bin
       args: [ '../../../regular_node.json', '8087' ]
       start_time: 6s
   normal8:
-    network_node_id: 0
+    network_node_id: 8
     ip_addr: "200.0.0.8"
     processes:
     - path: ../../target/debug/sim_bin
       args: [ '../../../regular_node.json', '8088' ]
       start_time: 7s
+  normal9:
+    network_node_id: 9
+    ip_addr: "200.0.0.9"
+    processes:
+    - path: ../../target/debug/sim_bin
+      args: [ '../../../regular_node.json', '8088' ]
+      start_time: 8s
+  normal10:
+    network_node_id: 10
+    ip_addr: "200.0.0.10"
+    processes:
+    - path: ../../target/debug/sim_bin
+      args: [ '../../../regular_node.json', '8088' ]
+      start_time: 9s
+  normal11:
+    network_node_id: 11
+    ip_addr: "200.0.0.11"
+    processes:
+    - path: ../../target/debug/sim_bin
+      args: [ '../../../regular_node.json', '8088' ]
+      start_time: 10s
+  normal12:
+    network_node_id: 12
+    ip_addr: "200.0.0.12"
+    processes:
+    - path: ../../target/debug/sim_bin
+      args: [ '../../../regular_node.json', '8088' ]
+      start_time: 11s
+  normal13:
+    network_node_id: 13
+    ip_addr: "200.0.0.13"
+    processes:
+    - path: ../../target/debug/sim_bin
+      args: [ '../../../regular_node.json', '8088' ]
+      start_time: 7s
+  normal14:
+    network_node_id: 14
+    ip_addr: "200.0.0.14"
+    processes:
+    - path: ../../target/debug/sim_bin
+      args: [ '../../../regular_node.json', '8088' ]
+      start_time: 7s
+  normal15:
+    network_node_id: 15
+    ip_addr: "200.0.0.15"
+    processes:
+    - path: ../../target/debug/sim_bin
+      args: [ '../../../regular_node.json', '8088' ]
+      start_time: 7s
+  
   

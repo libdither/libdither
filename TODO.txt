@@ -1,0 +1,8 @@
+# TODO
+
+ - Fix Node Discovery
+ - Measurement Bandwidth Usage
+ - Traversal Routing
+ - Onion Routing
+ - Switch to Actor System
+ - Make better Abstractions

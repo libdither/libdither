@@ -27,8 +27,8 @@ pub enum SessionEvent<Net: Network> {
 
 /// Interact with remote Session
 pub enum SessionAction<Net: Network> {
-	// Send Ping NOW, set need_more_pings option if session should respond to acknowledged pings with new pings
-	SetDesiredPingCount(usize),
+	// Notify Session Thread that is should do a ping (if it is configured to do so)
+	Ping(Option<usize>),
 	// Send a Packet to remote
 	Packet(NodePacket<Net>),
 }
@@ -89,7 +89,6 @@ struct SessionState<Net: Network> {
 	event_sender: UnboundedSender<EntitySessionEvent<Net>>,
 	entity_id: Entity,
 	ping_countdown: usize,
-	last_ping: Option<Instant>,
 	shared: Arc<ArcSwap<SessionSharedState<Net>>>,
 }
 
@@ -109,7 +108,6 @@ impl<Net: Network> SessionState<Net> {
 			event_sender,
 			entity_id,
 			ping_countdown: 0,
-			last_ping: None,
 			shared,
 		};
 
@@ -150,8 +148,6 @@ impl<Net: Network> SessionState<Net> {
 			let packet = PingingNodePacket { packet: None, ping_id, ack_ping: Some(ack_ping) };
 			self.packet_write.send(&packet).await?; // Send packet to remote
 			self.packet_write.flush().await?; // Immediately send packet (bypassing nagle's algorithm)
-			
-			self.last_ping = Some(Instant::now());
 		}
 
 		// Send packet event if received
@@ -183,27 +179,35 @@ impl<Net: Network> SessionState<Net> {
 	pub async fn handle_session_action(&mut self, action: SessionAction<Net>) -> Result<(), SessionError<Net>> {
 		match action {
 			SessionAction::Packet(packet) => {
+				log::debug!("{:?} SessionAction::Packet: {packet:?}", self.entity_id);
+				// If need a ping, send as ping packet
+				let ping_id = (self.ping_countdown != 0).then(||self.ping_tracker.gen_unique_id());
+
 				let ping_packet = PingingNodePacket {
 					packet: Some(packet),
-					ping_id: None,
+					ping_id,
 					ack_ping: None,
 				};
 				self.packet_write.send(&ping_packet).await?;
 			},
-			SessionAction::SetDesiredPingCount(ping_count) => {
-				self.ping_countdown = ping_count;
-				if self.ping_countdown != 0 {
-					self.ping_countdown = self.ping_countdown.saturating_sub(1);
-					// log::debug!("{:?} needed ping count: {:?}", self.entity_id, self.ping_countdown);
-					if self.last_ping.is_none() || self.last_ping.unwrap().elapsed() > Duration::from_millis(200) {
-						let ping_id = (self.ping_countdown != 0).then(||self.ping_tracker.gen_unique_id());
-						let packet = PingingNodePacket::<Net> { packet: None, ping_id, ack_ping: None };
-						// log::debug!("{:?} sending ping: {packet:?}", self.entity_id);
-						self.last_ping = Some(Instant::now());
-						self.packet_write.send(&packet).await?;
-						self.packet_write.flush().await?;
-					}
+			SessionAction::Ping(ping_count) => {
+				if let Some(ping_count) = ping_count {
+					self.ping_countdown = ping_count;
 				}
+
+				log::debug!("{:?} SessionAction::Ping: {ping_count:?}, countdown: {:?}", self.entity_id, self.ping_countdown);
+				
+				if self.ping_countdown != 0 {
+					// Gen ping ID, pinging packet, and send it immediately 
+					
+					let ping_id = (self.ping_countdown != 0).then(||self.ping_tracker.gen_unique_id());
+					let packet = PingingNodePacket::<Net> { packet: None, ping_id, ack_ping: None };
+					self.packet_write.send(&packet).await?;
+					self.packet_write.flush().await?;
+
+					self.ping_countdown = self.ping_countdown.saturating_sub(1);
+				}
+
 			},
 		}
 		Ok(())
