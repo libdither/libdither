@@ -3,7 +3,7 @@
 use std::net::{SocketAddr, SocketAddrV4, Ipv4Addr};
 use bevy_ecs::system::Resource;
 use rkyv::{AlignedVec, Infallible, Deserialize, to_bytes};
-use rkyv_codec::{RkyvCodecError, VarintLength};
+use rkyv_codec::{RkyvCodecError, length_codec::U32Length};
 use thiserror::Error;
 
 use async_std::{net::{TcpStream, TcpListener}, task};
@@ -81,11 +81,11 @@ impl TcpNoencState {
 
 			// Send own public key to remote
 			let archived = to_bytes::<_, 64>(&self.keys.public_key).map_err(|_|RkyvCodecError::SerializeError)?;
-			rkyv_codec::archive_sink::<_, VarintLength>(&mut tcp_stream, &archived).await?;
+			rkyv_codec::archive_sink::<_, U32Length>(&mut tcp_stream, &archived).await?;
 
 			// Read remote public key from stream before passing back connection
 			let mut buffer = AlignedVec::with_capacity(32);
-			let archive = rkyv_codec::archive_stream::<_, Vec<u8>, VarintLength>(&mut tcp_stream, &mut buffer).await?;
+			let archive = rkyv_codec::archive_stream::<_, Vec<u8>, U32Length>(&mut tcp_stream, &mut buffer).await?;
 			let remote_pub_key: Vec<u8> = archive.deserialize(&mut Infallible).unwrap();
 
 			Connection {

@@ -19,7 +19,7 @@ bevy_ecs = "0.10"
 # Important: rkyv endianness must be little-endian everywhere
 rkyv = { version = "0.7.40", features = ["validation", "archive_le"] } # Zero-Copy Serialization
 bytecheck = "0.6.10"
-rkyv_codec = "0.3.1"
+rkyv_codec = "0.4.0"
 serde = "1.0.152"
 
 # Data & Utilities

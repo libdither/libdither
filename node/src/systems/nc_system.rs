@@ -32,6 +32,7 @@ impl<Net: Network> NodeSystem for NCSystem<Net> {
 		world.insert_resource(CoordinateSolver::new());
 		world.insert_resource(CoordinateSolverState::default());
 		world.insert_resource(CoordinateSolverProblem::default());
+		world.insert_resource(ShouldUpdate::default());
     }
 
     fn register_systems(schedule: &mut Schedule) {
@@ -40,14 +41,13 @@ impl<Net: Network> NodeSystem for NCSystem<Net> {
 
 		schedule.add_systems((
 			nc_system_controller,
-			calculate_weights,
-			network_coordinate_system,
+			calculate_weights.run_if(resource_changed::<ShouldUpdate>()),
+			network_coordinate_system.run_if(resource_changed::<ShouldUpdate>()),
 			push_coordinates::<Net>.run_if(resource_changed::<Coordinates>()),
 		).chain());
 	}
 
 	fn register_components(entity_mut: &mut bevy_ecs::world::EntityMut) {
-		entity_mut.insert(ShouldUpdate::default());
 		entity_mut.insert(CoordinateWeight::default());
 	}
 
@@ -124,28 +124,28 @@ impl ArgminScaledAdd<Coordinates, f64, Coordinates> for Coordinates {
 }
 
 /// Changes when there is a new latency measurement and coordinate to use to update own coordinates
-#[derive(Component, Default)]
+#[derive(Resource, Default)]
 pub struct ShouldUpdate {
 	last_changed: u32,
 }
 // Manages the state of the NC System and initiates state changes
-fn nc_system_controller(mut query: Query<(Ref<LatencyMetrics>, Ref<Coordinates>, &mut ShouldUpdate)>) {
-	for (metrics, coords, mut update) in query.iter_mut() {
+fn nc_system_controller(mut query: Query<(Ref<LatencyMetrics>, Ref<Coordinates>)>, mut should_update: ResMut<ShouldUpdate>) {
+	for (metrics, coords) in query.iter_mut() {
 		// if both metrics and coords changed (and there is at least 1 latency measurement), update ShouldUpdate
 		// state.last_changed is initialized at zero, so as soon as LatencyMetrics and Coordinates are inserted as Components, ShouldUpdate will change
-		if metrics.last_changed() > update.last_changed && coords.last_changed() > update.last_changed {
+		if metrics.last_changed() > should_update.last_changed && coords.last_changed() > should_update.last_changed {
 			// log::debug!("metrics: {:?}, coords: {:?}, state: {:?}", metrics.last_changed(), coords.last_changed(), update.last_changed);
-			update.last_changed = u32::max(metrics.last_changed(), coords.last_changed());
+			should_update.last_changed = u32::max(metrics.last_changed(), coords.last_changed());
 		}
 	}
 }
-pub fn change_should_update(world: &mut World) {
+/* pub fn change_should_update(world: &mut World) {
 	let mut query = world.query::<(Entity, &mut ShouldUpdate)>();
 	query.for_each_mut(world, |(_, mut update)| {
 		// log::debug!("Set ShouldUpdate for {:?}", entity);
 		update.set_changed();
 	})
-}
+} */
 
 /// Uses latency measurements to iteratively update network coordinates
 /// 
@@ -157,7 +157,7 @@ pub fn change_should_update(world: &mut World) {
 struct CoordinateWeight {
 	value: f64,
 }
-fn calculate_weights(mut query: Query<(&LatencyMetrics, &mut CoordinateWeight), Changed<ShouldUpdate>>) {
+fn calculate_weights(mut query: Query<(&LatencyMetrics, &mut CoordinateWeight)>) {
 	let mut a_max = Duration::from_micros(1);
 	// calculate last received measurement from nodes (a_max)
 	for (metrics, _) in query.iter_mut() {
@@ -205,38 +205,41 @@ fn network_coordinate_system(
 	mut solver: ResMut<CoordinateSolver>,
 	mut solver_state: ResMut<CoordinateSolverState>,
 	mut solver_problem: ResMut<CoordinateSolverProblem>,
-	mut query: Query<(Entity, &Coordinates, &LatencyMetrics, &CoordinateWeight), Changed<ShouldUpdate>>
+	mut query: Query<(Entity, &Coordinates, &LatencyMetrics, &CoordinateWeight)>,
 ) {
-	for (entity, coordinates, metrics, weight) in query.iter_mut() {
-		// log::debug!("running coordinate update using data from {:?}: coord: {:?}, lat: {:?}, weight: {:?}", entity, coordinates, metrics.latest_latency(), weight);
-		let problem = CoordinateProblem {
-			remote_measurement: Duration::from_micros(metrics.latest_latency()).as_secs_f64() * 1000.0,
-			remote_coords: coordinates.clone(),
-			remote_weight: weight.value,
-			incoming: false,
-		};
-		let mut state = solver_state.state.clone();
-		state.param = Some(coordinates.clone());
-		solver_problem.problem.problem = Some(problem);
-
-		if state.get_iter() == 0 {
-			// log::debug!("Initiating state");
-			state = solver.solver.init(&mut solver_problem.problem, state).unwrap().0;
-			state.update();
-			state.func_counts(&solver_problem.problem);
-		}
-
-		match solver.solver.next_iter(&mut solver_problem.problem, state.clone()) {
-			Ok((new_state, _)) => {
-				state = new_state;
-				state.func_counts(&solver_problem.problem);
-				state.update();
-				state.increment_iter();
-			},
-			Err(err) => log::error!("error running coordinate solver: {err:?}"),
-		}
-		solver_state.state = state;
+	// log::debug!("running coordinate update using data from {:?}: coord: {:?}, lat: {:?}, weight: {:?}", entity, coordinates, metrics.latest_latency(), weight);
+	let problem = solver_problem.problem.problem.get_or_insert(CoordinateProblem::default());
+	problem.remote_measurements.clear();
+	problem.remote_coords.clear();
+	problem.remote_weights.clear();
+	problem.incoming = false;
+	// Update coordinate with all recent latencies and coordinates
+	for (entity, coords, metrics, weight) in query.iter() {
+		problem.remote_measurements.push(Duration::from_micros(metrics.latest_latency()).as_secs_f64() * 1000.0);
+		problem.remote_coords.push(coords.clone());
+		problem.remote_weights.push(weight.value);
 	}
+
+	let mut state = solver_state.state.clone();
+	state.param = Some(coordinates.clone());
+
+	if state.get_iter() == 0 {
+		// log::debug!("Initiating state");
+		state = solver.solver.init(&mut solver_problem.problem, state).unwrap().0;
+		state.update();
+		state.func_counts(&solver_problem.problem);
+	}
+
+	match solver.solver.next_iter(&mut solver_problem.problem, state.clone()) {
+		Ok((new_state, _)) => {
+			state = new_state;
+			state.func_counts(&solver_problem.problem);
+			state.update();
+			state.increment_iter();
+		},
+		Err(err) => log::error!("error running coordinate solver: {err:?}"),
+	}
+	solver_state.state = state;
 	if !query.is_empty() {
 		// Update personal coordinates
 		if let Some(coords) = solver_state.state.get_best_param() {
@@ -260,7 +263,7 @@ fn push_coordinates<Net: Network>(
 }
 
 
-/// Custom solver for CoordinateProblem
+/// Solvevr wrapper for CoordinateProblem
 #[derive(Resource)]
 struct CoordinateSolver {
 	solver: SteepestDescent<MoreThuenteLineSearch<Coordinates, Coordinates, f64>>,
@@ -273,11 +276,52 @@ impl CoordinateSolver {
 	}
 }
 
+/* /// Custom solver for CoordinateProblem
+#[derive(Resource)]
+struct CoordinateSolver {
+	learning_rate: f64
+}
+impl CoordinateSolver {
+	fn new() -> Self {
+		Self {
+			learning_rate: 0.0,
+		}
+	}
+}
+
+// reference: https://orbi.uliege.be/bitstream/2268/136727/1/phdthesis.pdf#page=41
+impl<O> Solver<O, IterState<Coordinates, Coordinates, (), (), f64>> for CoordinateSolver
+where
+	// The Landweber solver requires `O` to implement `Gradient`. 
+    // `P` and `G` indicate the types of the parameter vector and gradient,
+    // respectively.
+    O: Gradient<Param = Coordinates, Gradient = Coordinates>,
+    /* // The parameter vector of type `P` needs to implement `ArgminScaledSub`
+    // because of the update formula
+    P: Clone + ArgminScaledSub<G, F, P>,
+    // `F` is the floating point type (`f32` or `f64`)
+    F: ArgminFloat, */
+{
+    const NAME: &'static str = "coordinate_solver";
+
+    fn next_iter(&mut self, problem: &mut Problem<O>, mut state: IterState<Coordinates, Coordinates, (), (), f64>) -> Result<(IterState<Coordinates, Coordinates, (), (), f64>, Option<argmin::core::KV>), argmin::core::Error> {
+        let mut param = state.take_param().ok_or_else(argmin::argmin_error_closure!(
+            NotInitialized,
+            "Initial parameter vector required!"
+        ))?;
+		let gradient = problem.gradient(&param)?;
+		param.out_coord = (1.0 - self.learning_rate * REGULARIZATION_COEFF) * param.out_coord - self.learning_rate * gradient.out_coord;
+		param.in_coord = (1.0 - self.learning_rate * REGULARIZATION_COEFF) * param.in_coord - self.learning_rate * gradient.in_coord;
+		Ok((state.param(param), None))
+    }
+} */
+
 /// Defines the CostFunction and Gradient for the coordinate estimation problem (i.e. decentralized matrix completion)
+#[derive(Default)]
 struct CoordinateProblem {
-	remote_measurement: f64,
-	remote_coords: Coordinates,
-	remote_weight: f64,
+	remote_measurements: Vec<f64>,
+	remote_coords: Vec<Coordinates>,
+	remote_weights: Vec<f64>,
 	/// Whether or not the measurement was initiated from the remote (incoming = true), or initiated locally to the remote (incoming = false)
 	incoming: bool,
 }
@@ -302,12 +346,15 @@ impl CostFunction for CoordinateProblem {
 
     fn cost(&self, param: &Self::Param) -> Result<Self::Output, argmin::core::Error> {
 		let mut cost = 0.0f64;
-		// Penalize differences between predicted and actual latency measurements
-		// Predictions & coordinates are directional (Out_a * In_b) = predicted rtt from a -> b.
-		let outgoing_prediction = param.out_coord.dot(&self.remote_coords.in_coord);
-		let incoming_prediction = param.in_coord.dot(&self.remote_coords.out_coord);
-        cost += loss(incoming_prediction, self.remote_measurement);
-		cost += loss(outgoing_prediction, self.remote_measurement);
+		for (remote_measurement, remote_coords) in self.remote_measurements.iter().zip(self.remote_coords.iter()) {
+			// Penalize differences between predicted and actual latency measurements
+			// Predictions & coordinates are directional (Out_a * In_b) = predicted rtt from a -> b.
+			let outgoing_prediction = param.out_coord.dot(&remote_coords.in_coord);
+			let incoming_prediction = param.in_coord.dot(&remote_coords.out_coord);
+        	cost += loss(incoming_prediction, *remote_measurement);
+			cost += loss(outgoing_prediction, *remote_measurement);
+		}
+		
 
 		// Penalize large norms of (local) in and out coords (to prevent coordinates from overfitting or becoming larger than necessary)
 		cost += REGULARIZATION_COEFF * param.in_coord.norm_squared();
@@ -327,11 +374,13 @@ impl Gradient for CoordinateProblem {
 		let mut gradient_out = NetworkCoord::zeros();
 		let mut gradient_in = NetworkCoord::zeros();
 
-		let outgoing_prediction = param.out_coord.dot(&self.remote_coords.in_coord);
-		let incoming_prediction = param.in_coord.dot(&self.remote_coords.out_coord);
+		for (remote_measurement, remote_coords) in self.remote_measurements.iter().zip(self.remote_coords.iter()) {
+			let outgoing_prediction = param.out_coord.dot(&remote_coords.in_coord);
+			let incoming_prediction = param.in_coord.dot(&remote_coords.out_coord);
 
-		gradient_out += -(self.remote_measurement - outgoing_prediction) * self.remote_coords.in_coord + REGULARIZATION_COEFF * param.out_coord;
-		gradient_in  += -(self.remote_measurement - incoming_prediction) * self.remote_coords.out_coord + REGULARIZATION_COEFF * param.in_coord;
+			gradient_out += -(remote_measurement - outgoing_prediction) * remote_coords.in_coord + REGULARIZATION_COEFF * param.out_coord;
+			gradient_in  += -(remote_measurement - incoming_prediction) * remote_coords.out_coord + REGULARIZATION_COEFF * param.in_coord;
+		}
 		Ok(Coordinates { out_coord: gradient_out, in_coord: gradient_in })
     }
 }

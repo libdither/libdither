@@ -20,7 +20,7 @@ fn coord_logging(own_coord: Res<Coordinates>, peers: Query<(&LatencyMetrics, &Co
 			(own_coord.out_coord.dot(&coord.in_coord) * 1000.0)
 		).collect::<Vec<f64>>();
 		let latencies = peers.iter().map(|(lat, _)| {
-			lat.min_latency() as f64
+			lat.latest_latency() as f64
 		}).collect::<Vec<f64>>();
 
 

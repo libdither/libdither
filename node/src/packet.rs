@@ -6,7 +6,7 @@ use bytecheck::CheckBytes;
 use futures::Sink;
 use pin_project::pin_project;
 use rkyv::{AlignedVec, Archive, Archived, Deserialize, Infallible, Serialize};
-use rkyv_codec::{RkyvCodecError, RkyvWriter, VarintLength, archive_stream};
+use rkyv_codec::{RkyvCodecError, RkyvWriter, archive_stream, length_codec::U32Length};
 
 use crate::{net::Network, NetworkCoord, NCSystemPacket, session::PingID, DiscoveryPacket, TraversalPacket};
 
@@ -62,7 +62,7 @@ impl<Net: Network> std::fmt::Debug for PacketRead<Net> {
 impl<'b, Net: Network> PacketRead<Net> {
 	pub fn new(reader: Net::Read) -> Self { Self { reader, stream_buffer: AlignedVec::with_capacity(1024) } }
 	pub async fn read_packet(&'b mut self) -> Result<&'b Archived<PingingNodePacket<Net>>, RkyvCodecError> {
-		let packet = archive_stream::<Net::Read, PingingNodePacket<Net>, VarintLength>(&mut self.reader, &mut self.stream_buffer).await?;
+		let packet = archive_stream::<Net::Read, PingingNodePacket<Net>, U32Length>(&mut self.reader, &mut self.stream_buffer).await?;
 		Ok(packet)
 	}
 }
@@ -70,7 +70,7 @@ impl<'b, Net: Network> PacketRead<Net> {
 #[pin_project]
 pub struct PacketWrite<Net: Network> {
 	#[pin]
-	writer: RkyvWriter<Net::Write, VarintLength>,
+	writer: RkyvWriter<Net::Write, U32Length>,
 }
 
 impl<Net: Network> std::fmt::Debug for PacketWrite<Net> {
@@ -84,7 +84,7 @@ impl<Net: Network> PacketWrite<Net> {
 }
 impl<Net: Network> Sink<&PingingNodePacket<Net>> for PacketWrite<Net>
 where
-	RkyvWriter<Net::Write, VarintLength>: for<'a> Sink<&'a PingingNodePacket<Net>, Error = RkyvCodecError>,
+	RkyvWriter<Net::Write, U32Length>: for<'a> Sink<&'a PingingNodePacket<Net>, Error = RkyvCodecError>,
 {
     type Error = RkyvCodecError;
 

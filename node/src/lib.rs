@@ -165,7 +165,8 @@ impl<Net: Network> Node<Net> {
 		self.world.insert_resource(network);
 
 		// Create a new Schedule, which defines an execution strategy for Systems
-		let mut schedule = Schedule::default();
+		let mut schedule = Schedule::new();
+		schedule.set_executor_kind(bevy_ecs::schedule::ExecutorKind::SingleThreaded);
 
 		DiscoverySystem::<Net>::register_systems(&mut schedule);
 		LatencyMetricsSystem::<Net>::register_systems(&mut schedule);
