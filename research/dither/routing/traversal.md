@@ -18,16 +18,22 @@ Router: This is the role of a contributer who maintains the network by routing p
 
 This model of desires is good, but not everyone who uses or contributes to the network may be trying to optimise for these things to such an extreme. Some contributors may run nodes for free for fun or because of an external reward. Some users may not care how long it takes for their packets to arrive or how fast they can download a movie, as long as it happens eventually. For these scenarios, whatever system put in place to maximise network utility, should not only balance conflicting desires (such as those as the User and Contributor), but also match compatible desires (such as users and contributors who don't mind contributing for free). 
 
-## Design
+## A User-Centric Model
 
+Given no assumptions about the software running on a node, a given node with a set of peers will have for each peer some amount of resources (bandwidth, cpu cycles, memory) that it is willing to make available for that peer to use. This amount of resources may be static or it may fluctuate due to any number of reasons such as the behavior of the peer, prioritization of some peers over others, data being sent, or even natural forces such as limited link capacity. Whatever it may be, each node has some internal metric of how many resources they are willing to allocate to a given peer, determined by natural causes and internal decisions trees.
 
+Cooperation is then just two nodes communicating aspects of their internal decision trees to each other. I.e. "if you do this, I will do this". The "ideal" node would be one controlled by an AI that can make decisions in terms of how many resources to allocate to different peers such that it balances the user's intentions, experience, between handling requests and using other nodes to handle the user's request.
 
+### Resource-Optimising Agent Design
 
-If these 3 parties were separate categories of nodes, it would not be possible to design a system without some kind of external support / organization, because all the relays and routers would just not route any packets (and why should they?). However, in reality this is a peer-to-peer network where these categories overlap. So, if we can create a system of cooperation where to achieve the desires of the initiator, a given node would have to give up proportionally on its desires as a router or relay, this system may in fact be self-sustainable!
-
-The goals of traversal routing in Dither are as follows:
- - Nodes should be able to establish connections to each other 
- - A stream of packets may be re-routed so as to best minimize the bandwidth of the nodes it traverses through as well as the total round-trip latency. This tradeoff will be a request from the packet sender and will be subject to the requester's reputation (i.e. how much they contribute to the network minus how much they use it)
-
-Packet Traversal is Dither's answer to replacing conventional IP routing. Instead of rigid routing tables that must be centrally managed, packets flowing across the Dither network are managed locally and may reshape the structure of the network to better optimise for the goals of all parties involved.
-
+Containts:
+ - At any given time, a user wants to either use the network or not use the network. They send various requests to peers with various desirable optimisations (latency, bandwidth, anonymity). These three measures to easy to verify from the source given some assumptions.
+   - Latency - How much time it takes for remote to respond.
+     - Assumptions: Remote isn't very close and some intermediate node is delaying things.
+       - The network coordinate system is not distorted and manipulated from an attacker. Protection: NCShields.
+   - Bandwidth - How much data can be pushed to remote per second
+   - Anonymity - How many encrypted hops the packet goes though, how slow the connection is.
+     - Assumption: When using mixnet mode, can't tell if cover traffic is effectively disguising the data as it travels through various parts of the network.
+     - Assumption: Can't tell if nodes along relay path are malicious and recording packets.
+     - Can't tell: Exactly how big the anonymity set is, only general estimations.
+ - At any given time
