@@ -22,10 +22,9 @@ A general outline of the (very lofty) goals of Disp.
  - Seamless integration into Dither
 
 ## Core Ideas
-
- - 
+ - [Agnostic Syntax](syntax-agnosticism.md)
  - [Universal System of Types](universal-system-of-types.md)
- - [Binding Trees]
+ - [Hardware Modeling](hardware-modeling.md)
 
 ## Ideas
  - Objects are stored in self-defining data structures, i.e. they link to data that describes the format of the object (whether that be structurally, in-memory, or symbolically).
