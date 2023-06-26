@@ -1906,7 +1906,7 @@ dependencies = [
 [[package]]
 name = "rkyv_codec"
 version = "0.4.0"
-source = "git+https://github.com/zyansheep/rkyv_codec#9d11511f425d5bbeff56d7b1317404cf0b51b92f"
+source = "git+https://github.com/zyansheep/rkyv_codec#f8d3de5bdcce5b7c92bb325dced1b0709db9da42"
 dependencies = [
  "bytes 0.5.6",
  "bytes 1.4.0",

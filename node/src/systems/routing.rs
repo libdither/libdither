@@ -2,14 +2,14 @@
 //! The goal is to facilitate multiple types of routing based on the goals of the application.
 //! It takes connection requests from the application and establishes a routed connection of some type.
 
-use std::{marker::PhantomData, time::Instant, cmp::Ordering};
+use std::{marker::PhantomData, time::Instant};
 
 use bevy_ecs::prelude::*;
 use futures::channel::mpsc;
-use rkyv::{Archive, Serialize, Deserialize, Infallible};
+use rkyv::{Archive, Serialize, Deserialize};
 use bytecheck::CheckBytes;
 
-use crate::{NodePacket, EntityEventSender, session::{EntitySessionEvent, Session, SessionEvent}, NetworkCoord, Network, NodeSystem, NodeID, NodeConfig, Coordinates, Remote, RemoteIDMap};
+use crate::{NetworkCoord, Network, NodeSystem, NodeID, Remote};
 
 /// Request for an entity to act as an onion route.
 /// Requires `Remote` and `Coordinates` components.

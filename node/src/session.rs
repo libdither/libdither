@@ -35,8 +35,8 @@ pub enum SessionAction<Net: Network> {
 
 #[derive(Error, Debug)]
 pub enum SessionError<Net: Network> {
-	#[error("malformed packet: {0}")]
-	MalformedPacket(#[from] rkyv_codec::RkyvCodecError),
+	#[error("codec error: {0}")]
+	CodecError(#[from] rkyv_codec::RkyvCodecError),
 	#[error("connection error: {0}")]
 	ConnectionError(Net::ConnectionError),
 	#[error("event send error")]
@@ -129,13 +129,17 @@ impl<Net: Network> SessionState<Net> {
 	pub async fn handle_ping_packet(&mut self, pinging_packet: &Archived<PingingNodePacket<Net>>) -> Result<(), SessionError<Net>> {
 		// Record acknowledged ping
 		if let Some(ack) = pinging_packet.ack_ping.deserialize(&mut Infallible).unwrap() {
-			if let Some(duration) = self.ping_tracker.record_unique_id(ack) {
-				// Return latency measurement to main thread
-				self.ping_countdown = self.ping_countdown.saturating_sub(1);
-				self.event_sender.unbounded_send(EntitySessionEvent { entity: self.entity_id, event: SessionEvent::LatencyMeasurement(duration) })?;
-			} else {
-				log::debug!("session: ping tracker: error when recording acknowledged ping id");
-			}
+			match self.ping_tracker.record_unique_id(ack) {
+				Ok(duration) => {
+					// Return latency measurement to main thread
+					self.ping_countdown = self.ping_countdown.saturating_sub(1);
+					self.event_sender.unbounded_send(EntitySessionEvent { entity: self.entity_id, event: SessionEvent::LatencyMeasurement(duration) })?;
+				}
+				Err(err) => {
+					log::warn!("session: ping tracker: error when recording acknowledged ping id: {err}");
+					log::debug!("session: ping tracker: {:?}", self.ping_tracker);
+				}
+			} 
 		}
 
 		// Send back sent ping_id as acknowledgement
@@ -248,6 +252,15 @@ enum PingSlot {
 	Instant(Instant),
 	NextSlot(u8),
 }
+#[derive(Debug, Error)]
+enum PingTrackerError {
+	#[error("invalid ping tracker generation, expected: {expected}, found: {found}")]
+	InvalidGeneration { expected: u8, found: u8 },
+	#[error("invalid slot type: {0:?}")]
+	InvalidSlotType(PingSlot),
+	#[error("invalid slot index: {0}")]
+	InvalidSlotIndex(u8)
+}
 impl<const MAX_PENDING: u8> PingTracker<MAX_PENDING>
 	where [(); MAX_PENDING as usize]: Sized + std::fmt::Debug 
 {
@@ -281,7 +294,7 @@ impl<const MAX_PENDING: u8> PingTracker<MAX_PENDING>
 	}
 
 	// Takes previously generated unique id and returns the time elapsed from generation. May return None if PingID does not match a valid slot or is in an invalid generation.
-	pub fn record_unique_id(&mut self, id: PingID) -> Option<Duration> {
+	pub fn record_unique_id(&mut self, id: PingID) -> Result<Duration, PingTrackerError> {
 		match self.ping_queue.get_mut(id.id as usize) {
 			Some((slot, generation)) => {
 				match slot {
@@ -291,15 +304,15 @@ impl<const MAX_PENDING: u8> PingTracker<MAX_PENDING>
 						if *generation == id.gen {
 							*slot = PingSlot::NextSlot(self.next_free_slot); // Slot this NextSlot index to current free slot index
 							self.next_free_slot = id.id; // Set current free slot index to this slot.
-							Some(duration)
+							Ok(duration)
 						} else {
-							None // Invalid Generation
+							Err(PingTrackerError::InvalidGeneration { expected: *generation, found: id.gen }) // Invalid Generation
 						}
 					}
-					_ => None, // Invalid Slot type
+					_ => Err(PingTrackerError::InvalidSlotType(slot.clone())), // Invalid Slot type
 				}
 			},
-			None => None, // Invalid slot index
+			None => Err(PingTrackerError::InvalidSlotIndex(id.id)), // Invalid slot index
 		}
 	}
 }

@@ -62,7 +62,7 @@ impl<Net: Network> NodeSystem for NCSystem<Net> {
 			},
 			// Received a remote's network coordinates, make sure to record them.
 			NCSystemPacket::NotifyNetworkCoordinates(coords) => {
-				// log::debug!("received coordinates from {:?}: {:?}", entity, coords);
+				log::debug!("received coordinates from {:?}: {:?}", entity, coords);
 				world.entity_mut(entity).insert(coords);
 			},
 		}
@@ -133,7 +133,7 @@ fn nc_system_controller(mut query: Query<(Ref<LatencyMetrics>, Ref<Coordinates>)
 	for (metrics, coords) in query.iter_mut() {
 		// if both metrics and coords changed (and there is at least 1 latency measurement), update ShouldUpdate
 		// state.last_changed is initialized at zero, so as soon as LatencyMetrics and Coordinates are inserted as Components, ShouldUpdate will change
-		if metrics.last_changed() > should_update.last_changed && coords.last_changed() > should_update.last_changed {
+		if metrics.last_changed() > should_update.last_changed /* && coords.last_changed() > should_update.last_changed */ {
 			// log::debug!("metrics: {:?}, coords: {:?}, state: {:?}", metrics.last_changed(), coords.last_changed(), update.last_changed);
 			should_update.last_changed = u32::max(metrics.last_changed(), coords.last_changed());
 		}
@@ -158,27 +158,30 @@ struct CoordinateWeight {
 	value: f64,
 }
 fn calculate_weights(mut query: Query<(&LatencyMetrics, &mut CoordinateWeight)>) {
-	let mut a_max = Duration::from_micros(1);
 	// calculate last received measurement from nodes (a_max)
-	for (metrics, _) in query.iter_mut() {
-		let since_update = metrics.last_update().elapsed();
-		a_max = a_max.max(since_update);
-	}
-
 	let now = Instant::now();
+
+	let a_max = query.iter()
+		.map(|(metrics, _)| now.duration_since(metrics.last_update()))
+		.max()
+		.unwrap_or(Duration::from_micros(1)).max(Duration::from_micros(1));
+
 	// calculate duration_sum: sum (a_max - a_j) where a_j is a given peer's time since last measurement
 	let duration_sum = query.iter()
-		.map(|(metrics, _)|metrics.last_update().duration_since(now))
+		.map(|(metrics, _)|now.duration_since(metrics.last_update()))
 		.map(|a_j|a_max - a_j)
 		.sum::<Duration>();
 
-	if duration_sum == Duration::ZERO { return }
+	if duration_sum.is_zero() {
+		return
+	}
 
 	// calculate weights: w_j = (a_max - a_j) / duration_sum )
 	for (metrics, mut weight) in query.iter_mut() {
-		let elapsed = metrics.last_update().duration_since(now);
-		weight.value = (a_max.as_millis() as f64 - elapsed.as_millis() as f64) / duration_sum.as_millis() as f64;
+		let a_j = now.duration_since(metrics.last_update()).as_secs_f64();
+		weight.value = (a_max.as_secs_f64() - a_j) / duration_sum.as_secs_f64();
 	}
+	
 }
 
 #[derive(Resource)]
@@ -207,6 +210,7 @@ fn network_coordinate_system(
 	mut solver_problem: ResMut<CoordinateSolverProblem>,
 	mut query: Query<(Entity, &Coordinates, &LatencyMetrics, &CoordinateWeight)>,
 ) {
+	if query.is_empty() { return }
 	// log::debug!("running coordinate update using data from {:?}: coord: {:?}, lat: {:?}, weight: {:?}", entity, coordinates, metrics.latest_latency(), weight);
 	let problem = solver_problem.problem.problem.get_or_insert(CoordinateProblem::default());
 	problem.remote_measurements.clear();
@@ -226,29 +230,33 @@ fn network_coordinate_system(
 	if state.get_iter() == 0 {
 		// log::debug!("Initiating state");
 		state = solver.solver.init(&mut solver_problem.problem, state).unwrap().0;
+		state.target_cost = 1.0; // prevents weird bug where optimization spits out weird coordinates if loss gets too low
 		state.update();
 		state.func_counts(&solver_problem.problem);
 	}
 
 	match solver.solver.next_iter(&mut solver_problem.problem, state.clone()) {
 		Ok((new_state, _)) => {
-			state = new_state;
-			state.func_counts(&solver_problem.problem);
-			state.update();
-			state.increment_iter();
+			// Only update state if the new cost is not less than the target to avoid over optimizing.
+			if !(new_state.cost < state.target_cost) {
+				state = new_state;
+				state.func_counts(&solver_problem.problem);
+				state.update();
+				state.increment_iter();
+			}
 		},
 		Err(err) => log::error!("error running coordinate solver: {err:?}"),
 	}
+	
+	
 	solver_state.state = state;
-	if !query.is_empty() {
-		// Update personal coordinates
-		if let Some(coords) = solver_state.state.get_best_param() {
-			log::debug!("Updating coordinates: {:?} -> {:?}, state: {:?}", &*coordinates, coords, solver_state.state);
-			// log::debug!("Gradient: {:?}. Dist moved: {:?}", solver_state.state.get_gradient(), coordinates.out_coord.metric_distance(&coords.out_coord));
-			*coordinates = coords.clone();
-		} else {
-			log::warn!("Failed to fetch parameter, current coords: {:?}, state: {:?}", &*coordinates, solver_state.state);
-		}
+	// Update personal coordinates
+	if let Some(coords) = solver_state.state.get_param() {
+		log::debug!("Updating coordinates: {:?} -> {:?}, state: {:?}", &*coordinates, coords, solver_state.state);
+		// log::debug!("Gradient: {:?}. Dist moved: {:?}", solver_state.state.get_gradient(), coordinates.out_coord.metric_distance(&coords.out_coord));
+		*coordinates = coords.clone();
+	} else {
+		log::warn!("Failed to calculate best parameter, current coords: {:?}, state: {:?}", &*coordinates, solver_state.state);
 	}
 }
 
@@ -326,17 +334,16 @@ struct CoordinateProblem {
 	incoming: bool,
 }
 
-// Currently using L2 Norm as loss function
-fn loss(predicted: f64, expected: f64) -> f64 {
-	let out = predicted - expected;
-	out * out
+// Currently using L1 Norm as loss function
+fn loss(expected: f64, prediction: f64) -> f64 {
+	(expected - prediction).abs()
 }
-// Gradient of L2 Norm. Gradient is positive if predicted < expected. 
-fn loss_gradient(predicted: f64, expected: f64) -> f64 {
-	predicted - expected
+// Gradient of L1 Norm
+fn loss_gradient(expected: f64, prediction: f64) -> f64 {
+	-(expected - prediction).signum()
 }
 
-const REGULARIZATION_COEFF: f64 = 2.0;
+const REGULARIZATION_COEFF: f64 = 0.001;
 
 // Cost function and gradients given by: https://orbi.uliege.be/bitstream/2268/136727/1/phdthesis.pdf#page=36
 impl CostFunction for CoordinateProblem {
@@ -346,19 +353,19 @@ impl CostFunction for CoordinateProblem {
 
     fn cost(&self, param: &Self::Param) -> Result<Self::Output, argmin::core::Error> {
 		let mut cost = 0.0f64;
-		for (remote_measurement, remote_coords) in self.remote_measurements.iter().zip(self.remote_coords.iter()) {
+		
+		for ((remote_measurement, remote_coords), weight) in self.remote_measurements.iter().zip(self.remote_coords.iter()).zip(self.remote_weights.iter()) {
 			// Penalize differences between predicted and actual latency measurements
 			// Predictions & coordinates are directional (Out_a * In_b) = predicted rtt from a -> b.
 			let outgoing_prediction = param.out_coord.dot(&remote_coords.in_coord);
 			let incoming_prediction = param.in_coord.dot(&remote_coords.out_coord);
-        	cost += loss(incoming_prediction, *remote_measurement);
-			cost += loss(outgoing_prediction, *remote_measurement);
+			cost += loss(*remote_measurement, outgoing_prediction);
+        	cost += loss(*remote_measurement, incoming_prediction);
+			
+			// Penalize large norms of (local) in and out coords (to prevent coordinates from overfitting or becoming larger than necessary)
+			// cost += REGULARIZATION_COEFF * param.out_coord.dot(&param.out_coord);
+			// cost += REGULARIZATION_COEFF * param.in_coord.dot(&param.in_coord);
 		}
-		
-
-		// Penalize large norms of (local) in and out coords (to prevent coordinates from overfitting or becoming larger than necessary)
-		cost += REGULARIZATION_COEFF * param.in_coord.norm_squared();
-		cost += REGULARIZATION_COEFF * param.out_coord.norm_squared();
 
 		Ok(cost)
     }
@@ -374,13 +381,15 @@ impl Gradient for CoordinateProblem {
 		let mut gradient_out = NetworkCoord::zeros();
 		let mut gradient_in = NetworkCoord::zeros();
 
-		for (remote_measurement, remote_coords) in self.remote_measurements.iter().zip(self.remote_coords.iter()) {
+		for ((remote_measurement, remote_coords), weight) in self.remote_measurements.iter().zip(self.remote_coords.iter()).zip(self.remote_weights.iter()) {
 			let outgoing_prediction = param.out_coord.dot(&remote_coords.in_coord);
 			let incoming_prediction = param.in_coord.dot(&remote_coords.out_coord);
 
-			gradient_out += -(remote_measurement - outgoing_prediction) * remote_coords.in_coord + REGULARIZATION_COEFF * param.out_coord;
-			gradient_in  += -(remote_measurement - incoming_prediction) * remote_coords.out_coord + REGULARIZATION_COEFF * param.in_coord;
+			gradient_out += *weight * loss_gradient(*remote_measurement, outgoing_prediction) * remote_coords.in_coord;
+			gradient_in  += *weight * loss_gradient(*remote_measurement, incoming_prediction) * remote_coords.out_coord;
 		}
+		gradient_out += REGULARIZATION_COEFF * param.out_coord;
+		gradient_in += REGULARIZATION_COEFF * param.in_coord;
 		Ok(Coordinates { out_coord: gradient_out, in_coord: gradient_in })
     }
 }

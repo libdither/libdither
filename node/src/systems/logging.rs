@@ -26,6 +26,7 @@ fn coord_logging(own_coord: Res<Coordinates>, peers: Query<(&LatencyMetrics, &Co
 
 		let diff_sum = predicted_lats.iter().zip(latencies.iter()).map(|(pred, lat)|f64::abs(lat - pred)).sum::<f64>();
 		log::info!("Updated coordinate. Predicted Lats: {predicted_lats:?}, Lats: {latencies:?} Diff Sum: {diff_sum}");
+		log::info!("Updated coordinate. New Coordinate: {:?}", own_coord);
 	}
 }
 fn measurement_logging(peers: Query<(Entity, &LatencyMetrics), Changed<LatencyMetrics>>) {

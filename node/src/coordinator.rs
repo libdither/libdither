@@ -24,10 +24,12 @@ pub trait CoordinateType: Clone + Default {
 }
 /// Trait for a Coordinator.
 pub trait NodeCoordinator: Default {
-    type Coord: CoordinateType;
+    type Coord;
     type RemoteState;
     /// Update the system 
     fn update(&mut self, remotes: impl Iterator<Item = &mut Self::RemoteState>);
+
+    fn own_coord(&self) -> Self::Coord;
 }
 
 /// Coordinate with format Distance-Distance-Height using f64 as a scalar
