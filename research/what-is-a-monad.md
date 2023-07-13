@@ -148,7 +148,7 @@ We can descibe types coupled with operations that resemble a monoid! (Assume `Na
 set naturals_addition_monoid {
 	set unit 0,
 	set multiplication addition,
-	set associativity_proof { a, b, c } <proof of associativity> // These are left out because writing proofs are really complicated
+	set associativity_proof { a, b, c } <proof of associativity> // These are left out because writing proofs in type theory is complicated
 	set identity_proof { a } <proof of identity>
 } : Monoid(Nat)
 ```
