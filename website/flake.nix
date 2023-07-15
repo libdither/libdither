@@ -1,10 +1,10 @@
 {
 	inputs = {
-		nixpkgs.url = "github:NixOS/nixpkgs/nixos-21.05";
+		nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 		utils.url = "github:gytis-ivaskevicius/flake-utils-plus";
-  	};
+  };
 
-  	outputs = { self, nixpkgs, utils, ... } @inputs:
+  outputs = { self, nixpkgs, utils, ... } @inputs:
 	let
 		inherit (builtins) removeAttrs;
 		mkApp = utils.lib.mkApp;
@@ -13,6 +13,7 @@
 		buildInputs = with pkgs; [
 			hugo
 			mdbook
+			mdbook-katex
 		];
 	in utils.lib.mkFlake {
 		inherit self inputs;
