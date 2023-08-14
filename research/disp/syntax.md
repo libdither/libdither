@@ -4,6 +4,65 @@ Since Disp has [Syntax Agnosticism](syntax-agnosticism.md), it does not require 
 
 Disp's default syntax is still a work-in-progress, however I think I want something similar to lisp with various Rust conventions sprinkled in.
 
+## Examples
+```rust
+/// Define things with `let` and `:=`
+let thing := 3
+
+/// Qualify the type of your definitions with `:`
+let pi := 3.141592653589798283 : Real
+
+/// Define unordered sets
+let set := {pi, thing} : {Real, Nat}
+/assert_eq Set::get(set, pi) pi
+/assert_typ Set::get(set, pi) Real
+/// Define ordered sets
+let list := [pi, thing, 2] : [Real, Nat, Nat]
+/assert_eq list.0 pi
+
+type resolve : Ident -> Type
+type resolve_elem : {Set, Ident} -> Type
+type resolve_list : {List, Nat} -> Type
+
+type parse_nat : String -> Nat
+
+type Nat : Type;
+type Z : Nat;
+type S : Nat -> Nat;
+
+let NatDef := {
+	type zero : Nat,
+	type succ : Nat -> Nat, 
+} : Type
+
+let TypeParsing := { T : Type, Error : Type } -> {
+	type parse : String -> Result<T, Error>
+}
+type Bool : Type;
+type true : Bool;
+type false : bool;
+
+let _ : TypeParsing(Bool) := {
+	let parse := (string) -> (
+		match string {
+			"true" => true,
+			"false" => false,
+		}
+	)
+}
+
+/// The type
+let TypeConstructor := Type -> Type;
+
+type round : Real -> Nat
+round(pie) := thing
+
+type Nat : Type
+type Real : Type
+type Type : Type // Warning: Type is already a member of Type because it is the Type of all Types, including itself.
+
+```
+
 ## Note: This Syntax is just an idea and subject to lots of change
 
 ```
