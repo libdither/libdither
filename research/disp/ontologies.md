@@ -45,14 +45,13 @@ let Category := {
 }
 let CatObj : T -> Category{Obj:=T}
 
-
-let Functor := {C,D: impl{Category}} -> {
+let Functor := {C,D: Category} -> {
 	type obj_map: C.Obj -> D.Obj;
 	type hom_map: {a,b: C.Obj} {hom: Hom{a,b}} -> D.Hom{obj_map{a}, obj_map{b}};
 	type preserve_id: {a: C.Obj} -> hom_map{id{a}} = id{obj_map{a}};
-	type preserve_comp: {a,b,c: C.Obj} {f: C.Hom{a,b}, g: C.Hom{b,c}} -> 
+	type preserve_comp: {a,b,c: C.Obj} {f: C.Hom{a,b}, g: C.Hom{b,c}} -> ???
 }
 
-let Endofunctor := {C: impl{Category}} -> Functor{C,C};
+let Endofunctor := {C: Category} -> Functor{C,C};
 
 ```
