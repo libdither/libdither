@@ -123,6 +123,37 @@ Ideas:
  - There is more to theorize about here for future research :)
 
 
+### Conflicts with ISP Load Balancing
+
+(This section is WIP)
+
+Implementing an alternative routing protocol on top of regular IP routing may pose issues for ISP routing (i.e. forcing utilising of certain links too much, causing major slowdowns). ISPs don't optimize for latency or bandwidth, they optimize for load balancing to prevent too much link utilisation. TODO: Dither should take this into account by implementing its own second-layer load balancing system that makes sure ISP links aren't overloaded.
+
+Questions for this problem:
+ - How might peer-to-peer overlay networks (of various kinds) effect an ISP’s ability to do load balancing well?
+   - ISP simply have to do more buffering, slowing queue times for specific links, making those links become unattractive, shifting the route prioritization to ones that are less desirable -> problem is this makes those routes unusable for regular (nearby) people and are instead hijacked by through-traffic.
+
+
+
+Research
+ - Dawn - Selfish overlay compensate for careless underlay
+
+ - If overlay networks can or do conflict with ISP load balancing effort, how can that conflict be reduced via design of the protocol?
+   - Maybe reimplement load balancing into the network protocol?
+     - What might this look like in a peer-to-peer setting?
+
+
+Some set of nodes in the network:
+ - Sending along certain local paths (need to be careful to not overwhelm bandwidth along local link: not likely)
+ - Sending along mid-range path, some room for path diversity, but if everyone is doing it, it may create hotspot: need 
+
+Main issue: A is sending large file to B, anonymously. If they route through one path, this will be a problem, if they route along multiple paths, ISPs have more ability to distribute the load. 
+ - More paths = more chance for paths to be surveiled: is it obvious who is chatting with who? -> More obvious than just one path
+   - Mixnets ? -> How fast would these be for large data transfers?
+
+
+
+
 ## Research, Inspirations & Similar Work
 
 (List in rough order of reading of notable articles I am using to implement Dither Routing. If anyone knows of any similar work not listed here, please let me know on Matrix!)
