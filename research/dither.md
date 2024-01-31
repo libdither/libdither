@@ -2,8 +2,7 @@
 
 - [The Dither Project](#the-dither-project)
   - [What is it?](#what-is-it)
-  - [A Plan for the Future of the Internet](#a-plan-for-the-future-of-the-internet)
-- [Core Tenets](#core-tenets)
+- [Core Design Tenets](#core-design-tenets)
 - [Structure](#structure)
   - [Core Process](#core-process)
   - [Service Swarm](#service-swarm)
@@ -14,36 +13,29 @@
 
 ## What is it?
 
-Dither is a project with the goal of decentralizing the internet. It is a toolbox of various tools application developers can use to communicate privately, host data, manage accounts much more. It is currently being developed by [@Zyansheep](https://github.com/zyansheep) and temporarily hosted via GitHub under the [libdither](https://github.com/libdither) organization.
-
-## A Plan for the Future of the Internet
-
-The plan behind Dither is to create an modern internet unencumbered by any kind of central control. To accomplish this, Dither must somehow replace existing apps and services *by outcompeting them*. This is an incredibly monumental task, but there are some things that may help in Dither's favor.
-
- - **No Hosting Costs** — Being decentralized means the users host everything. If we can create a system to make it as painless as possible to host data, that would be ideal.
- - **Redesigning Everything is Sometimes Good** — If applications using Dither are fundamentally better designed than the alternative and it is easy to switch, users will be more likely to use them.
- - **No Intellectual Property** — Intellectual property protections do not apply to the core of Dither since it is a peer-to-peer network. This means that new platforms can be immediately populated with any existing content people might want to watch. Note: Precautions should be taken to make sure creators have a say in if they want their content to be shown on mainstream applications using the protocol to prevent public backlash.
- - **Standardization** — Dither's ecosystem of APIs will all be compatible with each other which will infinitely improve the experience of the user. (Imagine being able to use a Discord-like chat room or a Reddit-like comment system underneath a YouTube video, or really any kind of system you want. It's all modular!).
- - **Natural Incentives** — Similar to Brave browser's tipping system, If applications built on Dither have good incentive systems for content creation that extends to existing content, then creators whose content is uploaded to the network will automatically accrue income that will then be an incentive for them to claim their money and create an account. Unlike Brave, there won't be any KYC requirements :).
+Dither is a project with the ultimate goal of creating a decentralized and privacy-respecting Internet. It is a repository of libraries, tools, ideas, and applications that allow people to communicate privately, distribute data, manage accounts, much more. It is currently being developed by [@Zyansheep](https://github.com/zyansheep) and (for the time being) hosted via GitHub under the [libdither](https://github.com/libdither) organization.
 
 *The aim for Dither is to replace existing centralized applications with decentralized alternatives that are unified through their use of a singular, modular protocol.*
 
 See the [application document](applications.md) for outlines of various applications that could be built using Dither.
 
-# Core Tenets
-It seems necessary for projects to have guidelines so that everyone may be on the same page. These are the ones I've chosen for now, as with everything, they are subject to change.
+# Core Design Tenets
+It seems helpful for projects to have guidelines to help aid design and collaboration. These are the ones I've chosen for now, as with everything, they are subject to change.
 
-**Dither should be as modular as possible.**
- - Reasoning: There should be no part of Dither that is difficult to replace with a different implementation and people should be able to pick and choose which parts they want.
+**Dither should be useful**
+ - Dither is a project. Projects should be useful.
+ - This one probably doesn't even need to be said, but it is always important while thinking about design, to keep in mind that you eventually want to create something useful.
 
-**Dither protocols, formats, and communities should be as interoperable as possible with existing protocols, formats, and communities**
- - Reasoning: To grow Dither's userbase, It should be as easy as possible to transition to Dither from other services.
- - One example of this would be allowing someone to pull comments from Reddit / Youtube into [Dithca](applications/dithca.md) and hosting them in a decentralized manner.
- - Another example might be [Dithca](applications/dithca.md) storing Reddit credentials and being able to optionally interact with comment threads pulled from centralized websites.
+**Dither should be modular and modelable**
+ - Once you build something, it often gets harder and harder to add features to it unless it is clear how the parts of the system connect and you can separate your concerns. To ensure extensibility and comprehensibility for future Dither developers, modularity and modelability are key.
 
-**Dither should rely on itself as much as possible for every aspect of development and usage.**
- - Reasoning: It feels natural for a program to use itself if possible. Rust is written in itself, GitLabs is hosted using GitLabs, etc.
- - Code Versioning, Storage, Building, Distribution, and Social communication should all run through Dither applications if it won't compromise development too much.
+**Dither should be interoperable**
+ - The goal of Dither is to replace existing services and standards. This is very hard to do (see: [xkcd #927](https://xkcd.com/927/)). To try to avoid this fate and make transition as easy as possible, Dither should do anything necessary to make the experience the same, or better, than existing platforms and services.
+   - A real-world example of this working is PipeWire acting as a single program unifying nearly all existing audio APIs on linux. (and being backwards compatible with programs that use those other audio APIs).
+ - See [Dither Interoperability](./dither-interoperability.md) for more details.
+
+**Dither should rely on itself**
+ - This tenet is simply a reminder of the end-goal of Dither: to replace the centralized internet. So long as the other tenets are satisfied, this is the ultimate goal. (Because who doesn't want to reinvent the wheel!)
 
 # Structure
 
@@ -82,4 +74,4 @@ These interfaces can be implemented however, but it is recommended for them to f
 
 ### [Inspirations for Dither](dither/inspirations.md)
 
-Dither as with any creative endeavor takes inspiration from many other projects. This is a list of what parts of Dither have been inspired from other projects.
+As with any creative endeavor, Dither takes inspiration from many other projects. This is a list of what parts of Dither have been inspired from other projects.
