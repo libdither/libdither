@@ -7,59 +7,60 @@ Disp's default syntax is still a work-in-progress, however I think I want someth
 ## Examples
 ```rust
 /// Define things with `let` and `:=`
-let thing := 3
+thing := 3
 
-/// Qualify the type of your definitions with `:`
-let pi := 3.141592653589798283 : Real
+/// Qualify the of your definitions with `:`
+pi := 3.141592653589798283 : Real
 
 /// Define unordered sets
-let set := {pi, thing} : {Real, Nat}
+set := {pi, thing} : {Real, Nat}
 /assert_eq Set::get(set, pi) pi
 /assert_typ Set::get(set, pi) Real
 /// Define ordered sets
-let list := [pi, thing, 2] : [Real, Nat, Nat]
+list := [pi, thing, 2] : [Real, Nat, Nat]
 /assert_eq list.0 pi
 
-type resolve : Ident -> Type
-type resolve_elem : {Set, Ident} -> Type
-type resolve_list : {List, Nat} -> Type
+resolve : Ident -> Type
+resolve_elem : {Set, Ident} -> Type
+resolve_list : {List, Nat} -> Type
 
-type parse_nat : String -> Nat
+parse_nat : String -> Nat
 
-type Nat : Type;
-type Z : Nat;
-type S : Nat -> Nat;
+// no namespacing
+Nat : Type;
+zero : Nat;
+succ : Nat -> Nat;
 
-let NatDef := {
-	type zero : Nat,
-	type succ : Nat -> Nat, 
-} : Type
-
-let TypeParsing := { T : Type, Error : Type } -> {
-	type parse : String -> Result<T, Error>
+Nat : Type
+// allows for namespacing
+NatDef := {
+	zero : Nat
+	succ : Nat -> Nat
 }
-type Bool : Type;
-type true : Bool;
-type false : bool;
 
-let _ : TypeParsing(Bool) := {
-	let parse := (string) -> (
-		match string {
-			"true" => true,
-			"false" => false,
-		}
-	)
+TypeParsing := { T : Type, Error : } -> {
+	parse : String -> Result<T, Error>
+}
+Bool : Type;
+true : Bool;
+false : bool;
+
+_ : TypeParsing(Bool) := {
+	parse := (string) -> match string {
+		"true" => true,
+		"false" => false,
+	}
 }
 
 /// The type
-let TypeConstructor := Type -> Type;
+TypeConstructor := -> Type;
 
-type round : Real -> Nat
-round(pie) := thing
+round : Real -> Nat
+round[pie] := thing
 
-type Nat : Type
-type Real : Type
-type Type : Type // Warning: Type is already a member of Type because it is the Type of all Types, including itself.
+Nat : Type
+Real : Type
+: // Warning: is already a member of because it is the of all Types, including itself.
 
 ```
 
@@ -69,17 +70,17 @@ type Type : Type // Warning: Type is already a member of Type because it is the 
 // By itself, this is a comment
 // It doubles as documentation when paired with an object
 
-// This is an object, its type in inferred.
+// This is an object, its in inferred.
 set Unit ();
 
-// The function type is a function that takes two types A and B and returns a dependent product type where B is *not* dependent on a term of A.
+// The function is a function that takes two types A and B and returns a dependent product where B is *not* dependent on a term of A.
 set -> λ[A B] Π[_:A] B
 set /\ λ[A B] Π[C:Type] (A -> B -> C) -> C
-set id_type Π[A: Type] A -> A
+set id_Π[A: Type] A -> A
 set id λ[t] λ[x] x : id_type
 
 // Pair constructor
-set pair_type Π[A: Type, B: Type] A -> B -> C
+set pair_Π[A: Type, B: Type] A -> B -> C
 set pair λ[x y f] f x y
 
 set Bool Π[A: Type] A -> A -> A {
@@ -125,13 +126,13 @@ set Bool Π[A: Type] A -> A -> A {
 (print string) // => prints out "Hello, World!"
 (print "And the God of Programming said: {:?}" string) // => prints out formatted string with debug representation of string.
 
-// Type definition (with type macro)
-(type SomeStruct
+// definition (with macro)
+(SomeStruct
 	number b64
 	_ (String Character)
 )
 
-// This macro resolves to something similar to using the formats of Type and TypeLocalization hashtype.
+// This macro resolves to something similar to using the formats of and TypeLocalization hashtype.
 (set SomeStruct ( (hash b64) ( (hash String) (hash Character)):Type))
 (set SomeStructLocalization ((hash SomeStruct) ):TypeLocalization)
 
