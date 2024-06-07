@@ -1,5 +1,15 @@
 # Dither Coin (Ideas are Work-In-Progress)
 
+Rationale: Currencies are a very cool invention, but they could be improved.
+
+The two notable areas of improvement are:
+ - Physical and digital implementation
+ - More efficient and just economies.
+
+This page has some potentially uneducated and most definitely *incomplete* ideas.
+
+### Implementation
+
 Dither's built-in cryptocurrency aims to solve all existing problems with crypto:
  - Scalability
    - Uses IOTA block structure combined with Federated Byzantine Voting for coordination.
@@ -19,3 +29,7 @@ Dither's built-in cryptocurrency aims to solve all existing problems with crypto
    - There will be SDKs so that Dither Coin can be built into other applications.
  - Ease of Purchase
    - A system for peer-to-peer purchase of Dither Coin using other assets will be created using Dither Chain. (Idea WIP)
+
+# Economics
+
+Some work needs to be done to counteract some of the negative sociological aspects of both new currencies and capitalism in general, namely enterprises that do not reasonably factor negative externalities into the price (land use, pollution, exploitative practices, etc.), and potentially harmful concentrations of economic power.
