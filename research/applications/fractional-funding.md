@@ -23,16 +23,4 @@ Goal: Take money from users and give it to creators in some fair manner.
 
 Idea for Process to achieve Goal:
  - Each user watches a video and gives to it some fixed number of shares of monthly money they've set aside.
- - At the end of each month money for each video is collected from user's shares.
- - For each video's accrued amount 
-
-
-The issue of funding stated formally:
-
-There is some set of creators, each have some amount of income to which they need to achieve a basic standard of living and further income which they may want.
-
-There is some set of users, each user has some amount of money they are willing to set aside to support the creators of content they consume.
-
-For each user there is some distribution of fractional shares of the set-aside amount over the set of video created over the course.
-
-Goal: Each creator should be paid from the pool of users who watch 
+ - At the end of each month the user's preferences on how money should be distributed for each video is sent to creators.
