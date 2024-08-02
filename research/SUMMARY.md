@@ -29,6 +29,7 @@
   - [Protocol of Truth](./applications/protocol-of-truth/protocol-of-truth.md)
     - [Usage Examples (WIP)]()
   - [Browser Alternative - D Framework]()
+  - [Fractional Funding](./applications/fractional-funding.md)
 - [Philosophy]()
   - [Design Philosophy](./applications/application-design-philosophy.md)
   - [Copyright is Cancer](./copyright-is-cancer.md)
