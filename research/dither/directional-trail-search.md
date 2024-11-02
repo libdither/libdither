@@ -2,7 +2,7 @@
 
 Directional Trail Search (DTS) is a protocol for efficiently fetching a piece of stored data from a network given its hash.
 
-It is intended to be a vast improvement over existing protocols like [IPFS](https://ipfs.tech/) by removing the use of spatially-inefficient Distributed Hash Tables (DHT), allowing for anonymous retrival and optionally anonymous hosting, and fixing the issue of scalability to create a true "inter-planetary" file system.
+It is intended to be a vast improvement over existing protocols like [IPFS](https://ipfs.tech/) by removing the use of poor-latency Distributed Hash Tables (DHT) and giving up some amount of data persistence in exchange for fast anonymous retrival of popular documents and flexibly anonymous hosting, and fixing the scalability issues to create a true "inter-planetary" file system.
 
 ## The Main Idea
 
