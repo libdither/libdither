@@ -20,12 +20,12 @@ These are some work-in-progress principles for how Dither and its communities sh
 
 *Dither should rely on itself as much as possible.*
 
-More details on Dither's Core Tenets can be found [here](docs/dither.html#core-tenants)
+More details on Dither's Core Tenets can be found [here](docs/dither.html#core-design-tenants)
 
 ## The Core Services of Dither
 Dither is at its core a piece of software that allows applications built on top of it to do a few funamdental things:
- - Send data to other computers in a flexibly private manner, where the user can choose how untraceable they want their connection to be (improves on TOR, I2P, and others). [See more](docs/dither/routing/distance-based-routing.html)
- - Host public data in such a way to distribute to burden of hosting over all parties interested in the data, while hiding information about the individual hosts and users of the data. (improves on IPFS, Bittorrent, and others) [See More](docs/dither/routing/directional-trail-search.html)
+ - Send data to other computers in a flexibly private manner, where the user can choose how untraceable they want their connection to be (improves on TOR, I2P, and others). [See more](docs/dither/routing.html)
+ - Host public data in such a way to distribute to burden of hosting over all parties interested in the data, while hiding information about the individual hosts and users of the data. (improves on IPFS, Bittorrent, and others) [See More](docs/dither/directional-trail-search.html)
 
 In addition to these two primary services, applications can use various other services to create a cohesive decentralized, private, and trustless internet. 
 
