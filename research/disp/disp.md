@@ -1,15 +1,9 @@
 # Disp
 
-*What is a program? What is data? Why, they are one of the same.*
+*The key to decentralization is effective coordination of disparate components.*
 
-Disp is a Decentralized Programming Language for the Decentralized Internet. The ultimate goal of Disp is (much like Dither) to allow for the replacement of all existing programming languages by creating a flexible, modular, and *decentralized* language.
 
-#### What does it mean for a Programming Language to be Decentralized?
-
-Modern programming languages are centraly-defined. Their parsers, type-checkers, interpreters, and specification are stored in a central repository, with complex systems of consensus creating a single evolving specification. Disp will attempt to do the opposite. It will provide a core set of tools for *building* languages that can be used however the user desires, and then use concepts from Category Theory (and semantic graph structures) to relate these "separate" languages together and allow them to translate seamlessly into each other.
-
-What might this look like? Imagine having an untyped lambda calculus evaluator (i.e. a simple model of computation) and allowing users to define various type systems for this model, from untyped, duck-typed, structurally-typed, simply typed, Martin-Loef Typed, or even the Calculus of Constructions, Cubical Type Theory and beyond. All these various type systems semantics can be related using Category Theory so that types in a simpler type system can be translated to types in a more complex type system. Then, on top of this, the syntax used to display (whether that be textual or using a [projectional/structured language editor](https://github.com/yairchu/awesome-structure-editors)).
-
+Disp is a decentralized programming language. The ultimate goal of disp is to allow individuals to create their own languages while making sure that code written in different individual languages are translatable to other variants, in theory creating a language that can evolve without any central coordination.
 ## Goals
 
 Create a general-purpose programming language that has the following main properties:
