@@ -1,2 +1,0 @@
-# Disp Default Syntax
-
