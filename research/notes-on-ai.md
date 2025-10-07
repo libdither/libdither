@@ -1,9 +1,20 @@
-# Notes on AI
 
-## The over/underfitting problem
+The types:
 
-Why can't we have an AI that can adjust the number of parameters it has? Have a separate neural network or some kind of external algorithm minimize the number of nodes in addition to minimizing the cost function. Why not feed the neural network structure as additional input to the network and allow the network to output modifications to the structure to minimize the cost function?
+```
+Binary : Type
+WasmExecution : Binary -> { Binary, Latency, ResourceUsage }
 
-## Neural Structure
-https://bzogrammer.substack.com/p/neural-computing-pt-1-sparse-distributed
 
+```
+
+The goal is to have an optimizer that can optimize itself.
+ - What does it mean to optimize itself? => It means what whatever function the original optimizer was optimizing for, it can now optimize that function better.
+ - What other function was it optimizing for?
+
+What is a neural network, type theoretically?
+```
+Input : Type
+Output : Type
+NeuralNet : Input -> Output
+```
