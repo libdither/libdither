@@ -1,5 +1,14 @@
 # Decentralized Data
 
+How does ZFS do it?
+ - They do massive compression of files on disk... is it per-file? Across-file? (probably per-file...)
+
+You have a piece of data:
+ - What do you do with it?
+ - What kind of data is it?
+   - A youtube video?
+     - Who's gonna retrieve it?
+
 Overall goal: maximize human utility
  - response speed is useful
  - anonymity is useful
