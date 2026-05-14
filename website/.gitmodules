@@ -7,3 +7,6 @@
 [submodule "public"]
 	path = public
 	url = https://github.com/libdither/dither.link-build.git
+[submodule "disp"]
+	path = disp
+	url = https://github.com/libdither/disp
