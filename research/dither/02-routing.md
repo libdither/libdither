@@ -6,43 +6,28 @@ It improves on speed and versatility over existing solutions (i.e. I2P and TOR) 
 
 In addition, to align itself with the philosophy of Dither, DAR aims to be as generic as possible, so that different encryption schemes and transport types may be used for different connections to hedge against the risk of one of them breaking, as well as easily allowing for novel schemes that may not be rigorously tested, but have desirable properties such as the stateless encryption protocol described in [HORNET](https://arxiv.org/pdf/1507.05724v3.pdf).
 
-## Route Properties Prediction (RPP)
+## Network Modeling
 
-In order to optimally select relays to establish onion routes through, it would be desirable to select nodes that have high-bandwidth connections and are located “en-route” between the sender and receiver. In small networks, this could be accomplished by every node measuring latency and bandwidth to every other node periodically, and then compiling a two separate shared `N*N` matrices representing the pairwise measurements of latency and bandwidth respectively. Then, when a path of relays needs to be selected, the requesting node would test all possible paths through the network to find the shortest ones and then send requests to nodes on those paths to be relays. This would (probably) work but exposes lots of information about the network publically and even in relatively small networks of even 20+ nodes, computational, communication, and storage costs make this solution completely infeasible.
+In order to figure out what paths through the network are ideal for the given application and user (trading-off latency, bandwidth, anonymity, and cost). We need to be able to model the effects of connecting and routing through different nodes. "Will connecting to 245.14.973.23 to hide my connection still reach my latency or bandwidth targets?", "To what degree will it gain me anonymity from various threat models?" "What will it cost?" etc. Users should be able to set QOL goals that they are happy with, minimum performance and anonymity guarantees on a per-application basis and have the protocol automatically figure out what nodes to select and route through. This is a general RL task however, and thus to solve it it seems likely that we'll need some general world modeling algorithms.
 
-There are still some methods to solve this problem, albeit less accurately. An individual without much experience in linear algebra might be able to think up a solution to solve the latency part of the problem, simply by observing that *latency between nodes seems to roughly correlate with physical distance between nodes*. To see if this correlation is modle-able in practice, one could assign 3-dimensional coordinates (because we live in a 3D world) to each node and have each node progressively update that coordinate such as to minimize the latency prediction error with its peers, functionally “embedding” the latency metric into a 3D space. In this scenario, real-world latency is predicted via the “Euclidean Distance” function and this is roughly what the [Vivaldi](https://pdos.csail.mit.edu/papers/vivaldi:sigcomm/paper.pdf) paper does, and it does predict latency. This method is considerably inaccurate because while Latency *does* correlate with physical distance, is not a direct causal relationship. Anything from internal processing latency, dynamic packet switching, or just a cable that doesn’t go directly from the source to destination will lengthen distances, which will then distort the space that we are trying to use to predict latencies.
+A world model should be able to:
+ - Take two IP addresses, or a series of IP addresses and a timestamp, and guess the latency and bandwidth between them.
+ - Take a desired latency and bandwidth and generate likely single or multiple IP chains that satisfy the desired latency, bandwidth, and cost. Or are as close to satisfying them as possible.
 
-For the math people: There are two properties that Euclidean physical space must have, but latency does not: Symmetry, and The Triangle Inequality. In physical space, the distance from point A to point B must be equivalent no matter from which you are measuring. This is not the case for computers on the internet as ISPs may delay connections initiated by certain nodes but not others. Symmetry violations are rare and typically non-consequential, but Triangle Inequality violations are *everywhere* when measuring latency. The Triangle Inequality says that given a measurement from point A to point B, a measurement from point A to B to C must always be greater than from A to B. (assuming C is not A or B). This inequality is frequently violated on the internet due to the tree-like way it is organized and the fact that routing tables may not always route packets along the most optimal paths (due to misconfiguration, or congestion management).
+Ideally this world model should be trainable in a federated / decentralized fashion. It is an open problem for how this could be done without divulging local information. (Perhaps it could be incorporated into the loss function for it to be bad at predicting certain "sensitive" metrics, at least for versions of the model sent to other nodes. This would somehow have to be balanced well with the game theory of the other nodes.)
 
-For those who know linear algebra, the better way to solve this problem is to imagine a large, partially filled $N*N$ matrix, where the ith row and jth column represent a latency or bandwidth measurement from node i to node j. When constructed on real networks, various papers have discovered that this matrix has a [low rank](https://en.wikipedia.org/wiki/Rank_(linear_algebra)). Rank is a metric measuring how *linearly independent* rows and columns of a matrix is, and matrices that are low-rank can be approximated by two matrices $N*r$ and $r*N$ where $r$ is the approximate rank of a large `N*N` matrix. Given a vector from column i from the $N*r$ matrix and vector from row j from the $r*N$ matrix factor, the dot product between the two vectors is the predicted latency from node i to node j. Note that unlike Vivaldi, this measurement is directional and you could swap rows/column indices where the vectors are chosen from to get a measurement from node j to node i instead.
-The “factorization” algorithm can be done on a single computer, but it can also be modified to work across a distributed peer-to-peer network similar to Vivaldi by simply doing running an optimization algorithm on each node to find a pair of $r$-size vectors that minimizes the difference between measured latency/bandwidth to directly connected nodes and predicted latency/bandwidth. I call this set of vectors “Routing Coordinates”.
+Once you do have a world model, you need to RL it. What are the rewards we are maximizing?
+ - Predictive accuracy of metrics outside of yourself. (Predict results of actions)
+   - Measurements, cost requests
+   - Path selection metrics
 
-### Modeling Fluctuating Connections
+What about the incentive layer here?
+Lets assume we have an out-of-band currency exchange system that is anonymous.
 
-While the goal of distance-based routing could be achieved by calculating a routing coordinate to each node in the network, This has two major problems: 
+Nodes are trying to maximize their own income from acting as proxies.
+Cost is similar to latency or bandwidth, its a metric you receive from pinging a node and it can be predicted.
 
-1. Individual nodes or even whole parts of the network may be moving in relation to other parts of the network, and thus fluctuating in terms of  (i.e. an airplane, or interplanetary communication). Thus requiring continuous recalculation of routing coordinates for all moving parties involved (which may include an entire planet, if used for inter-planetary routing).
-
-2. Multiple networks may form independently and thus may form incompatible coordinate systems when communicating, requiring resynchronization or some kind of coordinate translation.
-
-The solution to this issue that would work with a Vivaldi-type prediction scheme reflects something that humans do: *allow for different frames of reference*. Instead of each node calculating its own coordinates based on the global coordinates of other nodes, each node is the center of its own universe and it simply represents other nodes are simply offset from itself. I will call these offsets “relative routing coordinates” (RRCs). When two nodes want to communicate with each other, they must agree on some shared known point of reference, and then exchange their relative routing coordinates to that reference to be able to route through the network. This would formalize the idea that groups of computers may be changing relative to other groups of computers and would allow for more granular changes of relative coordinates rather than constant changes of global coordinates.
-
-Unfortunately, this strategy doesn’t work for matrix-factorization-based latency prediction, because translation is not a transformation that preserves the dot product between two vectors. Only rotations and reflections do. The problem here is still open, but I suspect the solution will entail some form of [tensor factorization](https://sci-hub.st/https://dl.acm.org/doi/10.1109/TNET.2020.3022757) or perhaps an even more advanced machine learning model. A somewhat general form of the problem is formalized as follows:
-
-The metric is predicted at some time via some black box function using the local coordinates and remote coordinates:
-$\^{d}_{ijt} = F(c_i, c_j, t)$
-
-Metrics are occasionally measured at some time t: $d_{ijt}$
-
-We must minimize the difference between the predicted and measured metric at any given time and update our current coordinates.
-
-$$
-\underset{c_i \in R^r}{\operatorname{\argmin}} \space d_{ijt} - F(c_i, c_j, t)
-$$
-
-### Other Concerns and Assumptions
-
-An assumption of this scheme is that intermediate routes will be directly connected to each other, but this will often not be the case, especially in the case where intermediate nodes are far away from each other. In this case, the current vision for the protocol states that packets will traverse through nodes in-between relays on the network. This will probably cause unnecessary congestion, but hopefully the discovery and peer-to-peer karma system will route the majority of traffic along high-connected nodes.
+Nodes get requests for proxy and send back price, they have some baseline resource usage and want to maximize cumulative money over time. When they get a proxy request they can either accept or send back their own price which the sending node can either accept or not. RL algorithms will then need to learn how to bargain with each other automatically within their constraints.
 
 ## Peer Discovery
 
