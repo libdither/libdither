@@ -2,43 +2,26 @@
 
 ## A Natural Idea
 
-A word in a language is a label to which we assign a definition. These definitions may be physical or abstract, but in a programming languages: a definition is a piece of code.
+A word in a language is a label to which we assign a definition. These definitions may be physical or abstract, but in a programming language, a definition is a piece of code.
 
-`let id = λx . x` - We are fitting the label "id" to the definition `λx . x`
+`id := {x} -> x` - We are fitting the label "id" to the program `{x} -> x`.
 
-Words in natural languages may have more than one definition. When using these words in conversation however, typically only one definition is intended by the speaker. The definitions and names we use in conversation are set by the *context* of the conversation to which the speaker hopes the listener has deduced correctly. 
+Words in natural languages may have more than one definition, yet in conversation we usually intend only one of them, and the listener works out which from the *context*. If we are talking about garnishing food, you mean adding something, whereas if we are talking about garnishing wages, you mean taking something away. Nobody has to announce which dictionary entry they intend.
 
-Contexts also exist in programming languages. Namespaces, modules, classes. Unlike real conversation where contexts can be deduced from various cues, computers need to know exactly what definition a label corresponds to and can't just "figure it out" (yet). A context in a programming language is meticulously organized hierarchy of modules. When using these modules, programmers have to specifically import names into the context of their code, requiring the programmer to keep in their head where in the module hierarchy all the names they need to use are.
+Contexts also exist in programming languages: namespaces, modules, classes. But unlike real conversation, the computer can't just "figure it out" (yet). The programmer has to spell out exactly where in a meticulously organized hierarchy of modules every name lives. This puts a special strain on the programmer, who must keep that whole pre-defined hierarchy in their head just to program effectively.
 
-Contrast this to how we deal with context in natural languages, where when starting a conversation, we assume don't assume what the single definition of a given word will be without first inferring a context from surrounding cues. For example if we are talking garnishing food, you might be referring to adding things whereas if we are talking about garnishing wages, we are talking about taking away. This is the way our brains are used to dealing with context, so it puts a special strain on the programmer where a complex pre-defined hierarchy must be memorized to actually program effectively.
+The goal: remove this burden by resolving names from the context of the program, the way a listener does.
 
-The goal: Remove this burden on the programmer by resolving names from the context of the program.
+## Structure
 
-## Implementation
+In Disp, names and programs are kept strictly separate. A program compiles to a tree that contains no names at all: variables are compiled away into the tree's structure, so two definitions that differ only in naming (or formatting, or [syntax style](syntax.md#syntax-agnosticism)) produce the *identical* tree. The tree's hash is the program's true identity.
 
-A perfect way to model resolving from contexts is to use a [knowledge graph](https://en.wikipedia.org/wiki/Knowledge_graph). A name may resolve to many different expressions, but the scope of possibilities may be restricted further by the context of the types of surrounding types or specifically declared contexts.
+Names are then just labels that people attach to hashes. A `.disp` file is, in effect, a record mapping labels to trees. This has a few nice consequences:
 
-# Structure
+ - The same program may be named differently by different people, in different styles or different human languages, without anyone forking anything.
+ - Renaming is free. It touches the label layer, never the code.
+ - When code is shared over Dither, identical definitions deduplicate automatically, no matter who wrote them or what they called them.
 
-Names and programs in Disp are separate, this is so that alpha-equivalence is preserved and so that the same program may be able to named differently by different people.
+## Resolving from Context
 
-A program is represented by an [`Expr`](expr.md). A Named program is represented by a `NamedExpr`
-
-```rust
-enum Expr {
-	Abs { binding: Binding, expr: Expr },
-	App { func: Expr, args: Expr }
-	Var,
-}
-struct NamedExpr {
-	name: String,
-	expr: NameTree,
-}
-enum NameTree {
-	Abs { bind_name: String, expr: NameTree }, // For Abs and Pi binding
-	App { left: NameTree, right: NameTree } // For App
-	Name(NamedExpr)
-	End,
-}
-```
-
+A label-to-hash map is the simple version. A perfect way to model the richer version is a [knowledge graph](https://en.wikipedia.org/wiki/Knowledge_graph): a name may resolve to many different programs, and the scope of possibilities is narrowed down by the surrounding context (the types in play, the file's imports, specifically declared contexts), much like a conversation does. Type information makes this more tractable than it sounds, since most candidate meanings of a name simply won't fit where it is being used.

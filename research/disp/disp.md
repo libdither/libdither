@@ -1,50 +1,41 @@
 # Disp
 
-*The key to decentralization is effective coordination of disparate components.*
+*The key to decentralization is effective coordination of collaborating computational components.*
 
+Disp is a programming language where programs, types, and the type checker itself are all represented as regular programs in a self-reflective combinator calculus called the [tree calculus](https://treecalcul.us/). It is being developed to solve some of the fundamental problems with Dither, and in doing so should be pretty much the end-game of programming language design.
 
-Disp is a decentralized programming language. The ultimate goal of disp is to allow individuals to create their own languages while making sure that code written in different individual languages are translatable to other variants, in theory creating a language that can evolve without any central coordination.
-## Goals
+The problems to solve are:
+ - For a distributed system you need to be absolutely sure your code has no bugs and never will. To do so you need formal verification against the most rigorous set of bug-denying constraints you can come up with, ideally with a compiler that is itself verified in the same way.
+ - We need a language that can allow users to prove arbitrary equivalences and for these equivalences to be actively applied as optimizations, ideally directly to assembly.
+ - For a language to not ossify over time and new ideas/designs to be able to be invented *and be automatically safely adopted* new designs need to be able to be formally proven to apply and safely rewrite old code dynamically at each individual user's desire.
+   - As a subpoint here, the surface level details of the language should be user-customizable and fit to their preferred language syntax styles, whether that be block coding, ML-syntax, C-style, pythonic or what have you.
+ - In order to create things fast, it is generally infeasible to spend copious amounts of time worrying about specific algorithms and it would be ideal if programmers could simply write constraints and have an optimizer satisfy them. i.e. programming-language-native program synthesis.
 
-Create a general-purpose programming language that has the following main properties:
- - Absolute flexibility & configurability (customizable syntax & type system).
-   - [Syntax Agnosticism](syntax-agnosticism.md)
-     - [No More Bikeshedding](no-more-bikeshedding.md)
-     - Projectional Editing
-     - Easy Localization
-   - [Universal System of Types](universal-system-of-types.md)
-   - [Ontologies and Semantic Graphs](ontologies.md)
- - Most efficient language to run (Combined interpreter, JIT and AOT, provably equivalent in terms of behavior)
-   - Solve the dependency problem via content-addressed "deduplicated" AST structures & machinecode, and provable backwards-compatability.
-   - Support for compilation to any cpu / interpreter
-   - [Provable Zero-Cost Abstraction](provable-zero-cost-abstraction.md)
-   - [Hardware Modeling](hardware-modeling.md)
- - Seamless integration into Dither
+## The Core Idea: Types as predicate functions
 
-## Ideas
- - Objects are stored in self-defining data structures, i.e. they link to data that describes the format of the object (whether that be structurally, in-memory, or symbolically).
-	 - An object can be defined by its computation -> Compilation can be as incremental as you want.
-	 - 
- - High level programs are provably compiled into arbitrary lower-level representations with minimal programmer input.
-	 - An inductive datatype like `Nat` could be provably compiled into something like `BigInt` and be much more efficient. In tern, as long as you either ignore the possibility or proove it never happens, `BigInt` could be transformed into a  `U64` or something similar.
- - Goal of compilation is cpu-specific object file complete with
-   - data pre-loaded into memory
-   - list of cpu-specific instructions.
-   - hash of external virtual kernel API (i.e. syscall functions)
- - virtual kernel APIs can be constrained to give programs access to different parts of the computer, or forgone entirely for programs that only manipulate data.
- - Running object files requires a uniquely setup syscall kernel API that can deal with interrupts
+The Core™ idea of disp is that type systems (the feature of compilers that handle whether or not a given program you've written fits some constraints) should be definable in the language itself. Thinking about type systems for a second, you essentially have a program in the meta-language that looks like this: `check(term: Term, typ: Typ)` where `Term` and `Typ` are some special datastructures. If you think about this though, specifically the case where you partially-apply `typ` to `check`, you get a function that just checks if a given term is of a particular type. But what if you could just define this as its own function?
 
-## General Architecture
-- There are two structures that are core to disp: `Expr`, and `Judgement`. `Expr` is an inductive structure that represents all the terms and types of the language. `Judgement` is the structure that matches `Expr`s together to create a typing judgement (i.e. saying some term is of some type or `a : A`). See [[expr]] for more details.
-- All structures of the language are defined through [[hashtypes]] 
+This is what disp does and it makes it so that types are fundamentally first-class objects in the language, i.e. simply just functions that inspect some encoding of some data, and return true or false. More on this in [Universal System of Types](universal-system-of-types.md).
 
-- All language types are themselves self-defining structures, including the final bytecode file.
-- The language files are not stored as text files, they are instead stored as self-defining structures of groups of commands.
+The key part to make this happen being "inspect some encoding of some data" and this is where the backend combinator calculus disp is built on comes in. It's called the tree calculus (Invented by Barry Jay, with development help by Johannes Bader) and it allows you to (similar to `quote` in lisp) directly inspect arbitrary trees (which can include datatypes *and* functions).
 
+## The Solutions
+
+Each of the problems above can be pretty easily solved downstream of types-as-predicates plus the tree calculus:
+
+ - **Formal verification**: A type can encode any constraint you can compute, up to and including full specifications ("this function sorts its input"). And because the [type checker is itself disp code](implementation.md), it can be checked by the same machinery it implements, instead of being a pile of trusted compiler internals.
+ - **Provable optimization**: Equality between programs is just another type, so "these two programs always produce the same result" is a proposition you can prove, package up, and share. Combined with [hardware modeling](program-synthesis.md#hardware-modeling) to judge when a rewrite is actually faster, optimizations become a [library anyone can contribute to](program-synthesis.md#provable-optimization) rather than a compiler release.
+ - **No ossification**: Since the type system is a library, new disciplines can be adopted (or not) per user without forking the language. And since programs are nameless trees identified by hash, code deduplicates naturally across Dither, [names](names.md) and [syntax](syntax.md#syntax-agnosticism) become personal rendering layers on top, and proven equivalences let new designs safely rewrite old code.
+ - **Program synthesis**: Partially apply the type checker to a specification-type and you get a function that accepts or rejects programs. Add scoring functions for speed and size and you have exactly the thing an optimizer can [search against](program-synthesis.md).
+
+## Current State
+
+There is a working prototype at [github.com/libdither/disp](https://github.com/libdither/disp). A small TypeScript runtime evaluates trees; everything else (the kernel, the standard types, the test suite) is written in Disp itself. See [Implementation](implementation.md) for what exists and what doesn't yet.
 
 ## Inspirations
- - Lisp for treating programs-as-data.
+
+ - [Tree calculus](https://treecalcul.us/) (Barry Jay) for a substrate where programs can inspect programs.
+ - Lisp for treating programs-as-data in the first place.
  - Idris, Coq, Agda, Lean & Friends for dependent types.
+ - [Unison](https://www.unison-lang.org/) & IPFS for content-addressed, deduplicated code.
  - Rust for its safe & fast zero-cost abstractions.
- - IPFS for deduplication of shared code
- - IPLD for self-defining structures
