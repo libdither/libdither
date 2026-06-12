@@ -1,2 +1,0 @@
-# Self-Verifying Structures
-
