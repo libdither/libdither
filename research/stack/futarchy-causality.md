@@ -1,6 +1,8 @@
-# Futarchy, Causality, and Retroactive Consensus Markets
+# Futarchy and Causality
 
-*Fourth analytical note. Evaluates the retroactive consensus market ([Retroactive Consensus Markets — Rigorous Synthesis](governance/retroactive-consensus-markets.md), [mathematical-core.md](mathematical-core.md)) against Dynomight's "Futarchy's fundamental flaw" (dynomight.net/futarchy). Question: does the conditional-vs-causal critique of futarchy sink our design, and if not, exactly which parts survive?*
+> *Part III · The Synthesis — Chapter 12. A deep dive on the deepest objection.*
+
+*Evaluates the [retroactive consensus market](mechanism.md) (and its formal core, [The Mathematical Core](mathematical-core.md)) against Dynomight's "Futarchy's fundamental flaw" (dynomight.net/futarchy). Question: does the conditional-vs-causal critique of futarchy sink our design, and if not, exactly which parts survive? This is the causal twin of the [reflexivity](reflexivity.md) problem.*
 
 ---
 
@@ -94,7 +96,7 @@ The viability envelope ([mathematical-core.md](mathematical-core.md) §7) gains 
 V5 has concrete, testable mechanisms — and several fall out of features the design *already has*:
 
 1. **Counterfactual question framing.** Resolution prompts ask "effect relative to the counterfactual," and the resolution UI supplies the counterfactual scaffolding (comparison units, pre-trends).
-2. **Optionality as causal hygiene** *(already in the mechanism)*. Resolvers may **discard** questions they judge hopelessly confounded ([truth-markets §3.1](governance/retroactive-consensus-markets.md#31-primitives)). Forecasters won't be paid for predicting confounded conditionals because thoughtful resolvers won't resolve them → causally-hopeless questions are **endogenously deprioritized**. Double-edged: the system goes quiet exactly on the hardest causal questions, which may be the most decision-relevant.
+2. **Optionality as causal hygiene** *(already in the mechanism)*. Resolvers may **discard** questions they judge hopelessly confounded ([truth-markets §3.1](mechanism.md#the-primitives)). Forecasters won't be paid for predicting confounded conditionals because thoughtful resolvers won't resolve them → causally-hopeless questions are **endogenously deprioritized**. Double-edged: the system goes quiet exactly on the hardest causal questions, which may be the most decision-relevant.
 3. **Per-resolver independence as robustness** *(already in the mechanism)*. No single confounded resolution; you predict a *distribution* of independent counterfactual judgments, n_eff-weighted (§3 of the math core). Independent errors wash out; *shared* confounders (every resolver fooled the same way) do not — so V5 failures are correlated-error failures, and the n_eff immune machinery partially detects them (a confounded consensus looks like a low-independence bloc).
 4. **Slow payout buys causal evidence** *(the user's "distributed slowly over time")*. Because resolution is not pinned to an instant, the resolver can **wait for causal evidence to arrive** — the natural experiment to mature, the RCT to publish — before declaring. Slow distribution does not fix confounding at the mechanism level; it grants the time and removes the single attackable resolution instant that makes ex-ante markets fragile.
 

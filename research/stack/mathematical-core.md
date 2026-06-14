@@ -1,6 +1,8 @@
 # The Mathematical Core
 
-*Third document in the sequence: [roadmap.md](roadmap.md) (engineering map) → [the-living-network.md](the-living-network.md) (unifying abstraction) → this (the math). Goal: take every open question flagged in the first two documents and either answer it, reduce it to a measurable quantity, or state precisely why it is open. Notation is plain-text math in the style of the [truth-markets synthesis](governance/retroactive-consensus-markets.md).*
+> *Part III · The Synthesis — Chapter 11. The formal reference for the whole stack.*
+
+*This is the rigorous counterpart to the intuitive chapters of [Part II](substrate.md) and the synthesis of [The Living System](living-system.md). Goal: take every open question raised earlier in the book and either answer it, reduce it to a measurable quantity, or state precisely why it is open. The intuitive chapters forward-link here; each section below is the formal version of one of them. Notation follows the [mechanism](mechanism.md); every symbol is in the [glossary](glossary.md).*
 
 ---
 
@@ -24,7 +26,7 @@ Agents are coupled by exactly **three operators**, and the entire stack is these
 
 plus one **vertical flow**: weight issuance downward (credits, UBI, witness power, all gated by `n_eff`) and aggregation upward (world-models, preference tallies, all weighted by `n_eff`).
 
-The claim made precise in this document: **the organism is viable iff four inequalities hold** (§7), and each of the four corresponds to one of the load-bearing open problems from [the-living-network.md](the-living-network.md) §8.
+The claim made precise in this document: **the organism is viable iff four inequalities hold** (§7), and each of the four corresponds to one of the load-bearing open problems from [The Living System](living-system.md) §8.
 
 ---
 
@@ -66,7 +68,7 @@ F  =  Σ_{v,x}  D(v,x) · shortfall_cost(v,x)  +  Σ_nodes maintenance
 
 *Sketch.* Marginal-cost pricing makes each served request transfer exactly its social shortfall-saving to the server; maintenance is borne locally; sum over actions. This is the first welfare theorem specialized to a convex flow problem. ∎
 
-This answers the "FEP is slippery" objection from [the-living-network.md](the-living-network.md) §8 by *choosing* the free-energy functional and *deriving* the alignment, rather than asserting it: the price field **is** the prediction-error field. (Honest scope: Proposition 1 needs convex costs and no market power; lumpy storage and monopoly relays break it — see §8, Open-5.)
+This answers the "FEP is slippery" objection from [The Living System](living-system.md) §8 by *choosing* the free-energy functional and *deriving* the alignment, rather than asserting it: the price field **is** the prediction-error field. (Honest scope: Proposition 1 needs convex costs and no market power; lumpy storage and monopoly relays break it — see §8, Open-5.)
 
 ### 1.4 Verification (the layer-1 ↔ layer-4 bridge, made exact)
 
@@ -253,7 +255,7 @@ UBI to account `i` is `δM/N · ν_i` where `ν_i` is `i`'s marginal `n_eff` (§
 
 **Proposition 8 (reputation is intrinsically portable).** `R_{i,j}` is a pure deterministic function of two public, self-certifying logs: `i`'s signed timestamped forecast stream and `j`'s signed verdict stream. Therefore *any* network, zone, or fork can recompute any reputation from portable data. No platform can custody reputation; epistemic switching cost ≈ 0 by construction.
 
-This resolves the shared-reality vs. exit-discipline tension of [the-living-network.md](the-living-network.md) §6 with an architectural rule:
+This resolves the shared-reality vs. exit-discipline tension of [The Living System](living-system.md) §6 with an architectural rule:
 
 > **The perception layer (signed forecast/verdict logs, the world-model) is global, content-addressed, and portable. The action layers (currency, governance, resource allocation) are zonal and exitable.** Reality stays shared at the top (assumption A1 gets its large population); discipline and exit operate at the bottom (between-zone and between-network selection stays live); demurrage already makes currency stock a weak lock-in (wealth melts; what persists is flow and portable reputation).
 
@@ -276,7 +278,7 @@ Scale for signal: on the order of 30–100 resolvers, 100–300 questions with s
 
 ## 7. The viability envelope
 
-The four load-bearing problems from [the-living-network.md](the-living-network.md) §8 are now four inequalities. **The organism is viable iff:**
+The four load-bearing problems from [The Living System](living-system.md) §8 are now four inequalities. **The organism is viable iff:**
 
 ```
 (V1) Contraction:    L = λ·sup|g′| < 1            — perception dominates action
@@ -293,7 +295,7 @@ The four load-bearing problems from [the-living-network.md](the-living-network.m
 (V5) Causal resolution:  verdicts are ex-post counterfactual contrasts, not raw
                          conditional outcomes  — else the rule lends proper-scoring
                          authority to a confounded judgment (futarchy's flaw).
-                         See futarchy-and-causality.md. Dual to V1: both keep the
+                         See futarchy-causality.md. Dual to V1: both keep the
                          market an evidence instrument, never a mechanical decision rule.
 ```
 
@@ -315,7 +317,7 @@ From **roadmap.md** "Open questions before Phase 2":
 | Q4 | disp ↔ network boundary? | **Answered** (§1.5): the network service API *is* disp's effect algebra — `store/send/eval/price` = the three MATERIALIZE edges + the price field; canonical hash-consed serialization. |
 | Q5 | Smallest meaningful pilot? | **Specified** (§6): estimands `L̂`, `Σ̂`, calibration, VOI-routing; blind/shown randomization; planted sock-puppets; ~30–100 resolvers, ~100–300 questions. |
 
-From the **[truth-markets synthesis](governance/retroactive-consensus-markets.md) §8**:
+From the **[truth-markets synthesis](mechanism.md#open-problems) §8**:
 
 | # | Problem | Status |
 |---|---|---|

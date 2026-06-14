@@ -1,16 +1,18 @@
 # Roadmap: The Decentralization Stack (DRAFT)
 
+> *Appendix B. The engineering / build-plan view. For the conceptual development, read the chapters in order starting from [the overview](overview.md).*
+
 *Working draft. The goal: map the path from programming language → routing → currency/incentives → data & compute trading → governance, identify how the layers depend on each other, and call out what's missing at each step.*
 
 ## The stack at a glance
 
 | # | Layer | Project / doc | Maturity |
 |---|-------|---------------|----------|
-| 1 | Language & verification | disp ([disp/disp.md](disp/disp.md), `libdither/disp`) | **Working prototype.** Kernel + elaboration stages 0–3 self-hosted; effects, erasure, optimizer pending. |
-| 2 | Routing & data | Dither: DAR ([dither/02-routing.md](dither/02-routing.md)), DTS, RHL, identity | **Detailed design (DAR) → sketches (DTS/RHL/identity).** No implementation; simulator work exists (`dither-sim`). |
-| 3 | Currency & incentives | [applications/dither-currency.md](applications/dither-currency.md), routing incentives, [applications/fractional-funding.md](applications/fractional-funding.md) | **Sketch.** Economics ideas, no consensus design, no threat model. |
-| 4 | Data & compute trading | [dither/decentralized-data-ideas.md](dither/decentralized-data-ideas.md) | **Research agenda only.** No protocol design. |
-| 5 | Governance / truth machine | Retroactive consensus markets + hierarchical liquid quadratic voting ([governance/retroactive-consensus-markets.md](governance/retroactive-consensus-markets.md)); [applications/protocol-of-truth](applications/protocol-of-truth/protocol-of-truth.md) | **Rigorous mechanism synthesis now in repo**; central theory gap (reflexivity) reduced to a measurable threshold ([mathematical-core.md](mathematical-core.md) §2). |
+| 1 | Language & verification | disp ([disp/disp.md](../disp/disp.md), `libdither/disp`) | **Working prototype.** Kernel + elaboration stages 0–3 self-hosted; effects, erasure, optimizer pending. |
+| 2 | Routing & data | Dither: DAR ([dither/02-routing.md](../dither/02-routing.md)), DTS, RHL, identity | **Detailed design (DAR) → sketches (DTS/RHL/identity).** No implementation; simulator work exists (`dither-sim`). |
+| 3 | Currency & incentives | [applications/dither-currency.md](../applications/dither-currency.md), routing incentives, [applications/fractional-funding.md](../applications/fractional-funding.md) | **Sketch.** Economics ideas, no consensus design, no threat model. |
+| 4 | Data & compute trading | [dither/decentralized-data-ideas.md](../dither/decentralized-data-ideas.md) | **Research agenda only.** No protocol design. |
+| 5 | Governance / truth machine | Retroactive consensus markets + hierarchical liquid quadratic voting ([Retroactive Consensus Markets](mechanism.md)); [applications/protocol-of-truth](../applications/protocol-of-truth/protocol-of-truth.md) | **Rigorous mechanism synthesis now in repo**; central theory gap (reflexivity) reduced to a measurable threshold ([mathematical-core.md](mathematical-core.md) §2). |
 
 The truth machine in one line: forecasters publish timestamped probability distributions; capital-holding *resolvers* privately and retroactively declare what they believe happened; a reference-relative proper scoring rule pays forecasters for moving belief toward eventual resolver consensus. Output: a live world-model *and* a skill ranking, with no exploitable point-in-time oracle. Governance bolts this onto liquid quadratic voting: voters set goals, the market estimates which policies advance them, skill rankings can weight estimates.
 
@@ -22,13 +24,13 @@ These interactions are the actual argument for building this as *one* stack rath
 
 2. **The currency's anti-hoarding mechanic supports the market's key assumption.** The mechanism's aggregation quality degrades as capital concentrates (assumption A2, dispersed capital). A demurrage/redistribution currency structurally pushes against concentration. These two designs reinforce each other and should be co-designed, not bolted together.
 
-3. **Identity is upstream of everything quadratic.** QV is meaningless without Sybil resistance; the prediction market's reference-subtraction can be farmed by Sybil forecasters; routing incentives and data markets need persistent pseudonyms for reputation. Dither's web-of-trust identity layer ([dither/user-management.md](dither/user-management.md)) is currently an idea sketch but is a *hard dependency* of layers 3–5. It deserves promotion from "application concern" to core protocol.
+3. **Identity is upstream of everything quadratic.** QV is meaningless without Sybil resistance; the prediction market's reference-subtraction can be farmed by Sybil forecasters; routing incentives and data markets need persistent pseudonyms for reputation. Dither's web-of-trust identity layer ([dither/user-management.md](../dither/user-management.md)) is currently an idea sketch but is a *hard dependency* of layers 3–5. It deserves promotion from "application concern" to core protocol.
 
 4. **Tamper-evident timestamps are a shared primitive.** Forecasts must not be backdatable (assumption A4); the currency needs transaction ordering; RHL needs some consensus on link sets. One minimal ordering/timestamping/data-availability primitive serves all three — likely the *only* global consensus the stack needs. This reframes the consensus question (old_ideas/consensus/): we don't need general smart-contract consensus, we need cheap verifiable timestamping plus a payments ledger.
 
 5. **disp is the verification substrate for compute trading.** Selling computation requires the buyer to trust the result. disp's program-as-data + types-as-predicates + provable-equivalence story is exactly a verifiable-compute story: a compute offer is a content-addressed program plus a disp predicate the result must satisfy; disputes resolve by re-execution or proof checking. No design for this exists yet — it's the main missing bridge between layers 1 and 4.
 
-6. **disp can make markets machine-resolvable.** A question's outcome space and resolution criterion can be a disp predicate over published data. Resolvers can then delegate verdicts to programs for the objective subset of questions, reserving human judgment for ambiguous ones. This also unifies the quantitative truth machine with the qualitative [Protocol of Truth](applications/protocol-of-truth/protocol-of-truth.md) assertion graphs: assertions become market questions; debate structure becomes evidence attached to them.
+6. **disp can make markets machine-resolvable.** A question's outcome space and resolution criterion can be a disp predicate over published data. Resolvers can then delegate verdicts to programs for the objective subset of questions, reserving human judgment for ambiguous ones. This also unifies the quantitative truth machine with the qualitative [Protocol of Truth](../applications/protocol-of-truth/protocol-of-truth.md) assertion graphs: assertions become market questions; debate structure becomes evidence attached to them.
 
 7. **Per-resolver subjectivity matches Dither's polycentric philosophy.** Reputation `R_{i,j}` is relative to each resolver's worldview — no global truth oracle, just per-perspective rankings. Same shape as web-of-trust identity and the polycentric model. The stack is philosophically coherent: *subjective-but-aggregable* all the way down.
 
@@ -60,7 +62,7 @@ These interactions are the actual argument for building this as *one* stack rath
 - Resolver honesty is unmodeled once verdicts gate public money.
 - "Retroactive reward by extrapolated intention/utility" is a desideratum, not a defined operator.
 - Hierarchical/liquid structure of the QV layer is a TLDR, not a design (delegation mechanics, credit issuance, collusion resistance).
-- ~~The truth-markets notes live outside this repo and should be merged as a spec chapter.~~ **Done** — merged as [governance/retroactive-consensus-markets.md](governance/retroactive-consensus-markets.md) (mechanism, assumptions A1–A5, open problems §8).
+- ~~The truth-markets notes live outside this repo and should be merged as a spec chapter.~~ **Done** — merged as [Retroactive Consensus Markets](mechanism.md) (mechanism, assumptions A1–A5, open problems §8).
 
 ### Cross-cutting
 - **Identity/Sybil-resistance primitive** (blocks 3, 4, 5).
@@ -78,7 +80,7 @@ Two observations drive the ordering:
 ## Phased roadmap (draft)
 
 ### Phase 0 — Consolidation (weeks)
-- ✅ Merge truth-markets notes into this spec (`governance/` chapter): mechanism, assumptions A1–A5, open problems — see [governance/retroactive-consensus-markets.md](governance/retroactive-consensus-markets.md).
+- ✅ Merge truth-markets notes into this spec (`governance/` chapter): mechanism, assumptions A1–A5, open problems — see [Retroactive Consensus Markets](mechanism.md).
 - Write the cross-layer dependency map (this doc) and a first threat-model outline.
 - Decide the identity and timestamping primitives' requirements (consumers: currency, markets, governance).
 
