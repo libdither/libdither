@@ -1,32 +1,67 @@
 # The Decentralization Stack
 
-*This section builds one idea, from the ground up: a decentralized way to **aggregate dispersed knowledge and allocate scarce resources** — and the claim that the same mechanism, applied at different scales, generates an entire computing-and-governance stack (language → routing → currency → markets → governance).*
+> 🚧 **Draft — restructure in progress.** This problem-map reorganization supersedes the earlier prediction-market-first draft. Part A (core ideas) is a sketch; the in-depth Part B chapters are not yet written.
 
-It is written to be **read in order**. Earlier chapters are concrete and assume nothing; the sweeping claims are deliberately held until the end, where they are *earned* rather than asserted.
+*This section is the conceptual core of Dither: the full set of problems that stand between us and a [decentralized, privacy-respecting Internet](../dither.md), a short core idea for each, and — in depth — how the solutions lean on one another.*
 
-## The one-sentence version
+## The goal
 
-> Let specialists publish timestamped predictions; let capital-holders privately and retroactively judge what happened; pay the predictors for moving belief toward that eventual judgment. The money-optimal forecast becomes a shared, evolving world-model *and* a skill ranking — with no single oracle to corrupt. Everything else in the stack turns out to be a variation on this same move.
+Dither's end-goal is to **replace the centralized Internet** with decentralized alternatives unified by one modular protocol, under four [design tenets](../dither.md#core-design-tenets): it should be **useful**, **modular & modelable**, **interoperable**, and ultimately **self-reliant**. This section is about the hard part of "modelable": showing that the pieces form *one coherent system* rather than a pile of unrelated mechanisms.
 
-## How it's organized
+## There is no single root
 
-**Part I — The Engine.** The concrete mechanism, with nothing hidden behind metaphor. What problem it solves, how the scoring works, a fully worked example, and the assumptions it stands on.
+It is tempting to pick one idea — a currency, or a prediction market — and call it the seed everything grows from. That framing is wrong and it misleads. The stack is **a set of interdependent problems**; the closest thing to a root is *boundary integrity* (knowing who is a distinct participant), and the closest thing to a recurring *principle* is *prediction* (agents persist by predicting their environment). But neither is "the thing the rest is built on." The honest picture is a **dependency graph**, shown below.
 
-**Part II — The Recurring Pattern.** The same primitives — prediction, independence, value-as-flow — showing up at every layer: the storage/compute/routing substrate, identity and Sybil resistance, the stability of belief, and money.
+## The problem map
 
-**Part III — The Synthesis.** Only now do we name the animal: why these layers are *organs of one living system*, the full mathematical core, and a deep dive on the causal-inference critique.
+Eight problems, each stated in one line. ([Part A](core/identity.md) gives a short core idea for each; Part B develops them in depth.)
 
-**Appendices.** A [notation glossary](glossary.md) (every symbol defined once), the [engineering roadmap & build plan](roadmap.md), and the [open-questions](open-questions.md) provenance trail.
+| # | Problem | In one line |
+|---|---|---|
+| 1 | **Boundary & Identity** | Tell distinct participants apart (Sybil resistance) with no central registry and without breaking anonymity. *The problem under all the others.* |
+| 2 | **Ordering & Timestamps** | Agree "this happened before that" — and that a record wasn't backdated — without a global clock or blockchain. |
+| 3 | **A Verifiable Substrate** | Express computation as portable, content-addressed data whose results anyone can independently check (disp). |
+| 4 | **Anonymous Routing & Retrieval** | Move data between nodes and *find* who holds a value, without revealing who wants what. |
+| 5 | **One Resource Market** | Buy and sell storage, bandwidth, and compute as a single priced flow, not three markets. |
+| 6 | **Non-Concentrating Money** | A medium of exchange that resists the wealth concentration which wrecks aggregation. |
+| 7 | **Aggregating Truth** | Combine dispersed expert knowledge into a shared world-model with no corruptible oracle. |
+| 8 | **Deciding Together** | Combine people's preferences with that world-model into collective decisions that resist capture. |
 
-## Reading paths
+Plus the **composition** question — how these eight become *one living system* — and the cross-cutting concerns that ride on top of it: bootstrapping new users, exit/competition between networks, and the threat model.
 
-- **First time / non-technical:** Read Part I in full, skim Part II, read [The Living System](living-system.md). Skip the math.
-- **Builder:** Part I → Part II → the [roadmap](roadmap.md) appendix.
-- **Theorist:** Part I → [The Mathematical Core](mathematical-core.md) → [Futarchy and Causality](futarchy-causality.md) → [open questions](open-questions.md).
+## How they depend on each other
 
-## Conventions
+```
+                 ┌──────────────────────────┐
+   ROOT          │  1 · Boundary & Identity  │  every weighted/counted thing needs it
+                 └────────────┬─────────────┘
+                              │ distinct participants
+        ┌──────────────┬──────┴──────┬──────────────────┐
+        ▼              ▼             ▼                   ▼
+  2 · Ordering &  3 · Verifiable  4 · Anonymous     6 · Non-Concentr.
+     Timestamps      Substrate      Routing            Money
+        │              │             │                   │
+        │              └──────┬──────┘                   │ prices / denominates
+        │                     ▼                          │
+        │            5 · One Resource Market ◄───────────┘
+        │                     │
+        └─────────┬───────────┘
+                  ▼
+          7 · Aggregating Truth  ◄────►  6 · Money
+                  │              (δ-dial ⇄ dispersion: co-designed cycle)
+                  ▼
+          8 · Deciding Together
+                  │
+                  ▼
+   Composition — one living system  (+ bootstrapping · exit · threat model)
+```
 
-- Formulas in running text use standard math notation; every symbol is collected in the [glossary](glossary.md).
-- Where an intuitive chapter has a rigorous counterpart, a callout points to it:
-  > 📐 **Formal version:** [The Mathematical Core](mathematical-core.md).
-- Honest caveats are marked inline, next to the claim they qualify, not pooled at the end. This design's strength is knowing exactly where it might be wrong.
+Read it top-down: identity is the root; timestamps, the substrate, routing, and money are near-primitives; the resource market is the first place they combine; the truth machine sits on top of money and timestamps; governance sits on the truth machine. The one genuine **cycle** — money ⇄ truth machine — is why those two must be *co-designed*, not stacked.
+
+## How to read this section
+
+- **[Part A · Core Ideas](core/identity.md)** — eight short chapters, one seed solution per problem. Read these and you'll hold the whole shape in your head, including where each idea is still thin.
+- **Part B · In Depth** *(drafting)* — the same eight, developed in dependency order at engineering depth, **each ending with a "where it could break in implementation" section.** This is also the stack-wide threat model the [roadmap](roadmap.md) flags as missing.
+- **Reference** — the formal [Mathematical Core](mathematical-core.md), the [Futarchy & Causality](futarchy-causality.md) deep dive, a [glossary](glossary.md), the engineering [roadmap](roadmap.md), and [open questions](open-questions.md).
+
+> **Conventions.** Honest caveats are marked `⚠️` inline, next to the claim they qualify. Knowing exactly where this design might break is a feature, not an embarrassment — it's what Part B is *for*.
