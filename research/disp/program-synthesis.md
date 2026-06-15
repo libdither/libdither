@@ -34,7 +34,7 @@ The "when is it faster" half is the harder part, since benchmarks are noisy and 
 Optimizing compilers generate fast code through intermediate representations and [various techniques](https://www.lihaoyi.com/post/HowanOptimizingCompilerWorks.html) for figuring out what code is needed and what code is not. These strategies are mostly arbitrary and not easily improvable: a programmer has to go through and figure out which optimizations are worth the compiler computation cost and which aren't, and there are an immeasurable number of trade-offs and potential improvements for any given piece of hardware.
 
 #### How do we create fast algorithms?
-We typically write algorithms we think will run fast and then compare them to other algorithms using benchmarks. However, benchmarks have so many confounding factors that it is difficult to compare two of them and make definitive conclusions. The same algorithm may run faster or slower depending on a bazillion different factors, down to the [memory layout](https://www.youtube.com/watch?v=r-TLSBdHe1A) the compiler happened to pick.
+We typically write algorithms we think will run fast and then compare them to other algorithms using benchmarks. However, benchmarks have so many confounding factors that it is difficult to compare two of them and make definitive conclusions. The same algorithm may run faster or slower depending on a bazillion different factors, down to [the layout of the compiled object file](https://www.youtube.com/watch?v=r-TLSBdHe1A) the compiler happened to pick.
 
 To create efficient code, we must have a model of how that code is run. Typically this model is held in the programmer's mind and expressed through compiler and algorithm design. Instead of holding it in our forgetful, biased brains, it might be a good idea to have a software-defined model of our hardware, so that we can *prove* (or at least have really good heuristics that check whether) our optimizations and algorithms are actually faster.
 
@@ -47,7 +47,7 @@ Simple models could be hand-built from published data like Agner Fog's [instruct
 
 Benefits of this approach:
  - **No more annoying benchmarks.** A faster algorithm can be provably faster for a given model. (Benchmarks still get used to compare different models of a hardware system, but those benchmarks can be much more sophisticated and account for more confounding factors.)
- - **Faster optimization adoption.** With models and equivalence proofs, optimizations can spread through a public database without a compiler release in between:
+ - **Faster optimization adoption.** With models and equivalence proofs, optimizations can spread through a public codebase and pushed to users without a compiler release in between:
    - Bob finds a new optimization for a certain pattern of expressions.
    - Bob proves it is faster for a well-trusted model of x86_64 CPUs.
    - Bob broadcasts the optimization to everyone.
