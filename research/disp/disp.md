@@ -2,14 +2,14 @@
 
 *The key to decentralization is effective coordination of collaborating computational components.*
 
-Disp is a programming language where programs, types, and the type checker itself are all represented as regular programs in a self-reflective combinator calculus called the [tree calculus](https://treecalcul.us/). It is being developed to solve some of the fundamental problems with Dither, and in doing so should be pretty much the end-game of programming language design.
+Disp is a programming language where programs, types, and the type checker itself are all represented as regular programs in a self-reflective combinator calculus called the [tree calculus](https://treecalcul.us/). It is being developed to solve some of the fundamental problems in [Dither](https://dither.link/docs/dither.html)'s development, and in doing so should solve programming language design, subsuming all other languages. (Yes I know, big claims, I promise this makes sense)
 
 The problems to solve are:
  - For a distributed system you need to be absolutely sure your code has no bugs and never will. To do so you need formal verification against the most rigorous set of bug-denying constraints you can come up with, ideally with a compiler that is itself verified in the same way.
  - We need a language that can allow users to prove arbitrary equivalences and for these equivalences to be actively applied as optimizations, ideally directly to assembly.
  - For a language to not ossify over time and new ideas/designs to be able to be invented *and be automatically safely adopted* new designs need to be able to be formally proven to apply and safely rewrite old code dynamically at each individual user's desire.
    - As a subpoint here, the surface level details of the language should be user-customizable and fit to their preferred language syntax styles, whether that be block coding, ML-syntax, C-style, pythonic or what have you.
- - In order to create things fast, it is generally infeasible to spend copious amounts of time worrying about specific algorithms and it would be ideal if programmers could simply write constraints and have an optimizer satisfy them. i.e. programming-language-native program synthesis.
+ - In order to create things fast, it is generally infeasible to spend copious amounts of time worrying about specific algorithms and it would be ideal if programmers could simply write constraints and have an optimizer satisfy them. i.e. programming-language-native program synthesis, a.k.a. specification-driven development.
 
 ## The Core Idea: Types as predicate functions
 
