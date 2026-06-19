@@ -224,6 +224,8 @@ w_i*  =  M/N  +  (e_i − s_i)/δ
 
 with relaxation time `1/δ`. Wealth converges to *equal* plus *net-contribution-flow scaled by `1/δ`*. Demurrage converts unbounded **stock** inequality into bounded **flow** inequality: you can only be richer than baseline by `(your sustained net flow)/δ`.
 
+> **Generalization (Part B).** [Value as Flow](value-as-flow.md) replaces the scalar wallet `w_i` with a *portfolio of shares in local pools*, `w_i = Σ_z θ_{i,z}·V_z`, and runs demurrage per-zone (`δ_z`). Summing the per-zone dynamics over a portfolio with uniform `δ` reproduces exactly the attractor above — local dispersion dials *agglomerate* into this global one. Heterogeneous `δ_z` makes the lowest-demurrage zone the binding constraint (a concentration "haven"), which is why the design needs a global floor `δ_min`.
+
 ### 4.2 The δ-dial: assumption A2 becomes a theorem
 
 The truth machine's aggregation quality requires dispersed resolver budgets (assumption A2). If budgets are proportional to wealth and net earning advantages are bounded by `ē`, then the largest steady-state budget share is

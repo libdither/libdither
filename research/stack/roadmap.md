@@ -10,7 +10,7 @@
 |---|-------|---------------|----------|
 | 1 | Language & verification | disp ([disp/disp.md](../disp/disp.md), `libdither/disp`) | **Working prototype.** Kernel + elaboration stages 0–3 self-hosted; effects, erasure, optimizer pending. |
 | 2 | Routing & data | Dither: DAR ([dither/02-routing.md](../dither/02-routing.md)), DTS, RHL, identity | **Detailed design (DAR) → sketches (DTS/RHL/identity).** No implementation; simulator work exists (`dither-sim`). |
-| 3 | Currency & incentives | [applications/dither-currency.md](../applications/dither-currency.md), routing incentives, [applications/fractional-funding.md](../applications/fractional-funding.md) | **Sketch.** Economics ideas, no consensus design, no threat model. |
+| 3 | Currency & incentives | [Non-Concentrating Money](core/money.md) + [Value as Flow](value-as-flow.md); [Math Core](mathematical-core.md) §4; routing incentives, [fractional funding](../applications/fractional-funding.md) | **Redesigned (draft).** Pool-equity shares + per-zone demurrage; egalitarian-attractor and δ-dial formalized; payments are consensus-number-1. Open: zone definition, the δ-floor / global baseline, the exchange-rate field, threat model. |
 | 4 | Data & compute trading | [dither/decentralized-data-ideas.md](../dither/decentralized-data-ideas.md) | **Research agenda only.** No protocol design. |
 | 5 | Governance / truth machine | Retroactive consensus markets + hierarchical liquid quadratic voting ([Retroactive Consensus Markets](mechanism.md)); [applications/protocol-of-truth](../applications/protocol-of-truth/protocol-of-truth.md) | **Rigorous mechanism synthesis now in repo**; central theory gap (reflexivity) reduced to a measurable threshold ([mathematical-core.md](mathematical-core.md) §2). |
 
@@ -20,7 +20,7 @@ The truth machine in one line: forecasters publish timestamped probability distr
 
 These interactions are the actual argument for building this as *one* stack rather than five projects:
 
-1. **The truth machine fills the currency's biggest hole.** dither-currency.md proposes a periodic redistribution from all wallets into a pot managed by an "intelligent democratic mechanism" — left undefined. Liquid QV + retroactive consensus markets *is* that mechanism. Conversely, the governance layer needs a native unit for resolver budgets `B_j`, QV credits, and forecaster payouts.
+1. **The truth machine fills the currency's biggest hole.** The currency's recycled flow (demurrage → UBI, plus any communal pot) needs an "intelligent democratic mechanism" to direct it — and to set the global demurrage floor `δ_min` that keeps capital dispersed. Liquid QV + retroactive consensus markets *is* that mechanism. Conversely, governance needs a native unit for resolver budgets `B_j`, QV credits, and forecaster payouts — the [pool-equity shares](core/money.md).
 
 2. **The currency's anti-hoarding mechanic supports the market's key assumption.** The mechanism's aggregation quality degrades as capital concentrates (assumption A2, dispersed capital). A demurrage/redistribution currency structurally pushes against concentration. These two designs reinforce each other and should be co-designed, not bolted together.
 

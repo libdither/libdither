@@ -21,3 +21,21 @@
 
 6. **A framework for coupling Markov blankets.** Is there a mathematical framework for the general nature of coupling between blankets — correspondences between the modeled ("demiurge") world and real life?
    → **Partially addressed.** Cooperation is formalized as a continuous coupling field over the latency-trust coordinate space ([living-system.md](living-system.md) §6, [mathematical-core.md](mathematical-core.md) §5): edge weight = degree of fate-sharing. A *general* theory of coupled blankets — and the model-vs-reality correspondence the "demiurge" phrasing was reaching for — is not yet developed; it overlaps with the still-open grand-conjecture stability proof ([mathematical-core.md](mathematical-core.md) §7).
+
+---
+
+## From the money-layer redesign (pool-equity currency)
+
+*Raised by the [Value as Flow](value-as-flow.md) rework and its [proposed crux resolution](value-as-flow.md#the-remaining-crux). These are the honest residue **after** that resolution — what it still owes.*
+
+7. **Measuring the cooperation field `κ`.** Zone boundaries and the `δ`-coupling are defined by fate-sharing `κ`, read off the residual-correlation matrix `Σ` — the *same* object the immune system reads as Sybil-correlation, but with opposite sign. Can honest dense cooperation (common-shock exposure, autonomous action) be separated from puppetry (shared private controller state, mimicked independence) at finite monitoring richness?
+   → **Open.** The same arms-race floor as the mimicry-cost bound ([mathematical-core.md](mathematical-core.md) §8, Open-1) — but now load-bearing for *where zones are drawn*, not only for voting weight.
+
+8. **Stability of the `δ_min` homeostatic loop.** The global baseline is set by a controller that senses concentration through the truth machine's (lagged) accuracy and adjusts demurrage. Plant lag `~1/δ` plus sensor delay `τ` make a naïve bang-bang / high-gain-integral controller oscillate — monetary boom-bust. A damped PI controller with slew-limited `δ` over a low-pass-filtered signal *should* be stable, but the stable-vs-limit-cycle boundary is unmapped.
+   → **Open — first thing to simulate.** Sweep `(k_p, k_i, τ, δ-slew)` in the coupled agent-based model; this is the money-layer slice of the grand-conjecture stability question ([mathematical-core.md](mathematical-core.md) §7). Controller sketch in [Value as Flow](value-as-flow.md#the-remaining-crux).
+
+9. **Bootstrapping the set-point.** Homeostasis (Q8) needs a working truth machine as its sensor — but the truth machine needs dispersed capital (A2), which needs `δ_min`. Chicken-and-egg. Likely answer: start `δ_min` as a conservative constant and hand control to the loop once the truth machine is live and calibrated — but the hand-over criterion is unspecified.
+   → **Open.**
+
+10. **Transparency vs. privacy of zone metabolism.** Boundary-reputation enforcement (illiquidity-punishing havens) requires neighbours to *observe* a zone's `δ_z` and concentration. That transparency fights the currency's transaction-privacy goal (the zk / secure-aggregation story). What is the minimal disclosure — perhaps a zero-knowledge proof of "`δ_z ≥ δ_min` **and** my Gini `≤ β`" — that enables enforcement without exposing the cap table?
+    → **Open.** Points toward a *proof-of-compliance* primitive rather than raw disclosure.

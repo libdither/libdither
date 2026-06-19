@@ -56,10 +56,15 @@ The chapters introduce symbols where they're first needed; this is the single pl
 
 | Symbol | Meaning | First used |
 |---|---|---|
-| `δ` | **demurrage rate** — decay-unless-circulated; the dispersion dial | [Value as Flow](value-as-flow.md) |
-| `M` | total money supply | [Math Core](mathematical-core.md) §4 |
+| `θ_{i,z}` | agent `i`'s **share** of pool `z` (a fragment of a whole; `Σ_i θ_{i,z}=1`) | [Value as Flow](value-as-flow.md) |
+| `V_z` | basket-value of zone `z`'s resource **pool** — *is* its money supply (not minted) | [Value as Flow](value-as-flow.md) |
+| `w_i` | wealth of `i` `= Σ_z θ_{i,z}·V_z` (a portfolio of pool shares) | [Value as Flow](value-as-flow.md) |
+| `χ(x→y)` | **exchange-rate field** over the coordinate space; anchored by basket arbitrage | [Value as Flow](value-as-flow.md) |
+| `δ_z` | zone-local **demurrage rate** — decay-unless-circulated; the dispersion dial | [Value as Flow](value-as-flow.md) |
+| `δ_min` | the global demurrage **floor** (anti-haven; the regulated baseline) | [Value as Flow](value-as-flow.md) |
+| `b_z` | zone `z` per-capita baseline `= V_z / n_eff(z)` (the local UBI level) | [Math Core](mathematical-core.md) §4 |
+| `M` | total money supply `= Σ_z V_z` | [Math Core](mathematical-core.md) §4 |
 | `N` | population, measured in `n_eff` units | [Math Core](mathematical-core.md) §4 |
-| `w_i` | wallet balance of agent `i` | [Math Core](mathematical-core.md) §4 |
 | `e_i`, `s_i` | agent `i`'s earn / spend rates | [Math Core](mathematical-core.md) §4 |
 | `ē` | bound on net earning advantage | [Math Core](mathematical-core.md) §4.2 |
 | `β` | target concentration bound on resolver budgets | [Math Core](mathematical-core.md) §4.2 |

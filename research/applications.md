@@ -9,7 +9,7 @@
  - [Dithix](applications/dithix.md) - Dither Resource Manager: Manage and cache any kind of resource, interface between the Merkle Tree and the Filesystem.
  - [Nomia on Dither](applications/nomia.md) - Nomia on Dither, 
  - [Tree of Math](tree-of-math-old.md) - Directed Acyclic Graph linking a standardized data structure for defintions and proofs together based on set theory creating a comprehensive tree of knowledge.
- - [Dither Coin](applications/dither-coin.md) - Cryptocurrency that solves all the current problems and creates a complete digital replication of cash (being decentralized, anonymous, non-volatile, and difficult to trace).
+ - **Dither Coin → [Non-Concentrating Money](stack/core/money.md)** - The currency is now a *core stack concern*, not a standalone application: a portfolio of demurrage-decaying shares in local resource pools, with exchange rates discovered at zone boundaries. (Supersedes the old fixed-supply "Dither Coin" sketch.)
  - [Dither DEX](applications/dither-dex.md) - A all-faceted decentralized exchange to facilitate trade any kind of real or virtual asset. Supports meeting up in real life or exchanging other virtual assets anonymously and securely. Also supports moderation, karmic filtering
  - [Protocol of Truth](applications/protocol-of-truth/protocol-of-truth.md)
 
