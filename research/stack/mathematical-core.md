@@ -1,8 +1,6 @@
 # The Mathematical Core
 
-> *Part III · The Synthesis — Chapter 11. The formal reference for the whole stack.*
-
-*This is the rigorous counterpart to the intuitive chapters of [Part II](substrate.md) and the synthesis of [The Living System](living-system.md). Goal: take every open question raised earlier in the book and either answer it, reduce it to a measurable quantity, or state precisely why it is open. The intuitive chapters forward-link here; each section below is the formal version of one of them. Notation follows the [mechanism](mechanism.md); every symbol is in the [glossary](glossary.md).*
+> *Reference. The formal companion to the chapters: every open question raised in the book is either answered, reduced to a measurable quantity, or stated precisely as open. Notation follows [chapter 7](07-truth.md); every symbol is in the [glossary](glossary.md).*
 
 ---
 
@@ -26,7 +24,7 @@ Agents are coupled by exactly **three operators**, and the entire stack is these
 
 plus one **vertical flow**: weight issuance downward (credits, UBI, witness power, all gated by `n_eff`) and aggregation upward (world-models, preference tallies, all weighted by `n_eff`).
 
-The claim made precise in this document: **the organism is viable iff four inequalities hold** (§7), and each of the four corresponds to one of the load-bearing open problems from [The Living System](living-system.md) §8.
+The claim made precise in this document: **the organism is viable iff five inequalities hold** (§7), each corresponding to a load-bearing open problem from [The Organism](10-organism.md).
 
 ---
 
@@ -68,7 +66,7 @@ F  =  Σ_{v,x}  D(v,x) · shortfall_cost(v,x)  +  Σ_nodes maintenance
 
 *Sketch.* Marginal-cost pricing makes each served request transfer exactly its social shortfall-saving to the server; maintenance is borne locally; sum over actions. This is the first welfare theorem specialized to a convex flow problem. ∎
 
-This answers the "FEP is slippery" objection from [The Living System](living-system.md) §8 by *choosing* the free-energy functional and *deriving* the alignment, rather than asserting it: the price field **is** the prediction-error field. (Honest scope: Proposition 1 needs convex costs and no market power; lumpy storage and monopoly relays break it — see §8, Open-5.)
+This answers the "FEP is slippery" objection from [The Organism](10-organism.md) by *choosing* the free-energy functional and *deriving* the alignment, rather than asserting it: the price field **is** the prediction-error field. (Honest scope: Proposition 1 needs convex costs and no market power; lumpy storage and monopoly relays break it — see §8, Open-5.)
 
 ### 1.4 Verification (the layer-1 ↔ layer-4 bridge, made exact)
 
@@ -117,7 +115,7 @@ p*  =  λ·g(p*) + (1−λ)·π
 
 *Proof.* `p* = λp* + (1−λ)π ⟹ (1−λ)p* = (1−λ)π ⟹ p* = π`. ∎
 
-This is genuinely surprising and important: **reflexivity does not bias the forecast at all in the linear regime** — the influence passes through and cancels. The beauty-contest pathology requires nonlinearity, not mere influence.
+**Reflexivity does not bias the forecast at all in the linear regime**: the influence passes through and cancels. The beauty-contest pathology requires nonlinearity, not mere influence.
 
 **Proposition 3 (bifurcation threshold).** The fixed point is unique for any `g` with `λ · sup|g′| < 1`. If `λ · sup|g′| > 1` (e.g. conformity response `g(p) = sigmoid(κ(p−½))` with `λκ/4 > 1`), multiple stable fixed points exist — including **fiction equilibria** where `p*` is near certainty while `π` is not. This is the dark room, as a bifurcation.
 
@@ -186,7 +184,7 @@ n_eff  =  1ᵀ Σ⁻¹ 1
 - **UBI / perfusion:** newcomer drip ramps with established marginal `n_eff` (a farm of fresh accounts shares ≈ one UBI until the accounts behaviorally diverge — §4.3).
 - **Witness power** (timestamping, §5): attestations weighted by `n_eff`, so "many witnesses" means many *independent* witnesses.
 
-> **`n_eff` is the single security parameter of the entire stack.** Votes, aggregation quality, UBI farming, witness security, and resolver-bloc resistance are all the same number. "Boundary integrity," quantified.
+> **`n_eff` is the single security parameter of the entire stack.** Votes, aggregation quality, UBI farming, witness security, and resolver-bloc resistance are all the same number.
 
 ### 3.2 The autoimmune dilemma — dissolved, not solved
 
@@ -224,7 +222,7 @@ w_i*  =  M/N  +  (e_i − s_i)/δ
 
 with relaxation time `1/δ`. Wealth converges to *equal* plus *net-contribution-flow scaled by `1/δ`*. Demurrage converts unbounded **stock** inequality into bounded **flow** inequality: you can only be richer than baseline by `(your sustained net flow)/δ`.
 
-> **Generalization (Part B).** [Value as Flow](value-as-flow.md) replaces the scalar wallet `w_i` with a *portfolio of shares in local pools*, `w_i = Σ_z θ_{i,z}·V_z`, and runs demurrage per-zone (`δ_z`). Summing the per-zone dynamics over a portfolio with uniform `δ` reproduces exactly the attractor above — local dispersion dials *agglomerate* into this global one. Heterogeneous `δ_z` makes the lowest-demurrage zone the binding constraint (a concentration "haven"), which is why the design needs a global floor `δ_min`.
+> **Generalization (Part B).** [Money](06-money.md) replaces the scalar wallet `w_i` with a *portfolio of shares in local pools*, `w_i = Σ_z θ_{i,z}·V_z`, and runs demurrage per-zone (`δ_z`). Summing the per-zone dynamics over a portfolio with uniform `δ` reproduces exactly the attractor above — local dispersion dials *agglomerate* into this global one. Heterogeneous `δ_z` makes the lowest-demurrage zone the binding constraint (a concentration "haven"), which is why the design needs a global floor `δ_min`.
 
 ### 4.2 The δ-dial: assumption A2 becomes a theorem
 
@@ -234,7 +232,7 @@ The truth machine's aggregation quality requires dispersed resolver budgets (ass
 max_j B_j/ΣB  ≤  1/N + ē/(δM)
 ```
 
-**To enforce a target concentration bound `β`, set `δ ≥ ē / (M·(β − 1/N))`.** The demurrage rate is the knob that *enforces the epistemic layer's soundness condition*. This is the deepest cross-layer coupling in the stack, now an equation: monetary policy ⇄ truth-machine validity. (Caveat: this bounds steady-state stock, not instantaneous flow-through; a high-flow actor can still spend heavily in bursts — burst-spend caps on resolver budgets close that gap.)
+**To enforce a target concentration bound `β`, set `δ ≥ ē / (M·(β − 1/N))`.** The demurrage rate is the knob that *enforces the epistemic layer's soundness condition*: monetary policy and truth-machine validity are one equation. (Caveat: this bounds steady-state stock, not instantaneous flow-through; a high-flow actor can still spend heavily in bursts — burst-spend caps on resolver budgets close that gap.)
 
 ### 4.3 Perfusion (new-user bootstrapping, quantified)
 
@@ -257,7 +255,7 @@ UBI to account `i` is `δM/N · ν_i` where `ν_i` is `i`'s marginal `n_eff` (§
 
 **Proposition 8 (reputation is intrinsically portable).** `R_{i,j}` is a pure deterministic function of two public, self-certifying logs: `i`'s signed timestamped forecast stream and `j`'s signed verdict stream. Therefore *any* network, zone, or fork can recompute any reputation from portable data. No platform can custody reputation; epistemic switching cost ≈ 0 by construction.
 
-This resolves the shared-reality vs. exit-discipline tension of [The Living System](living-system.md) §6 with an architectural rule:
+This resolves the shared-reality vs. exit-discipline tension of [The Organism](10-organism.md) with an architectural rule:
 
 > **The perception layer (signed forecast/verdict logs, the world-model) is global, content-addressed, and portable. The action layers (currency, governance, resource allocation) are zonal and exitable.** Reality stays shared at the top (assumption A1 gets its large population); discipline and exit operate at the bottom (between-zone and between-network selection stays live); demurrage already makes currency stock a weak lock-in (wealth melts; what persists is flow and portable reputation).
 
@@ -280,7 +278,7 @@ Scale for signal: on the order of 30–100 resolvers, 100–300 questions with s
 
 ## 7. The viability envelope
 
-The four load-bearing problems from [The Living System](living-system.md) §8 are now four inequalities. **The organism is viable iff:**
+The load-bearing problems from [The Organism](10-organism.md) are now five inequalities. **The organism is viable iff:**
 
 ```
 (V1) Contraction:    L = λ·sup|g′| < 1            — perception dominates action
@@ -319,7 +317,7 @@ From **roadmap.md** "Open questions before Phase 2":
 | Q4 | disp ↔ network boundary? | **Answered** (§1.5): the network service API *is* disp's effect algebra — `store/send/eval/price` = the three MATERIALIZE edges + the price field; canonical hash-consed serialization. |
 | Q5 | Smallest meaningful pilot? | **Specified** (§6): estimands `L̂`, `Σ̂`, calibration, VOI-routing; blind/shown randomization; planted sock-puppets; ~30–100 resolvers, ~100–300 questions. |
 
-From the **[truth-markets synthesis](mechanism.md#open-problems) §8**:
+From the **[truth-markets synthesis](07-truth.md#open-problems) §8**:
 
 | # | Problem | Status |
 |---|---|---|
@@ -358,4 +356,4 @@ From the **[truth-markets synthesis](mechanism.md#open-problems) §8**:
                   action zonal & exitable.                            (§5)
 ```
 
-Five equations, four viability inequalities (V1–V4), one conjecture (§7). That is the mathematical core.
+Five equations, five viability inequalities (V1–V5), one conjecture (§7).

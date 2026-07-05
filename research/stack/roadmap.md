@@ -10,9 +10,9 @@
 |---|-------|---------------|----------|
 | 1 | Language & verification | disp ([disp/disp.md](../disp/disp.md), `libdither/disp`) | **Working prototype.** Kernel + elaboration stages 0–3 self-hosted; effects, erasure, optimizer pending. |
 | 2 | Routing & data | Dither: DAR ([dither/02-routing.md](../dither/02-routing.md)), DTS, RHL, identity | **Detailed design (DAR) → sketches (DTS/RHL/identity).** No implementation; simulator work exists (`dither-sim`). |
-| 3 | Currency & incentives | [Non-Concentrating Money](core/money.md) + [Value as Flow](value-as-flow.md); [Math Core](mathematical-core.md) §4; routing incentives, [fractional funding](../applications/fractional-funding.md) | **Redesigned (draft).** Pool-equity shares + per-zone demurrage; egalitarian-attractor and δ-dial formalized; payments are consensus-number-1. Open: zone definition, the δ-floor / global baseline, the exchange-rate field, threat model. |
+| 3 | Currency & incentives | [Money](06-money.md); [Math Core](mathematical-core.md) §4; routing incentives, [fractional funding](../applications/fractional-funding.md) | **Redesigned (draft).** Pool-equity shares + per-zone demurrage; egalitarian-attractor and δ-dial formalized; payments are consensus-number-1. Open: zone definition, the δ-floor / global baseline, the exchange-rate field, threat model. |
 | 4 | Data & compute trading | [dither/decentralized-data-ideas.md](../dither/decentralized-data-ideas.md) | **Research agenda only.** No protocol design. |
-| 5 | Governance / truth machine | Retroactive consensus markets + hierarchical liquid quadratic voting ([Retroactive Consensus Markets](mechanism.md)); [applications/protocol-of-truth](../applications/protocol-of-truth/protocol-of-truth.md) | **Rigorous mechanism synthesis now in repo**; central theory gap (reflexivity) reduced to a measurable threshold ([mathematical-core.md](mathematical-core.md) §2). |
+| 5 | Governance / truth machine | Retroactive consensus markets + hierarchical liquid quadratic voting ([Retroactive Consensus Markets](07-truth.md)); [applications/protocol-of-truth](../applications/protocol-of-truth/protocol-of-truth.md) | **Rigorous mechanism synthesis now in repo**; central theory gap (reflexivity) reduced to a measurable threshold ([mathematical-core.md](mathematical-core.md) §2). |
 
 The truth machine in one line: forecasters publish timestamped probability distributions; capital-holding *resolvers* privately and retroactively declare what they believe happened; a reference-relative proper scoring rule pays forecasters for moving belief toward eventual resolver consensus. Output: a live world-model *and* a skill ranking, with no exploitable point-in-time oracle. Governance bolts this onto liquid quadratic voting: voters set goals, the market estimates which policies advance them, skill rankings can weight estimates.
 
@@ -20,7 +20,7 @@ The truth machine in one line: forecasters publish timestamped probability distr
 
 These interactions are the actual argument for building this as *one* stack rather than five projects:
 
-1. **The truth machine fills the currency's biggest hole.** The currency's recycled flow (demurrage → UBI, plus any communal pot) needs an "intelligent democratic mechanism" to direct it — and to set the global demurrage floor `δ_min` that keeps capital dispersed. Liquid QV + retroactive consensus markets *is* that mechanism. Conversely, governance needs a native unit for resolver budgets `B_j`, QV credits, and forecaster payouts — the [pool-equity shares](core/money.md).
+1. **The truth machine fills the currency's biggest hole.** The currency's recycled flow (demurrage → UBI, plus any communal pot) needs an "intelligent democratic mechanism" to direct it — and to set the global demurrage floor `δ_min` that keeps capital dispersed. Liquid QV + retroactive consensus markets *is* that mechanism. Conversely, governance needs a native unit for resolver budgets `B_j`, QV credits, and forecaster payouts — the [pool-equity shares](06-money.md).
 
 2. **The currency's anti-hoarding mechanic supports the market's key assumption.** The mechanism's aggregation quality degrades as capital concentrates (assumption A2, dispersed capital). A demurrage/redistribution currency structurally pushes against concentration. These two designs reinforce each other and should be co-designed, not bolted together.
 
@@ -62,7 +62,7 @@ These interactions are the actual argument for building this as *one* stack rath
 - Resolver honesty is unmodeled once verdicts gate public money.
 - "Retroactive reward by extrapolated intention/utility" is a desideratum, not a defined operator.
 - Hierarchical/liquid structure of the QV layer is a TLDR, not a design (delegation mechanics, credit issuance, collusion resistance).
-- ~~The truth-markets notes live outside this repo and should be merged as a spec chapter.~~ **Done** — merged as [Retroactive Consensus Markets](mechanism.md) (mechanism, assumptions A1–A5, open problems §8).
+- ~~The truth-markets notes live outside this repo and should be merged as a spec chapter.~~ **Done** — merged as [Retroactive Consensus Markets](07-truth.md) (mechanism, assumptions A1–A5, open problems §8).
 
 ### Cross-cutting
 - **Identity/Sybil-resistance primitive** (blocks 3, 4, 5).
@@ -80,7 +80,7 @@ Two observations drive the ordering:
 ## Phased roadmap (draft)
 
 ### Phase 0 — Consolidation (weeks)
-- ✅ Merge truth-markets notes into this spec (`governance/` chapter): mechanism, assumptions A1–A5, open problems — see [Retroactive Consensus Markets](mechanism.md).
+- ✅ Merge truth-markets notes into this spec (`governance/` chapter): mechanism, assumptions A1–A5, open problems — see [Retroactive Consensus Markets](07-truth.md).
 - Write the cross-layer dependency map (this doc) and a first threat-model outline.
 - Decide the identity and timestamping primitives' requirements (consumers: currency, markets, governance).
 
