@@ -1,6 +1,6 @@
 # The Mathematical Core
 
-> *Reference. The formal companion to the chapters: every open question raised in the book is either answered, reduced to a measurable quantity, or stated precisely as open. Notation follows [chapter 7](07-truth.md); every symbol is in the [glossary](glossary.md).*
+> *Reference. The formal companion to the chapters: every open question raised in the book is either answered, reduced to a measurable quantity, or stated precisely as open. Notation follows [chapter 3](03-market.md); every symbol is in the [glossary](glossary.md).*
 
 ---
 
@@ -24,7 +24,7 @@ Agents are coupled by exactly **three operators**, and the entire stack is these
 
 plus one **vertical flow**: weight issuance downward (credits, UBI, witness power, all gated by `n_eff`) and aggregation upward (world-models, preference tallies, all weighted by `n_eff`).
 
-The claim made precise in this document: **the organism is viable iff five inequalities hold** (§7), each corresponding to a load-bearing open problem from [The Organism](10-organism.md).
+The claim made precise in this document: **the organism is viable iff five inequalities hold** (§7), each corresponding to a load-bearing open problem from [Evolution](07-evolution.md).
 
 ---
 
@@ -66,7 +66,7 @@ F  =  Σ_{v,x}  D(v,x) · shortfall_cost(v,x)  +  Σ_nodes maintenance
 
 *Sketch.* Marginal-cost pricing makes each served request transfer exactly its social shortfall-saving to the server; maintenance is borne locally; sum over actions. This is the first welfare theorem specialized to a convex flow problem. ∎
 
-This answers the "FEP is slippery" objection from [The Organism](10-organism.md) by *choosing* the free-energy functional and *deriving* the alignment, rather than asserting it: the price field **is** the prediction-error field. (Honest scope: Proposition 1 needs convex costs and no market power; lumpy storage and monopoly relays break it — see §8, Open-5.)
+This answers the "FEP is slippery" objection from [Evolution](07-evolution.md) by *choosing* the free-energy functional and *deriving* the alignment, rather than asserting it: the price field **is** the prediction-error field. (Honest scope: Proposition 1 needs convex costs and no market power; lumpy storage and monopoly relays break it — see §8, Open-5.)
 
 ### 1.4 Verification (the layer-1 ↔ layer-4 bridge, made exact)
 
@@ -222,7 +222,7 @@ w_i*  =  M/N  +  (e_i − s_i)/δ
 
 with relaxation time `1/δ`. Wealth converges to *equal* plus *net-contribution-flow scaled by `1/δ`*. Demurrage converts unbounded **stock** inequality into bounded **flow** inequality: you can only be richer than baseline by `(your sustained net flow)/δ`.
 
-> **Generalization (Part B).** [Money](06-money.md) replaces the scalar wallet `w_i` with a *portfolio of shares in local pools*, `w_i = Σ_z θ_{i,z}·V_z`, and runs demurrage per-zone (`δ_z`). Summing the per-zone dynamics over a portfolio with uniform `δ` reproduces exactly the attractor above — local dispersion dials *agglomerate* into this global one. Heterogeneous `δ_z` makes the lowest-demurrage zone the binding constraint (a concentration "haven"), which is why the design needs a global floor `δ_min`.
+> **Generalization (Part B).** [Money](04-money.md) replaces the scalar wallet `w_i` with a *portfolio of shares in local pools*, `w_i = Σ_z θ_{i,z}·V_z`, and runs demurrage per-zone (`δ_z`). Summing the per-zone dynamics over a portfolio with uniform `δ` reproduces exactly the attractor above — local dispersion dials *agglomerate* into this global one. Heterogeneous `δ_z` makes the lowest-demurrage zone the binding constraint (a concentration "haven"), which is why the design needs a global floor `δ_min`.
 
 ### 4.2 The δ-dial: assumption A2 becomes a theorem
 
@@ -255,7 +255,7 @@ UBI to account `i` is `δM/N · ν_i` where `ν_i` is `i`'s marginal `n_eff` (§
 
 **Proposition 8 (reputation is intrinsically portable).** `R_{i,j}` is a pure deterministic function of two public, self-certifying logs: `i`'s signed timestamped forecast stream and `j`'s signed verdict stream. Therefore *any* network, zone, or fork can recompute any reputation from portable data. No platform can custody reputation; epistemic switching cost ≈ 0 by construction.
 
-This resolves the shared-reality vs. exit-discipline tension of [The Organism](10-organism.md) with an architectural rule:
+This resolves the shared-reality vs. exit-discipline tension of [Evolution](07-evolution.md) with an architectural rule:
 
 > **The perception layer (signed forecast/verdict logs, the world-model) is global, content-addressed, and portable. The action layers (currency, governance, resource allocation) are zonal and exitable.** Reality stays shared at the top (assumption A1 gets its large population); discipline and exit operate at the bottom (between-zone and between-network selection stays live); demurrage already makes currency stock a weak lock-in (wealth melts; what persists is flow and portable reputation).
 
@@ -278,7 +278,7 @@ Scale for signal: on the order of 30–100 resolvers, 100–300 questions with s
 
 ## 7. The viability envelope
 
-The load-bearing problems from [The Organism](10-organism.md) are now five inequalities. **The organism is viable iff:**
+The load-bearing problems from [Evolution](07-evolution.md) are now five inequalities. **The organism is viable iff:**
 
 ```
 (V1) Contraction:    L = λ·sup|g′| < 1            — perception dominates action
@@ -317,7 +317,7 @@ From **roadmap.md** "Open questions before Phase 2":
 | Q4 | disp ↔ network boundary? | **Answered** (§1.5): the network service API *is* disp's effect algebra — `store/send/eval/price` = the three MATERIALIZE edges + the price field; canonical hash-consed serialization. |
 | Q5 | Smallest meaningful pilot? | **Specified** (§6): estimands `L̂`, `Σ̂`, calibration, VOI-routing; blind/shown randomization; planted sock-puppets; ~30–100 resolvers, ~100–300 questions. |
 
-From the **[truth-markets synthesis](07-truth.md#open-problems) §8**:
+From the **[truth-markets synthesis](03-market.md#open-problems) §8**:
 
 | # | Problem | Status |
 |---|---|---|
@@ -357,3 +357,33 @@ From the **[truth-markets synthesis](07-truth.md#open-problems) §8**:
 ```
 
 Five equations, five viability inequalities (V1–V5), one conjecture (§7).
+
+---
+
+## 10. Working extensions (drafts)
+
+*Formal seeds from the [working notes](notes/protocols-as-priors.md); each is a candidate section, stated compactly, not yet integrated with §§1–7.*
+
+### 10.1 The Alignment Invariant
+
+Both payment rules already in this document are one rule. The market scoring rule's expected payment is a Bregman improvement toward the verdict: for the log score, `E[ρ] = KL(θ‖p_ref) − KL(θ‖p_new)`. The substrate's Proposition 1 pays `profit = −ΔF` for a convex expected-shortfall functional. Aggregation weight (§3) is marginal precision — the same quantity inside the estimator. Unifying spec rule:
+
+> **Every payment is a verified marginal reduction in an identified stakeholder's convex expected loss, relative to the shared reference.** A mechanism whose payment cannot be written in this form is out of spec. (The reference `p_ref` is the shared *prior*; the whole economy pays for prior improvement.)
+
+### 10.2 Delegation under independence accounting
+
+Under QV, `k` independent aligned voters with budget `c` each cast `k√c` votes; a fully pooled bloc casts `√(kc)`. One formula interpolates and is `n_eff`-consistent by construction:
+
+```
+votes(bloc) = √( n_eff(bloc) · pooled credits )
+```
+
+Endpoints: `ρ=1 → √(kc)`, `ρ=0 → k√c`. Delegation is voluntary correlation, priced identically to involuntary correlation; the bloc's position on the spectrum is estimated from preference residuals (overrides, split delegations). Open: estimator design that does not reward performative disagreement.
+
+### 10.3 Coupling surplus and merging
+
+Coalitions A, B couple/merge iff `G(A,B) − C(A,B) > 0`, where `G` is exploitable shared structure (`F_{A⊕B} = F_A + F_B − G`: shared caching, gains from trade, risk pooling, netting) and `C` is coordination cost (joint-boundary consensus latency, policy compromise, capture exposure). `κ` = accumulated observed `G − C`. Diminishing `G` with distance plus growing `C` with size ⇒ optimal coalition size (Coase, Mundell as instances). Cross-holdings from pool-equity trade implement fitness alignment (`∂U_A/∂ survival(B) > 0`), so merging is the `χ → 1` limit of trade rather than a mechanism.
+
+### 10.4 Verification as optimal stopping
+
+A claim with prior `b₀`; checks are purchasable evidence with cost and expected likelihood-ratio contribution; the optimal policy is Wald's SPRT — buy evidence while marginal value of certainty (stake-dependent) exceeds marginal cost, stop at threshold `τ(stake)`. §1.4's menu is one curve: model-agreement checks at the cheap end, predicate checks, `k`-replication (`P[fraud] ≤ (1−h)^k`: multiplicative confidence at linear cost), bisection, re-execution at the exact limit. Claims that never cross `τ` are served *as* uncertain, with the confidence label load-bearing.
