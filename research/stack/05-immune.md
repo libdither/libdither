@@ -1,4 +1,5 @@
 # 5 · The Immune System
+> 🤖 *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
 
 Three things go wrong with the circle, in its third year, in the same month.
 

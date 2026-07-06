@@ -1,6 +1,6 @@
 # Working Note · Predictive Materialization
 
-> 🧪 **Working note.** Source material for the rewritten [Agent](../01-agent.md) and [Market](../03-market.md) chapters. Denser than book prose; claims here are design candidates, not settled spec.
+> 🧪🤖 **Working note** (AI-drafted — [provenance](../ai-disclosure.md)). Source material for the rewritten [Agent](../01-agent.md) and [Market](../03-market.md) chapters. Denser than book prose; claims here are design candidates, not settled spec.
 
 ## The idea in one paragraph
 

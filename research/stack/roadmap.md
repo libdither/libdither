@@ -1,4 +1,5 @@
 # Roadmap: The Decentralization Stack (DRAFT)
+> 🤖 *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
 
 > *Appendix B. The engineering / build-plan view. For the conceptual development, read the chapters in order starting from [the overview](overview.md).*
 

@@ -1,4 +1,5 @@
 # The Mathematical Core
+> 🤖 *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
 
 > *Reference. The formal companion to the chapters: every open question raised in the book is either answered, reduced to a measurable quantity, or stated precisely as open. Notation follows [chapter 3](03-market.md); every symbol is in the [glossary](glossary.md).*
 

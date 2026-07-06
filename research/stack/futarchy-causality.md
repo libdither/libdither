@@ -1,6 +1,7 @@
 # Futarchy and Causality
+> 🤖 *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
 
-> *Part III · The Synthesis — Chapter 12. A deep dive on the deepest objection.*
+> *Reference. A deep dive on the strongest objection.*
 
 *Evaluates the [retroactive consensus market](03-market.md) (and its formal core, [The Mathematical Core](mathematical-core.md)) against Dynomight's "Futarchy's fundamental flaw" (dynomight.net/futarchy). Question: does the conditional-vs-causal critique of futarchy sink our design, and if not, exactly which parts survive? This is the causal twin of the [reflexivity](05-immune.md) problem.*
 

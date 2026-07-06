@@ -1,6 +1,6 @@
 # Working Note · Coupling and Merging
 
-> 🧪 **Working note.** Source material for the rewritten [Coupling](../02-coupling.md), [Money](../04-money.md), and [Governance](../06-governance.md) chapters.
+> 🧪🤖 **Working note** (AI-drafted — [provenance](../ai-disclosure.md)). Source material for the rewritten [Coupling](../02-coupling.md), [Money](../04-money.md), and [Governance](../06-governance.md) chapters.
 
 ## The move
 

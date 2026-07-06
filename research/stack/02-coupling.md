@@ -1,4 +1,5 @@
 # 2 · Coupling
+> 🤖 *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
 
 Enter the friend with the NAS in her closet. Every peer-to-peer project has one — the person whose spare machine and misplaced faith carry the whole early network — and ours arrives now, because your node has hit the wall that ended chapter 1: laptops sleep, and an archive with one copy is a countdown.
 

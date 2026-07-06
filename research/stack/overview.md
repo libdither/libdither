@@ -1,6 +1,6 @@
 # The Decentralization Stack
 
-> 🚧 **Draft**, and openly a rabbit hole. The math lives in the [Reference](mathematical-core.md); open problems are marked ⚠️ next to the claims they qualify; the rawest new material is in the [working notes](notes/protocols-as-priors.md).
+> 🚧 **Draft**, and openly a rabbit hole. One more thing, up front: 🤖 **nearly every document in this section was drafted by an AI collaborator**, working from the author's designs and direction — [read what that means](ai-disclosure.md) before trusting a fluent sentence. The math lives in the [Reference](mathematical-core.md); open problems are marked ⚠️ next to the claims they qualify; the rawest new material is in the [working notes](notes/protocols-as-priors.md).
 
 > *"If you wish to make an apple pie from scratch, you must first invent the universe."*
 > — Carl Sagan
