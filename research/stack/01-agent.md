@@ -1,50 +1,52 @@
 # 1 · The Agent
 
-Start with one node: your laptop, running the software alone. No network yet, nobody to pay or be paid by. What is this thing?
+Strip the problem down to one machine: yours. Before the knitting circle can have a shared archive, your node has to be able to do two things entirely alone — remember, and check. That sounds too small to be a chapter. It's the chapter everything else stands on, and the place where we can introduce, in miniature, the single habit the whole book keeps returning to.
 
-It is a predictor with a boundary. Inside: a model of the world it cares about, some exact data, some keys. At the boundary: whatever it senses and emits. And it runs one loop, which this whole book is built from:
+Here it is. An agent is a predictor with a boundary, and it survives by running one loop:
 
-> **Spend resources to reduce uncertainty about something, until you are confident enough to act — where "confident enough" scales with what is at stake.**
+> **Spend resources to reduce uncertainty about something, until you are confident enough to act — where "confident enough" scales with what's at stake.**
 
-Everything the node does is this loop pointed at a different question. Remembering points it at "what were those bits." Verifying points it at "is this result real." Later chapters point it at "who am I talking to," "what will this cost," and "what will careful judges conclude." One loop, many targets.
+Remembering is this loop pointed at "what were those bits." Verifying is the loop pointed at "is this result real." Later chapters will point it at stranger targets — *who am I talking to*, *what will storage cost here next month*, *what will careful people eventually conclude about this claim* — and each time it will be the same loop wearing different clothes. If the book has a thesis, it's that this observation can be taken embarrassingly far.
 
-## Certainty is purchased, not assumed
+## Certainty has a price list
 
-Suppose the node is handed a computation result — by a process it doesn't fully trust, or later, by a stranger. Today the reason you believe such a result is a logo: you trust the company that ran it. Alone, the node needs something better, and it has a *budget question*, not a trust question: how much is it worth spending to be how sure?
+Say a peer hands your node a computed result — a search index over the archive, a rendered preview, the resolution of some heavy query you didn't want to run yourself. On today's internet you'd believe it because of who sent it; the logo does the verifying. Alone, with no logos available, your node has to ask a different question, and it's a budget question rather than a trust question: *how much is it worth spending to be how sure?*
 
-Checks are purchases of evidence, and they form one curve of certainty per unit cost:
+Because checks come at every price point, and they form a single curve of certainty-per-cost:
 
-- **A model check** — does this result look like what a cheap predictor expects? Nearly free, weak evidence.
-- **A predicate check** — [disp](../disp/disp.md) types are predicates on results; when checking is cheaper than computing (the usual case), verify the answer directly. Cheap, strong.
-- **Sampled re-execution** — ask `k` independent executors; undetected fraud needs all `k` to collude on the same wrong answer, so confidence compounds as `(1−h)^k`: exponential certainty at linear cost.
-- **Bisection** — reduction traces are Merklizable, so a referee finds the first wrong step of a disputed run in `O(log T)` checks. Walked only on disagreement.
-- **Full re-execution** — the top of the curve, always available.
+- **A sniff test.** Does the result look like what a cheap local model expects? Nearly free, and worth nearly what you paid.
+- **A predicate check.** [disp](../disp/disp.md) types are predicates on results, and checking is usually far cheaper than computing (the whole of NP is built on this asymmetry). Cheap, strong, the workhorse.
+- **Sampled re-execution.** Ask `k` independent executors. Undetected fraud now requires every one of them to collude on the same wrong answer, so confidence compounds like `(1−h)^k` — exponential certainty at linear cost, which is the kind of deal you should distrust and this time is real.
+- **Bisection.** Two executors disagree; reduction traces are Merklizable; a referee finds the first wrong step in `O(log T)` checks. The expensive path, walked only on disagreement.
+- **Full re-execution.** The top of the curve. Always available, rarely worth it.
 
-The classical form of this loop is sequential hypothesis testing (Wald): keep buying evidence while the marginal value of certainty exceeds its marginal cost, stop at a threshold set by the stakes. Some claims never cross the threshold; they get served *as* uncertain, or not at all. A signature on a meme deserves a glance; a signature on a deed deserves the top of the curve.
+The classical name for shopping along this curve is sequential hypothesis testing (Wald, 1945): keep buying evidence while the marginal value of certainty beats its marginal cost, then stop at a threshold set by the stakes. A signature on a meme gets the sniff test. A signature on the deed to the group's treasury gets the top of the curve. And some claims never reach threshold at any price you're willing to pay — those get served *as* uncertain, or not at all, which will matter more than it seems when we reach moderation.
 
-What makes the curve's upper end reachable at all is disp: programs are content-addressed trees (the hash says *what it is*, not where it lives), computation is deterministic and confluent reduction, so two honest executors agree **bit for bit**, and "number of reduction steps" is a machine-independent unit of work — the metering a compute market will need later, free at the substrate. Exactness exists; the loop decides when it's worth paying for.
+What makes the curve's exact end reachable at all is disp. Programs there are content-addressed trees — the hash names *what a program is*, not where it lives — and computation is deterministic, confluent reduction, so two honest executors agree bit for bit, with "number of reduction steps" falling out as a machine-independent unit of work. (File that last fact away; it becomes the gas meter of chapter 3.) Exactness exists. The loop's job is deciding when it's worth paying for.
 
-## Memory is a materialization policy
+## Memory is a policy, not a warehouse
 
-The node's second job is remembering, and the naive picture — a file system holding bits — is one point in a larger space. What the node actually commits to, when it "stores" something, is a **policy for materializing that value later**, and policies trade off four things:
+Now the other solo job. The naive picture of storing the archive — bits in a file system — turns out to be one point in a space of options, and not always the best one. When your node "stores" something, what it actually commits to is a **policy for materializing that value later**, and policies trade off four things at once: the bits you hold (rent, paid over time), the compute you'll spend reconstructing (paid at request time), the latency you can tolerate (paid in impatience), and the fidelity you actually need — which depends on the *use*, not the data.
 
-| Axis | The cost |
-|---|---|
-| bits held | storage, over time |
-| compute to materialize | decoding or inference, at request time |
-| latency | how fast the value appears when demanded |
-| fidelity | how wrong the served value may be, weighted by the *stake* of the use |
+That last axis is the interesting one. Consider the options for a chunk of the archive:
 
-Raw bits maximize storage and minimize everything else. Compressed bits trade decode compute for space. A **model plus a residual** stores only what the model can't predict — still lossless, since the residual corrects it. A **model alone** is the cheapest of all and *knowingly lossy*: it serves a completion with a confidence label instead of a guarantee.
+| Policy | Bits | Decode | Fidelity |
+|---|---|---|---|
+| raw bits | all of them | none | exact |
+| compressed | fewer | some | exact |
+| model + residual | few | more | exact — the residual corrects the model |
+| model alone | fewest | inference | *approximately right, and labeled as such* |
 
-These are points on one Pareto frontier, and none is "the" representation: the hot value near constant demand stays raw; the archival tail lives as model-plus-residual; ambient knowledge lives in the model alone. Retrieval, in this picture, is the certainty loop again: a request is a *partial context*, and the node either completes it above the caller's confidence threshold or escalates toward exact bits. Hash-anchored data is not a different system from generative memory — it is its infinite-certainty limit, kept for the cases that justify the cost.
+The last row is new, and it's where this design parts company with ordinary storage systems. A model of the knitting circle's five years of chat can regenerate most of any given month — the running jokes have structure, Sarah's scarf saga follows an arc — and the parts it can't predict are precisely the residual worth paying raw-bit prices for. Which policy wins is not a global choice; it's decided pointwise by demand. The pinned messages stay raw. The archive's middle years live as model-plus-residual. The ambient texture of the place can live in the model alone, served with a confidence label, and for "what was the vibe of March 2022" a labeled approximation is the *right* product.
 
-One rule in this design is load-bearing enough to state as law: **a generated completion never silently substitutes for canonical bits.** The confidence label is what separates memory from hallucination; dropping it is not lossy compression, it is corruption.
+Retrieval, under this picture, is the certainty loop again: a request is a partial context, and the node either completes it above the caller's confidence threshold or escalates toward exact bits. Hash-addressed data isn't a different system from generative memory — it's the same system at the infinite-certainty end, kept for what justifies the cost.
 
-⚠️ Open, and stated plainly: disp is a working prototype — effects, erasure, and the optimizer are pending, and its networking story is the next chapter's typed-sessions program, not yet built. The generative-memory economics (who trains the models, how staleness is priced) waits on the market chapter, and the query-privacy regression it causes (a partial context reveals far more than a hash) waits on the coupling chapter's transport layer. Details and risks: [the predictive-materialization note](notes/predictive-materialization.md).
+One rule here is important enough to state as law, because everything downstream depends on it: **a generated completion never silently substitutes for canonical bits.** The confidence label is the entire difference between memory and hallucination. Drop it and you haven't built lossy compression; you've built a machine for corrupting archives politely.
 
-📐 Formal treatment: [Mathematical Core §1](mathematical-core.md) (the substrate and verification), [§10.4](mathematical-core.md) (verification as optimal stopping).
+⚠️ What we can't defend yet: disp is a working prototype (kernel and elaboration stages 0–3 self-hosted; effects, erasure, and the optimizer pending), and its networking story is the next chapter's typed-sessions program, which is presently a design note with theorems where the code should be. The economics of generative memory — who trains the models, how staleness gets priced — waits on chapter 3, and the privacy regression it causes (a partial context confesses far more about you than a hash does) waits on chapter 2's transport. Risks and details: [the predictive-materialization note](notes/predictive-materialization.md).
+
+📐 Formal treatment: [Mathematical Core §1](mathematical-core.md), [§10.4](mathematical-core.md).
 
 ---
 
-One node can now verify and remember, alone. What it cannot do alone is almost everything else: earn, learn what others know, or survive its own disk failing. For that it needs a second node, and the two of them need to agree on how to talk. That is [chapter 2](02-coupling.md).
+So: one node, alone, that can remember an archive and check a stranger's work. We set out to build a chat app and so far have built a machine that audits its own memory — which is progress, actually, though it doesn't feel like it. The next thing it needs is the thing no amount of solo cleverness provides: somebody else. That's [chapter 2](02-coupling.md).
