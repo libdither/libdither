@@ -1,5 +1,5 @@
 # Notation & Glossary
-> 🤖 *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
+> *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
 
 > *Appendix A. Every symbol used in the book, defined once.*
 

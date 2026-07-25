@@ -1,8 +1,8 @@
-# 🤖 About These Docs
+# About These Docs
 
 > This notice is itself AI-drafted. It seemed only fair.
 
-Every document in the Decentralization Stack section that carries the 🤖 marker — which, at the moment, is all of them — was drafted by an AI collaborator (Anthropic's Claude), working from the human author's designs, critiques, and direction across many iterative sessions.
+Every document in the Decentralization Stack section whose sidebar entry is *italicized* — which, at the moment, is all of them — was drafted by an AI collaborator (Anthropic's Claude), working from the human author's designs, critiques, and direction across many iterative sessions.
 
 The division of labor, as accurately as we can state it: the **human** supplied the goals and tenets, the core ideas (the currency-as-local-shares intuition, the predictive-memory idea, the zone-merging crux, the protocols-as-priors reframe, among others), every architectural decision, the critiques that drove each rewrite, and the final call on what ships. The **AI** supplied synthesis, structure, formalization sketches, connections to existing literature, and most of the actual sentences, including the jokes.
 
@@ -12,7 +12,7 @@ The full marker legend for this section:
 
 | Marker | Means |
 |---|---|
-| 🤖 | AI-drafted, human-directed (this notice) |
+| *Italics* (sidebar entry) | AI-drafted, human-directed; not yet edited by a human (this notice) |
 | 🚧 | draft; structure may still move |
 | ⚠️ | known weakness or open problem, stated next to the claim it qualifies |
 | 📐 | pointer to the formal treatment |

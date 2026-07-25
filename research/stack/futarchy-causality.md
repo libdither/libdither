@@ -1,5 +1,5 @@
 # Futarchy and Causality
-> 🤖 *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
+> *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
 
 > *Reference. A deep dive on the strongest objection.*
 

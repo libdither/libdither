@@ -1,5 +1,5 @@
 # 3 · The Market
-> 🤖 *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
+> *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
 
 The circle grows, as circles do, and acquires a video channel — someone's cable-cast tutorials, forty gigabytes and climbing — and suddenly the friend with the NAS is not enough. You need strangers' disks. You also need their bandwidth on tutorial night, and their compute when someone finally demands search over five years of arguments. The obvious move is to build three markets (storage, bandwidth, compute), and if you ask around, that's the standard advice; there are whole projects for each. Then, a little later, you'd discover the *fourth* market hiding behind them — because "is this rumor about the merino shortage true" and "which client fork deserves the treasury's money" also need pricing, and for those, today, you hire an editor or exhaust a moderator.
 

@@ -1,6 +1,6 @@
 # Comparisons to Other P2P Networks
 
-> 🤖 **This document was drafted by an AI collaborator**, working from the author's designs and direction — see [what that means](./stack/ai-disclosure.md) before trusting a fluent sentence. As a result it may be missing detail, lack absolute coherence, or read in a non-ideal writing style; claims about other projects were made from a mix of primary sources and the AI's training knowledge, spot-checked rather than systematically verified.
+> **This document was drafted by an AI collaborator**, working from the author's designs and direction — see [what that means](./stack/ai-disclosure.md) before trusting a fluent sentence. As a result it may be missing detail, lack absolute coherence, or read in a non-ideal writing style; claims about other projects were made from a mix of primary sources and the AI's training knowledge, spot-checked rather than systematically verified.
 
 As Dither aims to be the best possible design, it must improve in ideas and implementation over the competition. This page exists to provide an active list of how Dither improves (or doesn't) over other P2P network implementations.
 

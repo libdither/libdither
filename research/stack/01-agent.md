@@ -1,5 +1,5 @@
 # 1 · The Agent
-> 🤖 *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
+> *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
 
 Strip the problem down to one machine: yours. Before the knitting circle can have a shared archive, your node has to be able to do two things entirely alone — remember, and check. That sounds too small to be a chapter. It's the chapter everything else stands on, and the place where we can introduce, in miniature, the single habit the whole book keeps returning to.
 

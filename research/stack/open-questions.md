@@ -1,5 +1,5 @@
 # Open Questions — Research Scratchpad
-> 🤖 *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
+> *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
 
 *Raw questions that seeded the analytical notes. Each is tagged with its current status; several were taken up and answered (or reduced to measurable quantities) in [Evolution](07-evolution.md) and [mathematical-core.md](mathematical-core.md). Kept here as a provenance trail and a list of what genuinely remains.*
 

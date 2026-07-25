@@ -1,6 +1,6 @@
 # Working Note · Protocols as Priors
 
-> 🧪🤖 **Working note** (AI-drafted — [provenance](../ai-disclosure.md)). Source material for the rewritten [Overview](../overview.md), [Coupling](../02-coupling.md), and [Evolution](../07-evolution.md) chapters, and the frame for the whole v4 book.
+> 🧪 **Working note** (AI-drafted — [provenance](../ai-disclosure.md)). Source material for the rewritten [Overview](../overview.md), [Coupling](../02-coupling.md), and [Evolution](../07-evolution.md) chapters, and the frame for the whole v4 book.
 
 ## The reframe
 

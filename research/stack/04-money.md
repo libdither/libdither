@@ -1,5 +1,5 @@
 # 4 · Money
-> 🤖 *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
+> *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
 
 A month passes. You've served ten thousand fetches of the tutorial channel, held a terabyte of other people's residuals, sold compute overnight. What lands in your wallet?
 

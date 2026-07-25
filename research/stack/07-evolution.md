@@ -1,5 +1,5 @@
 # 7 · Evolution
-> 🤖 *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
+> *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
 
 The schism arrives in year five, as schisms do. It isn't even about crochet in the end — it's about the demurrage floor, of all things, and a faction that wants it lower, and a weekend of arguments that produce no agreement but do produce a fork announcement. Half the circle is leaving to run their own network, with different money and looser rules.
 

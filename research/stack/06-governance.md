@@ -1,5 +1,5 @@
 # 6 · Governance
-> 🤖 *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
+> *AI-drafted, human-directed — [what that means](ai-disclosure.md).*
 
 The crochet question has been open for two years.
 
