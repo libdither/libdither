@@ -47,3 +47,4 @@
 - [Articles]()
   - [What is a Monad?](./what-is-a-monad.md)
   - [How to do Node Discovery while Limiting Structural Data Leakage?](./node_discovery_ideas.md)
+  - [Comparisons to Other P2P Networks 🤖](./comparisons.md)
