@@ -1,3 +1,13 @@
 pre {
     white-space: pre-wrap;
 }
+
+/* Sidebar italics mark AI-drafted pages that have not yet been human-edited
+   (see stack/ai-disclosure.md). mdBook strips formatting from SUMMARY.md
+   titles, so the italics are applied here by href instead. Keep this list in
+   sync with the italicized entries in SUMMARY.md — currently every stack/
+   page plus comparisons. */
+ol.chapter li:has(> a[href^="stack/"]) > a,
+ol.chapter li:has(> a[href="comparisons.html"]) > a {
+    font-style: italic;
+}
