@@ -1,4 +1,5 @@
 result
 resources
-# public
+public
 .direnv
+.hugo_build.lock

@@ -1,0 +1,67 @@
+name: Build and deploy site
+
+on:
+  push:
+    branches: [main]
+  # Build (but don't deploy) on PRs, so a broken build is caught before merge.
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Queue deploys rather than cancelling them, so a push mid-deploy can't leave
+# the live site half-updated.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # Pinned to match the nix devshell, so CI output is byte-identical to a
+  # local build. Bump these together with flake.lock.
+  HUGO_VERSION: 0.115.0
+  MDBOOK_VERSION: 0.4.31
+  MDBOOK_KATEX_VERSION: 0.5.4
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Recursive is required: /docs/ is built from the dither-spec
+          # submodule, and static/disp/interactive-walkthrough.html is a
+          # symlink into the disp submodule that Hugo follows.
+          submodules: recursive
+
+      - name: Install toolchain
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -sSfL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP/bin" hugo
+          curl -sSfL "https://github.com/rust-lang/mdBook/releases/download/v${MDBOOK_VERSION}/mdbook-v${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP/bin" mdbook
+          curl -sSfL "https://github.com/lzanini/mdbook-katex/releases/download/v${MDBOOK_KATEX_VERSION}/mdbook-katex-v${MDBOOK_KATEX_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP/bin" mdbook-katex
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: Build
+        run: ./build.sh
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

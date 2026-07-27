@@ -26,7 +26,7 @@
 				src = ./.;
 				nativeBuildInputs = buildInputs;
 				buildPhase = ''
-					hugoix 
+					./build.sh
 				'';
 				installPhase = ''
 					cp -r public $out
