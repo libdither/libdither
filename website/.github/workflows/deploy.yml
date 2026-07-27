@@ -3,6 +3,8 @@ name: Build and deploy site
 on:
   push:
     branches: [main]
+  # Build (but don't deploy) on PRs, so a broken build is caught before merge.
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -55,6 +57,7 @@ jobs:
 
   deploy:
     needs: build
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
