@@ -10,3 +10,9 @@ rm -rf public
 # Hugo first: it owns the site root. mdbook then fills in /docs/ underneath.
 hugo --gc
 mdbook build dither-spec -d ../public/docs
+
+# dither-spec/book.toml sets src = ".", so mdbook copies every non-markdown
+# file in the submodule into the output -- including its git metadata and any
+# stale build dir left behind by running `mdbook build` there without -d. A
+# fresh CI checkout has neither; drop them so local builds match.
+rm -rf public/docs/.git public/docs/public
