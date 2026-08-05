@@ -41,6 +41,7 @@
     - [*Predictive Materialization* 🧪](./stack/notes/predictive-materialization.md)
     - [*Coupling and Merging* 🧪](./stack/notes/coupling-and-merging.md)
     - [*Protocols as Priors* 🧪](./stack/notes/protocols-as-priors.md)
+    - [*Contestability* 🧪](./stack/notes/contestability.md)
     - [*The Node as Software* 🧪](./stack/notes/node-as-software.md)
 - [Philosophy]()
   - [Design Philosophy](./applications/application-design-philosophy.md)
