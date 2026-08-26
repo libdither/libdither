@@ -1,0 +1,26 @@
+# Known-dangling internal links that predate the link check in build.sh.
+# One regex per line, matched against the resolved link target (a file:// URL
+# under public/). Remove an entry once its page renders -- for spec pages that
+# means listing the file in dither-spec/SUMMARY.md, since mdbook only renders
+# chapters listed there -- or once the link itself is fixed or removed.
+
+# Spec pages that exist in dither-spec but are not listed in SUMMARY.md.
+# Linked from dither/02-routing.md, comparisons.md, stack/roadmap.md,
+# applications.md and dither/interoperability.md.
+/docs/dither/discovery\.html$
+/docs/dither/measuring-anonymity\.html$
+/docs/dither/decentralized-data-ideas\.html$
+/docs/applications/(dithca|dithix|dither-git|nomia)\.html$
+
+# dither/reverse-hash-lookup.md links ../../applications/... (one ../ too
+# many), which escapes /docs/ entirely.
+/public/applications/(web-of-beliefs|dithca)\.html$
+
+# Targets that do not exist at the linked path: distance-based-routing.md was
+# superseded by dither/02-routing.md; zero-knowledge-proofs.md and
+# tree-of-math-old.md only exist under old_ideas/ and old-ideas/;
+# applications/dither-dex.md was never written.
+/docs/dither/distance-based-routing\.html$
+/docs/dither/zero-knowledge-proofs\.html$
+/docs/tree-of-math-old\.html$
+/docs/applications/dither-dex\.html$

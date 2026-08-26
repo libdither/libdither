@@ -14,6 +14,7 @@
 			hugo
 			mdbook
 			mdbook-katex
+			lychee
 		];
 	in utils.lib.mkFlake {
 		inherit self inputs;

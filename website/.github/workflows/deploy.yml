@@ -3,7 +3,8 @@ name: Build and deploy site
 on:
   push:
     branches: [main]
-  # Build (but don't deploy) on PRs, so a broken build is caught before merge.
+  # Build (but don't deploy) on PRs, so a broken build or dangling link is
+  # caught before merge.
   pull_request:
   workflow_dispatch:
 
@@ -24,6 +25,7 @@ env:
   HUGO_VERSION: 0.115.0
   MDBOOK_VERSION: 0.4.31
   MDBOOK_KATEX_VERSION: 0.5.4
+  LYCHEE_VERSION: 0.11.1
 
 jobs:
   build:
@@ -46,6 +48,8 @@ jobs:
             | tar -xz -C "$RUNNER_TEMP/bin" mdbook
           curl -sSfL "https://github.com/lzanini/mdbook-katex/releases/download/v${MDBOOK_KATEX_VERSION}/mdbook-katex-v${MDBOOK_KATEX_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
             | tar -xz -C "$RUNNER_TEMP/bin" mdbook-katex
+          curl -sSfL "https://github.com/lycheeverse/lychee/releases/download/v${LYCHEE_VERSION}/lychee-v${LYCHEE_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP/bin" lychee
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       - name: Build
