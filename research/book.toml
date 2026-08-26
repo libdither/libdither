@@ -12,5 +12,10 @@ build-dir = "public/docs"
 [output.html]
 additional-css = ["custom.css"]
 
+# dither.md linked inspirations.md at this path (which never existed) for years,
+# so the URL is out in the wild.
+[output.html.redirect]
+"/dither/inspirations.html" = "../inspirations.html"
+
 [preprocessor.katex]
 after = ["links"]
