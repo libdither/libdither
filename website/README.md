@@ -23,11 +23,11 @@ git push                                        # triggers the deploy
 
 ## Local development
 
-Requires [nix](https://nixos.org) with flakes (or hugo-extended, mdbook and
-mdbook-katex on `PATH`). `direnv allow` picks up the devshell automatically.
+Requires [nix](https://nixos.org) with flakes (or hugo-extended, mdbook,
+mdbook-katex and lychee on `PATH`). `direnv allow` picks up the devshell automatically.
 
 ```sh
-nix develop        # hugo-extended, mdbook, mdbook-katex
+nix develop        # hugo-extended, mdbook, mdbook-katex, lychee
 hugo server        # live preview of the site shell
 ./build.sh         # full build (site + /docs/) into public/
 ```
@@ -35,3 +35,10 @@ hugo server        # live preview of the site shell
 CI pins the same tool versions the devshell provides, so a local `./build.sh`
 produces byte-identical output to a deploy. When bumping `flake.lock`, update
 the pinned versions in `.github/workflows/deploy.yml` to match.
+
+`build.sh` ends by running [lychee](https://github.com/lycheeverse/lychee) over
+`public/` and fails on any internal link whose target was not generated (a
+typo in a path, or a spec page that exists but is not listed in
+`dither-spec/SUMMARY.md` -- mdbook only renders chapters listed there). Known
+dangling links that predate the check are allowlisted in `.lycheeignore`;
+remove an entry once its page is listed or the link is fixed.
