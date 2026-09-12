@@ -7,14 +7,14 @@ on:
     # /docs/); Rust-only commits shouldn't redeploy it.
     paths:
       - "website/**"
-      - "research"
+      - "research/**"
       - ".github/workflows/deploy.yml"
   # Build (but don't deploy) on PRs, so a broken build or dangling link is
   # caught before merge.
   pull_request:
     paths:
       - "website/**"
-      - "research"
+      - "research/**"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
@@ -43,8 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Recursive is required: /docs/ is built from the dither-spec
-          # submodule at research/, and the site theme is a submodule too.
+          # Recursive is required for the site theme submodule.
           submodules: recursive
 
       - name: Install toolchain

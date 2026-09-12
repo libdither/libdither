@@ -26,10 +26,10 @@ hugo --gc
 mdbook build ../research -d ../website/public/docs
 
 # research/book.toml sets src = ".", so mdbook copies every non-markdown
-# file in the submodule into the output -- including its git metadata and any
-# stale build dir left behind by running `mdbook build` there without -d. A
-# fresh CI checkout has neither; drop them so local builds match.
-rm -rf public/docs/.git public/docs/public
+# file in that directory into the output -- including any stale build dir
+# left behind by running `mdbook build` there without -d. A fresh CI checkout
+# has none; drop it so local builds match.
+rm -rf public/docs/public
 
 # Fail on dangling internal links. Offline: only file links are checked, never
 # http(s). --base resolves root-relative hrefs (/docs/...) from the Hugo pages

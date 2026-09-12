@@ -1,6 +1,8 @@
 # www.dither.link website
 
-Website for Dither, hosts the entirety of [libdither/dither-spec](https://github.com/libdither/dither-spec) in addition to an introduction to Dither
+Website for Dither, hosts the entirety of the Dither spec (the repo's
+`research/` directory, rendered at `/docs/`) in addition to an introduction
+to Dither
 
 More to be added in the future (such as a blog and perhaps a simple commenting system).
 
@@ -10,16 +12,8 @@ Pushing to `main` builds and deploys the site to <https://dither.link> via
 GitHub Actions (`.github/workflows/deploy.yml`). There is nothing to run by
 hand — `public/` is build output and is no longer committed.
 
-To publish a change to the spec (a submodule at the repo root, `research/`):
-
-```sh
-cd ../research
-# edit, then
-git commit -am "..." && git push
-cd ..
-git commit -am "research: ..." research   # bump the submodule pointer
-git push                                  # triggers the deploy
-```
+The spec lives directly in this repo at `research/` — edit it, commit, and
+push like any other file; a push to `main` touching it triggers the deploy.
 
 The disp interactive walkthrough (`/disp/interactive-walkthrough.html`) is not
 a submodule: `build.sh` fetches it from the disp repo pinned to the commit in

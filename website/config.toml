@@ -35,7 +35,7 @@ block = true
   # You can also set value to "*" to render all sections to menu
   BookSection = 'docs'
   
-  BookRepo = 'https://github.com/libdither/dither-spec'
+  BookRepo = 'https://github.com/libdither/libdither'
   BookCommitPath = 'commit'
   BookEditPath = 'edit/master'
   BookDateFormat = 'Jan 2, 2006'
