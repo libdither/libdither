@@ -7,11 +7,25 @@ cd "$(dirname "$0")"
 # across builds. Start clean instead.
 rm -rf public
 
+# The disp interactive walkthrough is a single self-contained HTML page served
+# at /disp/interactive-walkthrough.html. It is fetched pinned to a commit
+# rather than vendored or submoduled -- it is the only file the site needs
+# from the disp repo. Bump the rev to publish a newer walkthrough. The stamp
+# file skips the download when the pinned rev is already present.
+DISP_REV=6de700f514217028d5ab3cc53f20acd2feb0c9cd
+WALKTHROUGH=static/disp/interactive-walkthrough.html
+if [ ! -f "$WALKTHROUGH" ] || [ "$(cat .disp-walkthrough-rev 2>/dev/null)" != "$DISP_REV" ]; then
+  mkdir -p static/disp
+  curl -sSfL "https://raw.githubusercontent.com/libdither/disp/$DISP_REV/INTERACTIVE_WALKTHROUGH.html" \
+    -o "$WALKTHROUGH"
+  echo "$DISP_REV" > .disp-walkthrough-rev
+fi
+
 # Hugo first: it owns the site root. mdbook then fills in /docs/ underneath.
 hugo --gc
-mdbook build dither-spec -d ../public/docs
+mdbook build ../research -d ../website/public/docs
 
-# dither-spec/book.toml sets src = ".", so mdbook copies every non-markdown
+# research/book.toml sets src = ".", so mdbook copies every non-markdown
 # file in the submodule into the output -- including its git metadata and any
 # stale build dir left behind by running `mdbook build` there without -d. A
 # fresh CI checkout has neither; drop them so local builds match.

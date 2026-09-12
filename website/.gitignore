@@ -1,5 +1,8 @@
 result
 resources
 public
+# fetched by build.sh, pinned to DISP_REV
+static/disp/interactive-walkthrough.html
+.disp-walkthrough-rev
 .direnv
 .hugo_build.lock

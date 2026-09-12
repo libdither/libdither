@@ -10,16 +10,20 @@ Pushing to `main` builds and deploys the site to <https://dither.link> via
 GitHub Actions (`.github/workflows/deploy.yml`). There is nothing to run by
 hand — `public/` is build output and is no longer committed.
 
-To publish a change to the spec:
+To publish a change to the spec (a submodule at the repo root, `research/`):
 
 ```sh
-cd dither-spec
+cd ../research
 # edit, then
 git commit -am "..." && git push
 cd ..
-git commit -am "dither-spec: ..." dither-spec   # bump the submodule pointer
-git push                                        # triggers the deploy
+git commit -am "research: ..." research   # bump the submodule pointer
+git push                                  # triggers the deploy
 ```
+
+The disp interactive walkthrough (`/disp/interactive-walkthrough.html`) is not
+a submodule: `build.sh` fetches it from the disp repo pinned to the commit in
+its `DISP_REV` variable. Bump that rev to publish a newer walkthrough.
 
 ## Local development
 
@@ -39,6 +43,6 @@ the pinned versions in `.github/workflows/deploy.yml` to match.
 `build.sh` ends by running [lychee](https://github.com/lycheeverse/lychee) over
 `public/` and fails on any internal link whose target was not generated (a
 typo in a path, or a spec page that exists but is not listed in
-`dither-spec/SUMMARY.md` -- mdbook only renders chapters listed there). Known
+`research/SUMMARY.md` -- mdbook only renders chapters listed there). Known
 dangling links that predate the check are allowlisted in `.lycheeignore`;
 remove an entry once its page is listed or the link is fixed.

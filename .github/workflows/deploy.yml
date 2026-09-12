@@ -3,15 +3,18 @@ name: Build and deploy site
 on:
   push:
     branches: [main]
-    # The site lives under website/; Rust-only commits shouldn't redeploy it.
+    # The site lives under website/ (plus the research/ spec it renders into
+    # /docs/); Rust-only commits shouldn't redeploy it.
     paths:
       - "website/**"
+      - "research"
       - ".github/workflows/deploy.yml"
   # Build (but don't deploy) on PRs, so a broken build or dangling link is
   # caught before merge.
   pull_request:
     paths:
       - "website/**"
+      - "research"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
@@ -41,8 +44,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           # Recursive is required: /docs/ is built from the dither-spec
-          # submodule, and static/disp/interactive-walkthrough.html is a
-          # symlink into the disp submodule that Hugo follows.
+          # submodule at research/, and the site theme is a submodule too.
           submodules: recursive
 
       - name: Install toolchain
