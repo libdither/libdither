@@ -1,0 +1,3 @@
+# Network Modeling
+
+Humans in a community tend to form more efficient, intelligent communities when they can predict the dynamics of the community with some accuracy. When applied to peer-to-peer networks, this suggests that many efficiency and resiliency gains could be made if nodes in the network had detailed world-models of the rest of the network and could predict with some accuracy the dynamics of the network.

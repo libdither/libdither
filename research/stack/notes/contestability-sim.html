@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🛡️</text></svg>">
+<title>Bread &amp; Shields — contestability sandbox</title>
+<style>
+:root{
+  --bg:#eef1f5; --panel:#ffffff; --panel2:#f6f8fb; --ink:#1c2531; --muted:#5d6c80; --line:#d7dfe9;
+  --accent:#0d8ca6; --accent-soft:#0d8ca622;
+  --bread:#2f9e58; --amber:#c69110; --shield:#cf4433;
+  --ghost:#0d8ca6;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0e131a; --panel:#151c26; --panel2:#1a2230; --ink:#d9e3ef; --muted:#8494a8; --line:#243040;
+    --accent:#54c6dd; --accent-soft:#54c6dd22;
+    --bread:#46c274; --amber:#e0b445; --shield:#e25b4a;
+    --ghost:#54c6dd;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e131a; --panel:#151c26; --panel2:#1a2230; --ink:#d9e3ef; --muted:#8494a8; --line:#243040;
+  --accent:#54c6dd; --accent-soft:#54c6dd22;
+  --bread:#46c274; --amber:#e0b445; --shield:#e25b4a;
+  --ghost:#54c6dd;
+}
+:root[data-theme="light"]{
+  --bg:#eef1f5; --panel:#ffffff; --panel2:#f6f8fb; --ink:#1c2531; --muted:#5d6c80; --line:#d7dfe9;
+  --accent:#0d8ca6; --accent-soft:#0d8ca622;
+  --bread:#2f9e58; --amber:#c69110; --shield:#cf4433;
+  --ghost:#0d8ca6;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+#topbar{display:flex;align-items:center;gap:16px;padding:10px 16px;border-bottom:1px solid var(--line);
+  background:var(--panel);flex-wrap:wrap}
+#topbar h1{font-size:15px;margin:0;font-weight:650;letter-spacing:.01em}
+#topbar h1 .sub{color:var(--muted);font-weight:450;margin-left:8px;font-size:13px}
+.spacer{flex:1}
+button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;
+  padding:5px 12px;font:inherit;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] button.primary{color:#08222a}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) button.primary{color:#08222a} }
+#app{display:grid;grid-template-columns:236px 1fr 252px;grid-template-rows:1fr auto;
+  gap:10px;padding:10px;height:calc(100vh - 54px);min-height:520px}
+.rail{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;
+  overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+.rail h2{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+  margin:0 0 6px;font-weight:600}
+.rail section{border-top:1px solid var(--line);padding-top:10px}
+.rail section:first-child{border-top:none;padding-top:0}
+#stage{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+#net{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+#legend{position:absolute;left:10px;bottom:10px;background:color-mix(in srgb,var(--panel) 88%,transparent);
+  border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:11.5px;color:var(--muted);
+  display:flex;flex-direction:column;gap:4px;pointer-events:none}
+.lg{display:flex;align-items:center;gap:6px}
+.swatchbar{width:54px;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--bread),var(--amber),var(--shield))}
+.haloDot{width:12px;height:12px;border-radius:50%;border:3px solid var(--accent);opacity:.75}
+.dashline{width:26px;height:0;border-top:2px dashed var(--ghost)}
+label.opt{display:flex;gap:8px;align-items:flex-start;padding:4px 2px;border-radius:6px;cursor:pointer}
+label.opt:hover{background:var(--panel2)}
+label.opt input{margin-top:3px;accent-color:var(--accent)}
+label.opt .t{font-weight:600;font-size:13px}
+label.opt .d{color:var(--muted);font-size:11.5px;line-height:1.35}
+.slider{display:flex;flex-direction:column;gap:2px;margin:7px 0}
+.slider .row{display:flex;justify-content:space-between;font-size:12px}
+.slider .val{color:var(--accent);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=number]{width:90px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+  border-radius:6px;padding:4px 6px;font:inherit}
+#charts{grid-column:1/4;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;min-height:118px}
+.chart{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px 4px;
+  display:flex;flex-direction:column;min-width:0}
+.chart .ttl{font-size:11px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;display:flex;justify-content:space-between}
+.chart .ttl .cur{color:var(--ink);font-weight:650}
+.chart canvas{width:100%;height:78px;display:block}
+#insp .empty{color:var(--muted);font-size:12.5px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12.5px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:11px;font-weight:650;letter-spacing:.03em}
+#events{font-size:11.5px;color:var(--muted);display:flex;flex-direction:column-reverse;gap:3px;max-height:170px;overflow-y:auto}
+#events div b{color:var(--ink);font-weight:600}
+details.help{font-size:12px;color:var(--muted)}
+details.help summary{cursor:pointer;color:var(--ink)}
+@media (max-width:1020px){
+  #app{display:flex;flex-direction:column;height:auto}
+  #stage{height:56vh;order:-1;flex:none}
+  #charts{display:grid;grid-template-columns:repeat(2,1fr)}
+}
+@media (prefers-reduced-motion: reduce){ .pulse{display:none} }
+</style>
+
+<div id="topbar">
+  <h1>Bread &amp; Shields<span class="sub">contestability rent in a p2p relay network</span></h1>
+  <div class="spacer"></div>
+  <span class="mono" style="color:var(--muted);font-size:12.5px">round <b id="roundNo" style="color:var(--ink)">0</b></span>
+  <button id="playBtn" class="primary">Pause</button>
+  <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">speed
+    <input type="range" id="speed" min="1" max="8" value="2" style="width:80px"></label>
+  <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">seed
+    <input type="number" id="seed" value="7" class="mono"></label>
+  <button id="resetBtn">Restart</button>
+</div>
+
+<div id="app">
+  <div class="rail" id="leftRail">
+    <section>
+      <h2>Mechanism ladder</h2>
+      <div id="mechOpts"></div>
+    </section>
+    <section>
+      <h2>Scenario</h2>
+      <div id="scenOpts"></div>
+    </section>
+    <section>
+      <h2>Parameters</h2>
+      <div id="params"></div>
+    </section>
+    <section>
+      <h2>View</h2>
+      <label class="opt"><input type="checkbox" id="lensGT">
+        <span><span class="t">Ground-truth lens</span><br><span class="d">Reveal Sybil ownership and true n<sub>eff</sub> instead of what the estimator sees.</span></span></label>
+      <label class="opt"><input type="checkbox" id="shadowOn" checked>
+        <span><span class="t">Shadow baseline</span><br><span class="d">Run an M0 twin on the same seed; dashed lines on the charts.</span></span></label>
+    </section>
+    <section>
+      <details class="help"><summary>How to read this</summary>
+        <p>Each dot is a relay node. <b>Size</b> = wealth. <b>Color</b> = rent share of income: green earns competitively (bread), red earns from position (shields). <b>Halo thickness</b> = n<sub>eff</sub> of independent alternatives — thick means contestable, thin means choke point.</p>
+        <p><b>Hover a node</b> to see the counterfactual shadow: dashed paths its dependents would take if it vanished, labeled with the premium. Cyan pulses are bypass audits actually exercising those paths.</p>
+        <p>The tax has a threshold: below a marginal rate of ~1 on scarcity-rent it merely <i>transfers</i> (revenue high, behavior unchanged); above it, it <i>disciplines</i> — hubs learn markups down and revenue self-extinguishes. Try sweeping the tax slider through 1.0, and try the Sybil scenario with estimator quality at 0.</p>
+      </details>
+    </section>
+  </div>
+
+  <div id="stage">
+    <canvas id="net"></canvas>
+    <div id="legend">
+      <div class="lg"><span class="swatchbar"></span> rent share: bread → shields</div>
+      <div class="lg"><span class="haloDot"></span> halo = n<sub>eff</sub> of alternatives</div>
+      <div class="lg"><span class="dashline"></span> counterfactual / audit path</div>
+    </div>
+  </div>
+
+  <div class="rail" id="rightRail">
+    <section id="insp">
+      <h2>Inspector</h2>
+      <div class="empty">Hover a node. Click to pin.</div>
+    </section>
+    <section>
+      <h2>Events</h2>
+      <div id="events"></div>
+    </section>
+  </div>
+
+  <div id="charts"></div>
+</div>
+
+<script>
+'use strict';
+/* ---------- deterministic RNG ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+function hash2(a,b){let h=(a*2654435761^b*40503)>>>0;h^=h>>>13;h=Math.imul(h,0x5bd1e995)>>>0;return h^h>>>15;}
+
+/* ---------- tiny binary heap ---------- */
+function Heap(){this.a=[];}
+Heap.prototype.push=function(k,v){const a=this.a;a.push([k,v]);let i=a.length-1;
+  while(i>0){const p=(i-1)>>1;if(a[p][0]<=a[i][0])break;[a[p],a[i]]=[a[i],a[p]];i=p;}};
+Heap.prototype.pop=function(){const a=this.a;if(!a.length)return null;const top=a[0],last=a.pop();
+  if(a.length){a[0]=last;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;
+    if(l<a.length&&a[l][0]<a[m][0])m=l;if(r<a.length&&a[r][0]<a[m][0])m=r;
+    if(m===i)break;[a[m],a[i]]=[a[i],a[m]];i=m;}}return top;};
+
+/* ---------- simulation core ---------- */
+const MECH={M0:0,M1:1,M2:2,M3:3,M4:4};
+const N_TARGET=2.5, COLD_PEN=0.7, EMA=0.03;
+
+function makeSim(cfg){
+  const rng=mulberry32(cfg.seed>>>0);
+  const S={cfg, round:0, nodes:[], adj:new Map(), edgeFlow:new Map(),
+    auditPool:0, events:[], pulses:[],
+    metrics:{gini:[],rent:[],tax:[],aud:[],welf:[],err:[]},
+    welfE:0, attackDone:false, cartel:null};
+
+  // --- world generation: clustered communities joined by sparse bridges,
+  // so genuine positional scarcity (choke points) exists from the start
+  const N=cfg.N, C=6;
+  const centers=[];
+  for(let c=0;c<C;c++){const a=Math.PI*2*c/C+0.3*(rng()-0.5);
+    centers.push([0.5+0.34*Math.cos(a),0.5+0.34*Math.sin(a)]);}
+  const gauss=()=>{const u=Math.max(1e-9,rng()),v=rng();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
+  for(let i=0;i<N;i++){
+    const c=i%C,[cx,cy]=centers[c];
+    S.nodes.push({id:i,cluster:c,
+      x:Math.min(0.96,Math.max(0.04,cx+0.075*gauss())),
+      y:Math.min(0.96,Math.max(0.04,cy+0.075*gauss())),
+      cost:0.35+0.9*rng()*rng(),markup:0.02+0.02*rng(),
+      wealth:5,warmth:0.6,owner:i,cartel:0,isSybil:false,
+      flowE:0,incomeE:0,rentIncE:0,premE:0,neffT:2,neffE:2,measured:false,
+      samples:[],winRev:0,lastWinRev:0,prevMarkup:null,taxE:0,
+      degCap:6+((rng()*5)|0)});
+    S.adj.set(i,new Set());
+  }
+  let flatDirty=true;
+  const link=(a,b)=>{if(a!==b){S.adj.get(a).add(b);S.adj.get(b).add(a);flatDirty=true;}};
+  for(const n of S.nodes){ // k nearest within own cluster
+    const ds=S.nodes.filter(m=>m!==n&&m.cluster===n.cluster)
+      .map(m=>[(m.x-n.x)**2+(m.y-n.y)**2,m.id]).sort((p,q)=>p[0]-q[0]);
+    for(let k=0;k<Math.min(3,ds.length);k++)link(n.id,ds[k][1]);
+  }
+  for(let c=0;c<C;c++){ // 1–2 bridges between ring-adjacent clusters
+    const B=(c+1)%C,pairs=[];
+    for(const a of S.nodes)if(a.cluster===c)
+      for(const b of S.nodes)if(b.cluster===B)
+        pairs.push([(a.x-b.x)**2+(a.y-b.y)**2,a.id,b.id]);
+    pairs.sort((p,q)=>p[0]-q[0]);
+    const nb=1+((rng()*2)|0),used=new Set();let made=0;
+    for(const[,ai,bi]of pairs){
+      if(made>=nb)break;
+      if(used.has(ai)||used.has(bi))continue;
+      link(ai,bi);used.add(ai);used.add(bi);made++;
+    }
+  }
+  link((rng()*N)|0,(rng()*N)|0); // one long chord
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+
+  const quote=v=>v.cost*(1+COLD_PEN*(1-v.warmth))+v.markup;
+
+  // flat adjacency + scratch arrays, rebuilt only when topology changes;
+  // quotes cached once per round — the routing hot path allocates nothing
+  let fStart=null,fNbr=null,fLen=null,Q=null,dsc=null,prv=null,stmp=null,epoch=0;
+  const heap=new Heap();
+  function rebuildFlat(){
+    const n=S.nodes.length;let e=0;for(const[,s]of S.adj)e+=s.size;
+    fStart=new Int32Array(n+1);fNbr=new Int32Array(e);fLen=new Float64Array(e);
+    let p=0;
+    for(let i=0;i<n;i++){fStart[i]=p;const ni=S.nodes[i];
+      for(const j of S.adj.get(i)){fNbr[p]=j;
+        fLen[p]=0.25*Math.hypot(ni.x-S.nodes[j].x,ni.y-S.nodes[j].y);p++;}}
+    fStart[n]=p;
+    Q=new Float64Array(n);dsc=new Float64Array(n);prv=new Int32Array(n);
+    stmp=new Int32Array(n);epoch=0;flatDirty=false;
+  }
+  function computeQuotes(){for(let i=0;i<S.nodes.length;i++)Q[i]=quote(S.nodes[i]);}
+  function dijkstra(s,t,banned){
+    epoch++;heap.a.length=0;
+    dsc[s]=0;stmp[s]=epoch;prv[s]=-1;heap.push(0,s);
+    while(heap.a.length){
+      const[d,u]=heap.pop();
+      if(d>dsc[u]+1e-12)continue;
+      if(u===t)break;
+      const e1=fStart[u+1];
+      for(let e=fStart[u];e<e1;e++){
+        const w=fNbr[e];
+        if(banned&&w!==t&&banned.has(w))continue;
+        const nd=d+fLen[e]+(w===t?0:Q[w]);
+        if(stmp[w]!==epoch||nd<dsc[w]-1e-12){
+          dsc[w]=nd;stmp[w]=epoch;prv[w]=u;heap.push(nd,w);}
+      }
+    }
+    if(stmp[t]!==epoch)return null;
+    const path=[];for(let v=t;v!==-1;v=prv[v])path.push(v);path.reverse();
+    return {cost:dsc[t],path};
+  }
+  const groupKey=v=>v.cartel?('c'+v.cartel):('o'+v.owner);
+  const pathHasGroup=(path,gk,skip)=>path.some((id,i)=>i>0&&i<path.length-1&&id!==skip&&groupKey(S.nodes[id])===gk);
+
+  // measure hub v against a served demand (s,t,path,cost). Returns nothing; updates EMAs.
+  function measureHub(v,s,t,curCost,curPath,value){
+    const gk=groupKey(v); const banned=new Set([v.id]);
+    let alt0=null,neT=0,neE=0;
+    for(let k=0;k<3;k++){
+      const r=dijkstra(s,t,banned); if(!r)break;
+      const delta=r.cost-curCost;
+      const w=Math.exp(-Math.max(0,delta)/(0.35*curCost+1e-9));
+      const sybilAlt=pathHasGroup(r.path,gk,v.id);
+      neT+=sybilAlt?0:w;
+      const q=(S.cfg.mech>=MECH.M2)?S.cfg.estQ:0;      // below M2 the estimator is naive
+      neE+=sybilAlt?w*(1-q):w;
+      if(k===0)alt0={path:r.path,delta:Math.max(0,delta)};
+      for(let i=1;i<r.path.length-1;i++)banned.add(r.path[i]);
+    }
+    const prem=alt0?alt0.delta:Math.max(0,value-curCost);
+    v.premE+= (prem-v.premE)*0.12;
+    v.neffT+= (neT-v.neffT)*0.12; v.neffE+=(neE-v.neffE)*0.12; v.measured=true;
+    v.samples.push({s,t,path:curPath.slice(),alt:alt0?alt0.path.slice():null,delta:prem});
+    if(v.samples.length>3)v.samples.shift();
+  }
+
+  function topHub(path){let best=null,bf=-1;
+    for(let i=1;i<path.length-1;i++){const n=S.nodes[path[i]];
+      if(n.flowE>bf){bf=n.flowE;best=n;}}return best;}
+
+  function logEv(msg){S.events.push({r:S.round,msg});if(S.events.length>60)S.events.shift();}
+
+  S.step=function(){
+    const c=S.cfg, round=++S.round;
+    const dRng=mulberry32(hash2(c.seed,round));           // demand stream (mechanism-independent)
+    const lRng=mulberry32(hash2(c.seed^0xa5a5,round));    // learning stream
+    const aRng=mulberry32(hash2(c.seed^0x5117,round));    // audit/measure stream
+    const N=S.nodes.length, D=Math.round(N*0.8);
+    let welf=0,taxSum=0,audSpend=0;
+    const rentRound=new Float64Array(N);
+    const served=[];
+
+    // decay flows
+    for(const n of S.nodes){n.flowE*=(1-EMA);n.warmth=Math.max(0.05,n.warmth*0.995);}
+    for(const[k,v]of S.edgeFlow){const nv=v*(1-EMA);if(nv<0.001)S.edgeFlow.delete(k);else S.edgeFlow.set(k,nv);}
+    if(flatDirty)rebuildFlat();
+    computeQuotes(); // quotes frozen for the round
+
+    // ---- demand + routing
+    for(let d=0;d<D;d++){
+      const s=(dRng()*N)|0; let t;
+      if(dRng()<c.locality){ // pick a nearby target
+        let best=-1,bd=Infinity;
+        for(let k=0;k<6;k++){const cand=(dRng()*N)|0;if(cand===s)continue;
+          const dd=dist(S.nodes[s],S.nodes[cand]);if(dd<bd){bd=dd;best=cand;}}
+        t=best<0?(s+1)%N:best;
+      } else { t=(dRng()*N)|0; if(t===s)t=(t+1)%N; }
+      const value=2.2+2.4*dRng();
+      const r=dijkstra(s,t,null);
+      if(!r||r.cost>value){continue;}                    // unserved: deadweight
+      let trueCost=0;
+      // audit? reroute via second-best around the top hub
+      let usedPath=r.path,usedCost=r.cost,audited=false;
+      if(c.mech>=MECH.M3&&aRng()<c.auditRate){
+        const hub=topHub(r.path);
+        if(hub){const r2=dijkstra(s,t,new Set([hub.id]));
+          if(r2&&r2.cost<=value){const delta=r2.cost-r.cost;
+            if(S.auditPool>=delta){S.auditPool-=delta;audSpend+=Math.max(0,delta);
+              usedPath=r2.path;usedCost=r2.cost;audited=true;
+              S.pulses.push({path:r2.path.map(id=>S.nodes[id]),age:0});}}}
+      }
+      for(let i=1;i<usedPath.length-1;i++){
+        const v=S.nodes[usedPath[i]],qv=quote(v);
+        v.wealth+=qv-v.cost;
+        v.flowE+=EMA*(1);
+        v.warmth=Math.min(1,v.warmth+0.05);
+        v.winRev+=v.markup; rentRound[v.id]+=v.markup;
+        trueCost+=v.cost;
+        const a=usedPath[i-1],b=usedPath[i],key=a<b?a*100000+b:b*100000+a;
+        S.edgeFlow.set(key,(S.edgeFlow.get(key)||0)+EMA);
+        if(c.mech>=MECH.M3)S.auditPool+=0.01*qv; // small uniform levy funds audits
+      }
+      // last edge into t
+      if(usedPath.length>=2){const a=usedPath[usedPath.length-2],b=t,key=a<b?a*100000+b:b*100000+a;
+        S.edgeFlow.set(key,(S.edgeFlow.get(key)||0)+EMA);}
+      S.nodes[s].wealth+=value-usedCost;
+      welf+=value-trueCost;
+      if(!audited)served.push({s,t,cost:usedCost,path:usedPath,value});
+    }
+
+    // income / rent EMAs: rent = markup income; revenue proxy = markup + cost recovery
+    for(const n of S.nodes){
+      const rents=rentRound[n.id];
+      n.rentIncE+=(rents-n.rentIncE)*EMA*3;
+      n.incomeE+=((rents+n.flowE*n.cost)-n.incomeE)*EMA*3;
+    }
+
+    // ---- measurement (sampled)
+    if(served.length){
+      const M=Math.min(8,served.length);
+      for(let k=0;k<M;k++){
+        const dm=served[(aRng()*served.length)|0];
+        const hub=topHub(dm.path);
+        if(hub)measureHub(hub,dm.s,dm.t,dm.cost,dm.path,dm.value);
+      }
+    }
+
+    // ---- tax + redistribution (M4)
+    if(c.mech>=MECH.M4){
+      for(const n of S.nodes){
+        if(!n.measured)continue;
+        const scar=Math.min(1,Math.max(0,1-n.neffE/N_TARGET));
+        const tax=c.taxRate*rentRound[n.id]*scar;
+        if(tax>0){n.wealth-=tax;n.winRev-=tax;taxSum+=tax;n.taxE+=(tax-n.taxE)*0.05;}
+        else n.taxE*=0.98;
+      }
+      S.auditPool+=taxSum*0.5;
+      const ubi=taxSum*0.5;
+      if(ubi>0){
+        const owners=new Map();
+        for(const n of S.nodes){const k='o'+n.owner;(owners.get(k)||owners.set(k,[]).get(k)).push(n);}
+        const per=ubi/owners.size;
+        for(const[,members]of owners){const each=per/members.length;
+          for(const m of members)m.wealth+=each;}
+      }
+    }
+    S.auditPool=Math.min(S.auditPool,50);
+
+    // ---- markup learning (hill-climb, staggered), colluders follow cartel rule
+    for(const n of S.nodes){
+      if(n.cartel){ // cartel: push together while traffic holds
+        if(n.flowE>0.65*(n.cartelRef||0.1))n.markup=Math.min(n.markup*1.006,2.5*n.cost);
+        else n.markup*=0.992;
+        continue;
+      }
+      if(n.isSybil){const h=S.nodes[n.owner];n.markup=h.markup*0.97;continue;}
+      if((round+n.id)%15!==0)continue;
+      if(n.prevMarkup!==null){
+        if(n.winRev<n.lastWinRev*1.01)n.markup=n.prevMarkup; // revert
+      }
+      n.lastWinRev=n.winRev;n.winRev=0;
+      n.prevMarkup=n.markup;
+      const dir=lRng()<0.5?-1:1;
+      n.markup=Math.max(0.001,Math.min(n.markup*(1+dir*c.learn),3*n.cost));
+    }
+
+    // ---- link dynamics: preferential attachment toward high-flow nodes
+    if(round%25===0){
+      const byFlow=[...S.nodes].sort((a,b)=>b.flowE-a.flowE).slice(0,10);
+      for(let k=0;k<3;k++){
+        const n=S.nodes[(lRng()*N)|0], h=byFlow[(lRng()*byFlow.length)|0];
+        if(n.id!==h.id&&S.adj.get(n.id).size<n.degCap&&S.adj.get(h.id).size<24)
+          link(n.id,h.id);
+      }
+    }
+
+    // ---- scenario attacks
+    if(!S.attackDone&&round===c.attackRound){
+      if(c.scenario==='sybil'){
+        let hub=null,bf=-1;for(const n of S.nodes)if(n.rentIncE>bf&&!n.isSybil){bf=n.rentIncE;hub=n;}
+        if(hub){
+          for(let k=0;k<2;k++){
+            const id=S.nodes.length;
+            const sy={id,cluster:hub.cluster,
+              x:Math.min(0.97,Math.max(0.03,hub.x+0.05*(lRng()-0.5))),
+              y:Math.min(0.97,Math.max(0.03,hub.y+0.05*(lRng()-0.5))),
+              cost:hub.cost*1.03,markup:hub.markup*0.97,wealth:2,warmth:0.5,
+              owner:hub.id,cartel:0,isSybil:true,flowE:0,incomeE:0,rentIncE:0,premE:0,
+              neffT:2,neffE:2,measured:false,samples:[],winRev:0,lastWinRev:0,
+              prevMarkup:null,taxE:0,degCap:8};
+            S.nodes.push(sy);S.adj.set(id,new Set());
+            const hlinks=[...S.adj.get(hub.id)].slice(0,10); // clone the full position, bridges included
+            for(const l of hlinks)link(id,l);
+            link(id,hub.id);
+          }
+          logEv(`hub ${hub.id} spawned 2 Sybil "competitors" — halo inflation attempt`);
+        }
+      } else if(c.scenario==='collusion'){
+        const top=[...S.nodes].sort((a,b)=>b.flowE-a.flowE).slice(0,2);
+        if(top.length===2){for(const h of top){h.cartel=1;h.cartelRef=h.flowE;}
+          logEv(`hubs ${top[0].id} & ${top[1].id} formed a cartel — coordinated markups`);}
+      }
+      S.attackDone=true;
+    }
+
+    // ---- metrics
+    const ws=S.nodes.map(n=>n.wealth).sort((a,b)=>a-b);
+    const mn=ws[0]<0?-ws[0]:0; let cum=0,gsum=0;
+    for(let i=0;i<ws.length;i++){const w=ws[i]+mn;cum+=w;gsum+=cum;}
+    const gini=cum>0?(ws.length+1-2*gsum/cum)/ws.length:0;
+    const byInc=[...S.nodes].sort((a,b)=>b.incomeE-a.incomeE);
+    const top=byInc.slice(0,Math.max(1,byInc.length/10|0));
+    const rentShare=top.reduce((s,n)=>s+(n.incomeE>1e-6?n.rentIncE/n.incomeE:0),0)/top.length;
+    let errMax=0;
+    for(const n of S.nodes)if(n.measured&&n.flowE>0.1)
+      errMax=Math.max(errMax,Math.abs(n.neffT-n.neffE));
+    S.welfE+= (welf-S.welfE)*0.05;
+    const M=S.metrics;
+    M.gini.push(gini);M.rent.push(rentShare);M.tax.push(taxSum);
+    M.aud.push(audSpend);M.welf.push(S.welfE);M.err.push(errMax);
+    for(const k in M)if(M[k].length>2400)M[k].splice(0,M[k].length-2400);
+  };
+  return S;
+}
+
+/* ---------- config & UI state ---------- */
+const cfg={seed:7,N:96,mech:MECH.M4,scenario:'sybil',attackRound:250,
+  taxRate:1.0,auditRate:0.10,estQ:0.7,locality:0.55,learn:0.15};
+let sim=null,twin=null,playing=true,hoverNode=null,pinned=null,frame=0;
+
+const MECH_DESCS=[
+ ['M0 · Laissez-faire','No instruments, no interventions. Watch the shields phase bloom.'],
+ ['M1 · Instruments on','Premia and halos measured and displayed. No consequences.'],
+ ['M2 · Independence weighting','Sybil "alternatives" discounted in n#eff# by estimator quality q.'],
+ ['M3 · + Bypass audits','ε of traffic rehearses second-best paths, keeping them warm.'],
+ ['M4 · + Rent tax → UBI','Tax on markup × scarcity; revenue funds the drip and the audits.']];
+const SCEN_DESCS=[['baseline','Baseline','Honest world. Hubs still emerge and learn to extract.'],
+ ['sybil','Sybil bypass','At round 250 the top rent-earner spawns fake competitors to inflate its halo.'],
+ ['collusion','Collusion','At round 250 the top two hubs cartelize and raise markups together.']];
+const PARAM_DEFS=[
+ ['N','Network size','nodes · rebuilds world',60,180,12],
+ ['taxRate','Tax rate','0–1.5 of positional rent',0,1.5,0.05],
+ ['auditRate','Audit rate ε','share of traffic rerouted',0,0.3,0.01],
+ ['estQ','Estimator quality q','Sybil detection, 0=blind',0,1,0.05],
+ ['locality','Demand locality','near vs far traffic',0,0.9,0.05],
+ ['learn','Learning step','markup hill-climb size',0.02,0.4,0.01]];
+
+function el(html){const d=document.createElement('div');d.innerHTML=html;return d.firstElementChild;}
+function fmt(x,d=2){return(+x).toFixed(d)}
+
+function buildControls(){
+  const mo=document.getElementById('mechOpts');
+  MECH_DESCS.forEach(([t,d],i)=>{
+    const lab=el(`<label class="opt"><input type="radio" name="mech" value="${i}" ${i===cfg.mech?'checked':''}>
+      <span><span class="t">${t}</span><br><span class="d">${d.replace('n#eff#','n<sub>eff</sub>')}</span></span></label>`);
+    lab.querySelector('input').addEventListener('change',()=>{cfg.mech=i;sim.cfg.mech=i;note(`mechanism → ${t}`);});
+    mo.appendChild(lab);});
+  const so=document.getElementById('scenOpts');
+  SCEN_DESCS.forEach(([v,t,d])=>{
+    const lab=el(`<label class="opt"><input type="radio" name="scen" value="${v}" ${v===cfg.scenario?'checked':''}>
+      <span><span class="t">${t}</span><br><span class="d">${d}</span></span></label>`);
+    lab.querySelector('input').addEventListener('change',()=>{cfg.scenario=v;reset();});
+    so.appendChild(lab);});
+  const pr=document.getElementById('params');
+  PARAM_DEFS.forEach(([key,t,d,min,max,st])=>{
+    const dec=st>=1?0:2;
+    const s=el(`<div class="slider"><div class="row"><span>${t} <span style="color:var(--muted)">· ${d}</span></span>
+      <span class="val mono" id="v_${key}">${fmt(cfg[key],dec)}</span></div>
+      <input type="range" min="${min}" max="${max}" step="${st}" value="${cfg[key]}"></div>`);
+    const inp=s.querySelector('input');
+    if(key==='N'){ // world rebuild — apply on release, not per drag tick
+      inp.addEventListener('input',e=>{document.getElementById('v_N').textContent=fmt(+e.target.value,0);});
+      inp.addEventListener('change',e=>{cfg.N=Math.round(+e.target.value);reset();});
+    } else {
+      inp.addEventListener('input',e=>{
+        cfg[key]=+e.target.value;sim.cfg[key]=cfg[key];
+        if(twin&&key!=='taxRate'&&key!=='auditRate'&&key!=='estQ')twin.cfg[key]=cfg[key];
+        document.getElementById('v_'+key).textContent=fmt(cfg[key],dec);});
+    }
+    pr.appendChild(s);});
+}
+function note(msg){sim.events.push({r:sim.round,msg});}
+
+/* ---------- charts ---------- */
+const CHART_DEFS=[
+ ['gini','Wealth Gini',v=>fmt(v,3)],
+ ['rent','Rent share · top hubs',v=>fmt(v*100,0)+'%'],
+ ['taxaud','Tax − / audit ·· spend',v=>fmt(v,2)],
+ ['welf','Welfare / round',v=>fmt(v,1)],
+ ['err','Estimator gap · worst node',v=>fmt(v,2)]];
+const chartEls={};
+function buildCharts(){
+  const host=document.getElementById('charts');
+  CHART_DEFS.forEach(([key,t])=>{
+    const c=el(`<div class="chart"><div class="ttl"><span>${t}</span><span class="cur mono" id="c_${key}"></span></div><canvas></canvas></div>`);
+    host.appendChild(c);chartEls[key]=c.querySelector('canvas');});
+}
+function css(name){return getComputedStyle(document.documentElement).getPropertyValue(name).trim();}
+function drawSeries(ctx,data,W,H,lo,hi,color,dash){
+  if(data.length<2)return;
+  ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.setLineDash(dash||[]);
+  ctx.beginPath();
+  const n=data.length,x0=Math.max(0,n-600);
+  for(let i=x0;i<n;i++){
+    const x=(i-x0)/(Math.max(1,n-1-x0))*W;
+    const y=H-4-(data[i]-lo)/(hi-lo+1e-12)*(H-10);
+    i===x0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();ctx.setLineDash([]);
+}
+function renderCharts(){
+  const M=sim.metrics,T=twin&&document.getElementById('shadowOn').checked?twin.metrics:null;
+  const sets={gini:[[M.gini,css('--accent'),null],(T?[T.gini,css('--muted'),[4,3]]:null)],
+    rent:[[M.rent,css('--shield'),null],(T?[T.rent,css('--muted'),[4,3]]:null)],
+    taxaud:[[M.tax,css('--accent'),null],[M.aud,css('--amber'),[3,3]]],
+    welf:[[M.welf,css('--bread'),null],(T?[T.welf,css('--muted'),[4,3]]:null)],
+    err:[[M.err,css('--shield'),null]]};
+  CHART_DEFS.forEach(([key,t,fmtF])=>{
+    const cv=chartEls[key],dpr=window.devicePixelRatio||1;
+    const W=cv.clientWidth,H=cv.clientHeight;
+    if(cv.width!==W*dpr){cv.width=W*dpr;cv.height=H*dpr;}
+    const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,W,H);
+    let lo=Infinity,hi=-Infinity;
+    const series=sets[key].filter(Boolean);
+    for(const[data]of series){const n=data.length,x0=Math.max(0,n-600);
+      for(let i=x0;i<n;i++){if(data[i]<lo)lo=data[i];if(data[i]>hi)hi=data[i];}}
+    if(!isFinite(lo)){return;}
+    if(hi-lo<1e-9){hi=lo+1;}
+    ctx.strokeStyle=css('--line');ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,H-4);ctx.lineTo(W,H-4);ctx.stroke();
+    for(const[data,color,dash]of series)drawSeries(ctx,data,W,H,lo,hi,color,dash);
+    const main=series[0][0];
+    if(main.length)document.getElementById('c_'+key).textContent=fmtF(main[main.length-1]);
+  });
+}
+
+/* ---------- network rendering ---------- */
+const net=document.getElementById('net');
+function lerp(a,b,t){return a+(b-a)*t;}
+function hex2rgb(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function mix(c1,c2,t){const a=hex2rgb(c1),b=hex2rgb(c2);
+  return`rgb(${lerp(a[0],b[0],t)|0},${lerp(a[1],b[1],t)|0},${lerp(a[2],b[2],t)|0})`;}
+function rentColor(r){ // 0 → bread, 0.5+ → shield
+  const t=Math.min(1,r/0.5);
+  return t<0.5?mix(css('--bread'),css('--amber'),t*2):mix(css('--amber'),css('--shield'),(t-0.5)*2);}
+function nodeXY(n,W,H){return[30+n.x*(W-60),24+n.y*(H-48)];}
+
+function renderNet(){
+  const dpr=window.devicePixelRatio||1,W=net.clientWidth,H=net.clientHeight;
+  if(net.width!==W*dpr){net.width=W*dpr;net.height=H*dpr;}
+  const ctx=net.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  const showInstruments=cfg.mech>=MECH.M1;
+  const lensGT=document.getElementById('lensGT').checked;
+  let wMax=1;for(const n of sim.nodes)if(n.wealth>wMax)wMax=n.wealth;
+  let fMax=0.01;for(const v of sim.edgeFlow.values())if(v>fMax)fMax=v;
+
+  // edges
+  ctx.lineCap='round';
+  for(const[key,f]of sim.edgeFlow){
+    const a=(key/100000)|0,b=key%100000;
+    if(a>=sim.nodes.length||b>=sim.nodes.length)continue;
+    const[x1,y1]=nodeXY(sim.nodes[a],W,H),[x2,y2]=nodeXY(sim.nodes[b],W,H);
+    const t=Math.min(1,f/fMax);
+    ctx.strokeStyle=css('--muted');ctx.globalAlpha=0.06+0.38*t;ctx.lineWidth=0.5+2.5*t;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+  // faint structural edges
+  ctx.globalAlpha=0.05;ctx.strokeStyle=css('--muted');ctx.lineWidth=0.6;
+  for(const[id,nbrs]of sim.adj)for(const j of nbrs)if(j>id){
+    const[x1,y1]=nodeXY(sim.nodes[id],W,H),[x2,y2]=nodeXY(sim.nodes[j],W,H);
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+  ctx.globalAlpha=1;
+
+  // audit pulses
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  sim.pulses=sim.pulses.filter(p=>p.age<90);
+  for(const p of sim.pulses)p.age++;
+  if(!reduced)for(const p of sim.pulses){
+    ctx.strokeStyle=css('--ghost');ctx.globalAlpha=Math.max(0,1-p.age/90)*0.8;
+    ctx.setLineDash([5,5]);ctx.lineDashOffset=-frame*0.6;ctx.lineWidth=1.6;
+    ctx.beginPath();
+    p.path.forEach((n,i)=>{const[x,y]=nodeXY(n,W,H);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+    ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;}
+
+  // hover counterfactual shadow
+  const focus=pinned||hoverNode;
+  if(focus&&focus.samples.length){
+    for(const sm of focus.samples){
+      ctx.strokeStyle=css('--accent');ctx.globalAlpha=0.35;ctx.lineWidth=2;
+      ctx.beginPath();sm.path.forEach((id,i)=>{if(id>=sim.nodes.length)return;
+        const[x,y]=nodeXY(sim.nodes[id],W,H);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();
+      if(sm.alt){
+        ctx.globalAlpha=0.9;ctx.setLineDash([6,4]);ctx.lineWidth=1.6;ctx.strokeStyle=css('--ghost');
+        ctx.beginPath();sm.alt.forEach((id,i)=>{if(id>=sim.nodes.length)return;
+          const[x,y]=nodeXY(sim.nodes[id],W,H);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();
+        ctx.setLineDash([]);
+        const mid=sim.nodes[sm.alt[(sm.alt.length/2)|0]];
+        if(mid){const[mx,my]=nodeXY(mid,W,H);
+          ctx.font='11px ui-monospace,monospace';ctx.fillStyle=css('--ghost');
+          ctx.fillText('+'+fmt(sm.delta,2),mx+6,my-6);}}
+      ctx.globalAlpha=1;}
+  }
+
+  // nodes
+  for(const n of sim.nodes){
+    const[x,y]=nodeXY(n,W,H);
+    const r=3.2+9*Math.sqrt(Math.max(0,n.wealth)/wMax);
+    const rentShare=n.incomeE>1e-6?Math.max(0,n.rentIncE/n.incomeE):0;
+    // halo
+    if(showInstruments&&n.measured&&n.flowE>0.05){
+      const ne=lensGT?n.neffT:n.neffE;
+      ctx.strokeStyle=css('--accent');ctx.globalAlpha=0.5;
+      ctx.lineWidth=0.6+2.8*Math.min(1,ne/3);
+      ctx.beginPath();ctx.arc(x,y,r+3.5,0,7);ctx.stroke();ctx.globalAlpha=1;}
+    ctx.fillStyle=rentColor(rentShare);
+    ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
+    if(n.cartel){ctx.strokeStyle=css('--shield');ctx.lineWidth=1.5;ctx.setLineDash([2,2]);
+      ctx.beginPath();ctx.arc(x,y,r+1.5,0,7);ctx.stroke();ctx.setLineDash([]);}
+    if(lensGT&&n.isSybil){ctx.strokeStyle=css('--ink');ctx.lineWidth=1.4;ctx.setLineDash([1.5,2.5]);
+      ctx.beginPath();ctx.arc(x,y,r+1.5,0,7);ctx.stroke();ctx.setLineDash([]);
+      // tether to owner
+      const own=sim.nodes[n.owner];if(own){const[ox,oy]=nodeXY(own,W,H);
+        ctx.globalAlpha=0.5;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(ox,oy);ctx.stroke();ctx.globalAlpha=1;}}
+    if(focus===n){ctx.strokeStyle=css('--ink');ctx.lineWidth=1.6;
+      ctx.beginPath();ctx.arc(x,y,r+5.5,0,7);ctx.stroke();}
+  }
+}
+
+/* ---------- inspector & events ---------- */
+function renderInspector(){
+  const host=document.getElementById('insp');
+  const n=pinned||hoverNode;
+  const lensGT=document.getElementById('lensGT').checked;
+  if(!n){host.innerHTML='<h2>Inspector</h2><div class="empty">Hover a node. Click to pin.</div>';return;}
+  const rentShare=n.incomeE>1e-6?Math.max(0,n.rentIncE/n.incomeE):0;
+  const scar=Math.min(1,Math.max(0,1-n.neffE/N_TARGET));
+  const tag=n.isSybil?`<span class="badge" style="background:var(--accent-soft);color:var(--accent)">Sybil of ${n.owner}</span>`
+    :n.cartel?`<span class="badge" style="background:var(--accent-soft);color:var(--shield)">cartel</span>`:'';
+  host.innerHTML=`<h2>Inspector ${pinned?'· pinned':''}</h2>
+   <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+     <b class="mono">node ${n.id}</b>${tag}</div>
+   <dl class="kv mono">
+    <dt>wealth</dt><dd>${fmt(n.wealth,1)}</dd>
+    <dt>unit cost</dt><dd>${fmt(n.cost)}</dd>
+    <dt>markup</dt><dd>${fmt(n.markup)}</dd>
+    <dt>rent share</dt><dd style="color:${rentColor(rentShare)}">${fmt(rentShare*100,0)}%</dd>
+    <dt>premium (VCG)</dt><dd>${fmt(n.premE)}</dd>
+    <dt>n_eff est</dt><dd>${fmt(n.neffE)}</dd>
+    ${lensGT?`<dt>n_eff true</dt><dd>${fmt(n.neffT)}</dd>`:''}
+    <dt>scarcity</dt><dd>${fmt(scar)}</dd>
+    <dt>flow (EMA)</dt><dd>${fmt(n.flowE)}</dd>
+    <dt>warmth</dt><dd>${fmt(n.warmth)}</dd>
+    <dt>tax (EMA)</dt><dd>${fmt(n.taxE,3)}</dd>
+   </dl>
+   <p style="font-size:11.5px;color:var(--muted)">Dashed cyan paths on the map are this node's dependents'
+   second-best routes — what traffic does if it vanishes. The label is the premium.</p>`;
+}
+function renderEvents(){
+  const host=document.getElementById('events');
+  host.innerHTML=sim.events.map(e=>`<div><b class="mono">r${e.r}</b> ${e.msg}</div>`).join('');
+}
+
+/* ---------- interaction ---------- */
+net.addEventListener('mousemove',e=>{
+  const rect=net.getBoundingClientRect(),W=rect.width,H=rect.height;
+  let best=null,bd=180;
+  for(const n of sim.nodes){const[x,y]=nodeXY(n,W,H);
+    const d=(x-e.clientX+rect.left)**2+(y-e.clientY+rect.top)**2;
+    if(d<bd){bd=d;best=n;}}
+  hoverNode=best;});
+net.addEventListener('mouseleave',()=>hoverNode=null);
+net.addEventListener('click',()=>{pinned=(pinned===hoverNode)?null:hoverNode;});
+
+document.getElementById('playBtn').addEventListener('click',e=>{
+  playing=!playing;e.target.textContent=playing?'Pause':'Play';
+  e.target.classList.toggle('primary',playing);});
+document.getElementById('resetBtn').addEventListener('click',()=>reset());
+document.getElementById('seed').addEventListener('change',e=>{cfg.seed=+e.target.value||1;reset();});
+
+function reset(){
+  sim=makeSim({...cfg});
+  twin=makeSim({...cfg,mech:MECH.M0});
+  pinned=null;hoverNode=null;
+  sim.events.push({r:0,msg:`world seeded (${cfg.N} nodes) · scenario: ${cfg.scenario}`});
+}
+
+/* ---------- main loop ---------- */
+function tick(){
+  frame++;
+  if(playing){
+    const steps=+document.getElementById('speed').value;
+    const shadow=document.getElementById('shadowOn').checked;
+    for(let i=0;i<steps;i++){sim.step();if(shadow)twin.step();}
+  }
+  document.getElementById('roundNo').textContent=sim.round;
+  renderNet();
+  if(frame%6===0){renderCharts();renderInspector();renderEvents();}
+  requestAnimationFrame(tick);
+}
+buildControls();buildCharts();reset();requestAnimationFrame(tick);
+</script>
+</html>
