@@ -30,7 +30,7 @@ type Latency = u64;
 use thiserror::Error;
 
 /// Multihash that uniquely identifying a node (represents the Multihash of the node's Public Key)
-pub type NodeID = hashdb::Hash;
+pub type NodeID = const_multihash::Hash;
 
 #[derive(Debug, Component)]
 struct Remote {

@@ -309,7 +309,7 @@ struct PingTracker {
 #[archive_attr(derive(bytecheck::CheckBytes))]
 pub struct PingID {
     id: u8,
-    gen: u8,
+    gener: u8,
 }
 #[derive(Default, Debug, Clone, Copy)]
 enum PingSlot {
@@ -340,7 +340,7 @@ impl PingTracker {
             // Has not been initialized yet. Implies next slot is uninitialized => Increment next_free_slot
             PingSlot::Init => self.next_free_slot += 1,
             // Has already been initialized and is waiting for call to record_unique_id.
-            // The only way to encounter this is if we have run out of space in the static bufer.
+            // The only way to encounter this is if we have run out of space in the static buffer.
             // Increment generation count to invalidate potential call to record_unique_id.
             // Increment next_free_slot because there is no space anyway, so we will have to overwrite.
             PingSlot::Instant(_) => {
@@ -356,7 +356,7 @@ impl PingTracker {
         // Return ID and generation for slot.
         PingID {
             id: return_index,
-            gen: *generation,
+            gener: *generation,
         }
     }
 
@@ -368,14 +368,14 @@ impl PingTracker {
                     PingSlot::Instant(sent_time) => {
                         // Calculate duration.
                         let duration = Instant::now().duration_since(*sent_time);
-                        if *generation == id.gen {
+                        if *generation == id.gener {
                             *slot = PingSlot::NextSlot(self.next_free_slot); // Slot this NextSlot index to current free slot index
                             self.next_free_slot = id.id; // Set current free slot index to this slot.
                             Ok(duration)
                         } else {
                             Err(PingTrackerError::InvalidGeneration {
                                 expected: *generation,
-                                found: id.gen,
+                                found: id.gener,
                             }) // Invalid Generation
                         }
                     }
