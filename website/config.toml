@@ -1,0 +1,51 @@
+baseURL = "https://www.dither.link"
+languageCode = "en-us"
+title = "Dither Link"
+theme = "book"
+
+[menu]
+[[menu.main]]
+  identifier = 'docs'
+  name = 'Docs'
+  url = '/docs/'
+  weight = 2
+[[menu.main]]
+  identifier = 'git'
+  name = 'Git'
+  url = 'https://github.com/libdither'
+  weight = 4
+[[menu.main]]
+  identifier = 'matrix'
+  name = 'Matrix'
+  url = 'https://matrix.to/#/#dither:matrix.org'
+  weight = 5
+
+[markup.goldmark.parser.attribute]
+block = true
+
+[params]
+  BookTheme = 'auto'
+  BookToC = true
+
+  # (Optional, default none) Set leaf bundle to render as side menu
+  # When not specified file structure and weights will be used
+  # BookMenuBundle = '/menu'
+
+  # (Optional, default docs) Specify section of content to render as menu
+  # You can also set value to "*" to render all sections to menu
+  BookSection = 'docs'
+  
+  BookRepo = 'https://github.com/libdither/dither-spec'
+  BookCommitPath = 'commit'
+  BookEditPath = 'edit/master'
+  BookDateFormat = 'Jan 2, 2006'
+  BookSearch = true
+
+  # (Optional, default true) Enables comments template on pages
+  # By default partials/docs/comments.html includes Disqus template
+  # See https://gohugo.io/content-management/comments/#configure-disqus
+  # Can be overwritten by same param in page frontmatter
+  BookComments = false
+
+  BookPortableLinks = true
+  BookServiceWorker = true

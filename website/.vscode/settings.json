@@ -1,0 +1,19 @@
+{
+	"liveServer.settings.multiRootWorkspaceName": "dither.link",
+	"nixEnvSelector.suggestion": false,
+	"nixEnvSelector.nixFile": "${workspaceRoot}/shell.nix",
+	"cSpell.words": [
+		"deallocated",
+		"Disp",
+		"Substructural"
+	],
+	"spellright.language": [
+		"en-US-10-1.",
+		"en-US-9-0."
+	],
+	"spellright.documentTypes": [
+		"latex",
+		"plaintext",
+		"markdown"
+	]
+}

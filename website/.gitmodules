@@ -1,0 +1,9 @@
+[submodule "dither-spec"]
+	path = dither-spec
+	url = https://github.com/libdither/dither-spec
+[submodule "themes/book"]
+	path = themes/book
+	url = https://github.com/alex-shpak/hugo-book
+[submodule "disp"]
+	path = disp
+	url = https://github.com/libdither/disp
