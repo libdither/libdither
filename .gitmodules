@@ -1,3 +1,12 @@
 [submodule "shadow"]
 	path = shadow
 	url = https://github.com/zyansheep/shadow
+[submodule "website/dither-spec"]
+	path = website/dither-spec
+	url = https://github.com/libdither/dither-spec
+[submodule "website/themes/book"]
+	path = website/themes/book
+	url = https://github.com/alex-shpak/hugo-book
+[submodule "website/disp"]
+	path = website/disp
+	url = https://github.com/libdither/disp

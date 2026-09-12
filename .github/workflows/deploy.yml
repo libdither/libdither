@@ -3,9 +3,16 @@ name: Build and deploy site
 on:
   push:
     branches: [main]
+    # The site lives under website/; Rust-only commits shouldn't redeploy it.
+    paths:
+      - "website/**"
+      - ".github/workflows/deploy.yml"
   # Build (but don't deploy) on PRs, so a broken build or dangling link is
   # caught before merge.
   pull_request:
+    paths:
+      - "website/**"
+      - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
 permissions:
@@ -53,11 +60,11 @@ jobs:
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       - name: Build
-        run: ./build.sh
+        run: ./website/build.sh
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ./public
+          path: ./website/public
 
   deploy:
     needs: build
