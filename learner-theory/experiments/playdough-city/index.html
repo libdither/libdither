@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Play-dough City: does squeezing a city make it sprawl?</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="viz-root">
+      <header class="top">
+        <h1>Play-dough City</h1>
+        <p>
+          Testing <a href="https://www.youtube.com/watch?v=-Qn4iZgQY8k" target="_blank" rel="noopener">“Play-dough explains the American City”</a>
+          with a standard urban-economics model instead of play-dough.
+        </p>
+      </header>
+
+      <main class="layout">
+        <section class="stage">
+          <div class="card scene-card" id="scene-card">
+            <canvas id="scene" aria-label="3D view of the model city. Block volume is floor space."></canvas>
+            <div class="scene-hint">Drag to orbit · scroll to zoom · hover a block</div>
+            <div class="scene-alert" id="scene-alert" hidden></div>
+            <div class="scene-legend" id="scene-legend"></div>
+            <div class="scene-note" id="scene-note"></div>
+            <div class="tooltip" id="scene-tooltip" hidden></div>
+          </div>
+
+          <section class="card verdict" aria-labelledby="verdict-title">
+            <h2 id="verdict-title">Do the video's claims hold with these settings?</h2>
+            <p class="sub">Updates live as you change the rules and assumptions.</p>
+            <div class="claims" id="claims"></div>
+          </section>
+
+          <section class="card stats-card" aria-labelledby="stats-title">
+            <h2 id="stats-title">With these rules, compared with the free-market city</h2>
+            <p class="sub" id="stats-sub"></p>
+            <div class="tiles" id="tiles"></div>
+          </section>
+
+          <div class="charts">
+            <section class="card chart-card" aria-labelledby="profile-title">
+              <div class="chart-head">
+                <div>
+                  <h2 id="profile-title">Cross-section: from downtown to the edge</h2>
+                  <p class="sub" id="profile-sub"></p>
+                </div>
+                <button class="btn" id="profile-table-btn" aria-expanded="false">Table</button>
+              </div>
+              <div class="tabs" id="profile-tabs" role="group" aria-label="Measure"></div>
+              <div class="chart-legend" id="profile-legend"></div>
+              <div class="plot" id="profile-plot"></div>
+              <div class="table-wrap" id="profile-table" hidden></div>
+            </section>
+
+            <section class="card chart-card" aria-labelledby="flows-title">
+              <div class="chart-head">
+                <div>
+                  <h2 id="flows-title">Where did the squeezed floor space go?</h2>
+                  <p class="sub" id="flows-sub"></p>
+                </div>
+                <button class="btn" id="flows-table-btn" aria-expanded="false">Table</button>
+              </div>
+              <div class="flows-bar" id="flows-bar"></div>
+              <div class="flows-legend" id="flows-legend"></div>
+              <p class="flows-note" id="flows-note"></p>
+              <div class="table-wrap" id="flows-table" hidden></div>
+            </section>
+          </div>
+        </section>
+
+        <aside class="panel">
+          <section class="card tour" id="tour" aria-live="polite">
+            <div class="step-count" id="tour-count"></div>
+            <h2 id="tour-title"></h2>
+            <div class="body" id="tour-body"></div>
+            <div class="nav">
+              <button class="btn" id="tour-back">Back</button>
+              <div class="dots" id="tour-dots"></div>
+              <span class="spacer"></span>
+              <button class="btn primary" id="tour-next">Next</button>
+            </div>
+          </section>
+
+          <section class="card controls">
+            <fieldset>
+              <legend>The rules (the lid)</legend>
+              <div class="control">
+                <label for="lid">Height limit <output id="lid-out"></output></label>
+                <input type="range" id="lid" min="0" max="16" step="1" />
+                <div class="help">In stories, with buildings covering half their lot (a floor-area-ratio cap of stories ÷ 2). 1 story allows about the floor space of a typical single-family lot, though real single-family zoning limits homes per lot rather than floor space.</div>
+              </div>
+              <div class="control" id="exempt-control">
+                <label for="exempt">Hole in the lid <output id="exempt-out"></output></label>
+                <input type="range" id="exempt" min="0" max="12" step="1" />
+                <div class="help">No height limit within this distance of downtown.</div>
+              </div>
+              <div class="control">
+                <label for="parking">Parking minimum <output id="parking-out"></output></label>
+                <input type="range" id="parking" min="0" max="12" step="1" />
+                <div class="help">Spaces per 1,000 sq ft, beyond what residents would pay for. Builders choose surface lots or garages, whichever is cheaper.</div>
+              </div>
+              <div class="control">
+                <label for="ugb">Growth boundary <output id="ugb-out"></output></label>
+                <input type="range" id="ugb" min="0" max="80" step="1" />
+                <div class="help">No new urban land beyond this distance.</div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>How people respond (the play-dough assumptions)</legend>
+              <div class="presets">
+                <button class="btn" id="assume-dough">Play-dough</button>
+                <button class="btn" id="assume-real">Realistic</button>
+              </div>
+              <div class="control">
+                <label for="flex">Can people live in less space? <output id="flex-out"></output></label>
+                <input type="range" id="flex" min="0" max="20" step="1" />
+                <div class="help">How much floor space people give up when rent rises (the price elasticity of housing demand). Play-dough can't be compressed: 0. Long-run estimates run ≈0.45–0.7.</div>
+              </div>
+              <div class="control">
+                <label for="migration">Can people move to other cities? <output id="migration-out"></output></label>
+                <input type="range" id="migration" min="0" max="6" step="1" />
+                <div class="help">How strongly population responds to residents' real income. Play-dough can't leave the table: 0. “Freely” is the textbook open city.</div>
+              </div>
+            </fieldset>
+
+            <details class="more" id="city-details">
+              <summary>The city</summary>
+              <div class="presets" id="city-presets"></div>
+              <div class="control">
+                <label for="households">Households <output id="households-out"></output></label>
+                <input type="range" id="households" min="5" max="60" step="1" />
+              </div>
+              <div class="control">
+                <label for="income">Household income <output id="income-out"></output></label>
+                <input type="range" id="income" min="40" max="250" step="5" />
+              </div>
+              <div class="control">
+                <label for="commute">Commuting cost <output id="commute-out"></output></label>
+                <input type="range" id="commute" min="500" max="5000" step="100" />
+                <div class="help">Per year, per mile you live from downtown: time plus money for a household's round trips. Cars and highways make this cheap.</div>
+              </div>
+              <div class="control">
+                <label for="build">Construction cost <output id="build-out"></output></label>
+                <input type="range" id="build" min="100" max="450" step="5" />
+                <div class="help">Per sq ft for a 2-story building.</div>
+              </div>
+              <div class="control">
+                <label for="heightcost">Cost of building tall <output id="heightcost-out"></output></label>
+                <input type="range" id="heightcost" min="0" max="6" step="1" />
+                <div class="help">How fast cost per sq ft rises with height. The default matches Ahlfeldt &amp; McMillen's (2018) estimates of ≈10%, ≈4% and ≈1.6% more per floor at 2.5, ≈15 and 110 floors, which compounds to ≈2.2× the 2-story cost at 15 stories and ≈20× at 110. The supertall end is the least certain; the common 2%-per-floor rule of thumb is flatter (≈9× at 110).</div>
+              </div>
+              <div class="control">
+                <label for="edgecost">Cost of land at the edge <output id="edgecost-out"></output></label>
+                <input type="range" id="edgecost" min="500" max="20000" step="250" />
+                <div class="help">Farm rent plus the yearly cost of new roads and pipes, per acre converted. Land becomes urban where its lots (60% of it; the rest is streets and parks) out-earn this.</div>
+              </div>
+            </details>
+          </section>
+        </aside>
+      </main>
+
+      <section class="about">
+        <details>
+          <summary>How the model works, and what it leaves out</summary>
+          <h3>What's being modelled</h3>
+          <p>
+            A textbook monocentric city (Alonso 1964; Muth 1969; Mills 1967), the model Bertaud &amp; Brueckner (2005) used to estimate what Bangalore's
+            floor-area (FAR) limits cost residents: 3–6% of household consumption, with a footprint about 17% smaller in their simulation without
+            the limits. Every household works downtown. Rent per sq ft falls with distance by exactly enough to offset the longer commute, so nobody
+            wants to move. On each lot, builders choose how much floor space to build: taller is worth it only where rents cover the rising cost of
+            building tall. Land stays farmland wherever farming, plus the saved cost of new roads and pipes, beats urban land rent, and that sets
+            the edge of the city.
+          </p>
+          <h3>How it maps onto the play-dough</h3>
+          <ul>
+            <li><b>The dough</b> is floor space. In the 3D view, each block's volume is the floor space on that land.</li>
+            <li><b>The brown paper</b> is the land the free-market city occupies. <b>Green</b> is farmland.</li>
+            <li>
+              <b>The lid</b> caps building height, drawn in stories on half the lot. <b>The hole</b> exempts downtown. Parking minimums and growth
+              boundaries are the other rules.
+            </li>
+            <li>
+              Play-dough can't be compressed and can't leave the table. Those are two separate assumptions, and each gets a slider. With both at zero
+              the model conserves floor space exactly, like the dough. Loosening either lets squeezed floor space go unbuilt: people live in less
+              space, or live somewhere else.
+            </li>
+          </ul>
+          <h3>Calibration</h3>
+          <p>
+            Household preferences are Stone–Geary, calibrated so a household spends 30% of an $85k income on ≈1,600 sq ft at typical rents, with the
+            chosen price elasticity (which is also the income elasticity). By default the cost of height matches the per-floor cost increases
+            Ahlfeldt &amp; McMillen (2018, Table 6) report at 2.5, ≈15 and 110 floors: ≈10%, ≈4% and ≈1.6% per floor. Their figures are sample-average
+            slopes and the supertall one rests on engineering estimates, so the “cost of building tall” slider can flatten the curve. Low-density
+            housing is Cobb–Douglas in land and capital with a 20% land share.
+            A surface parking space takes 30 m² (≈320 sq ft) including aisles; a garage space costs ≈$30k. Streets, parks and non-residential uses
+            take 40% of urban land.
+          </p>
+          <h3>What it leaves out</h3>
+          <ul>
+            <li>Jobs outside downtown, traffic congestion, and the shops and offices that dominate real downtown skylines.</li>
+            <li>Different incomes, so no “luxury condo” effect. Downtown gets taller only because space is scarce.</li>
+            <li>Time. Real buildings last decades, so a city adjusts to new rules slowly. This model shows the long-run end state.</li>
+            <li>
+              Limits on homes per lot and minimum lot sizes, which is how single-family zoning actually works. The lid here caps floor space instead;
+              with flexible home sizes the two aren't equivalent.
+            </li>
+            <li>
+              Why people like yards and cars. The free-market city here is roughly 3–4× denser than real US metros of the same size, and the rules
+              explain only part of that gap. Cheap car commuting is a big part of the rest (Glaeser &amp; Kahn 2004). Try the commuting-cost slider.
+            </li>
+            <li>Parking people would want anyway. The parking slider treats every required space as unwanted, so read it as an upper bound.</li>
+          </ul>
+          <h3>Sources</h3>
+          <ul>
+            <li>Bertaud &amp; Brueckner (2005), <i>Analyzing building-height restrictions: predicted impacts and welfare costs</i>, RSUE 35(2).</li>
+            <li>Ahlfeldt &amp; McMillen (2018), <i>Tall Buildings and Land Values: Height and Construction Cost Elasticities in Chicago, 1870–2010</i>, REStat 100(5).</li>
+            <li>Brueckner (1987), <i>The structure of urban equilibria: a unified treatment of the Muth–Mills model</i>, Handbook of Regional and Urban Economics vol. 2.</li>
+            <li>Hanushek &amp; Quigley (1980), <i>What is the price elasticity of housing demand?</i>, REStat 62(3).</li>
+            <li>Glaeser &amp; Kahn (2004), <i>Sprawl and urban growth</i>, Handbook of Regional and Urban Economics vol. 4.</li>
+          </ul>
+          <p>The model is in <code>model.js</code>, and <code>model.test.mjs</code> checks its equilibrium conditions and textbook results.</p>
+        </details>
+      </section>
+    </div>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

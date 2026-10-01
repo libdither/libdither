@@ -21,6 +21,7 @@ On top of these, services for identity, consensus, and storage combine into a co
 | `src/`, `node/` | Rust implementation: the node, networking, routing, and simulation binaries |
 | [`research/`](research/) | The Dither spec & design documents, rendered to [dither.link/docs](https://dither.link/docs/dither.html) |
 | [`website/`](website/) | The [dither.link](https://dither.link) site; deploys via GitHub Actions on pushes to `main` |
+| [`learner-theory/`](learner-theory/) | Research on land markets, neural networks and learning algorithms as one kind of price system, with interactive pages and tests |
 
 ## Status & Community
 
