@@ -27,6 +27,8 @@
         --farm: #d5e6c6;
         --farm-line: #bcd4a8;
         --paved: #ebe8e0;
+        --water: #b9d3ee; /* the coast ⇄ the sensory edge */
+        --made: #7a7266; /* roads and rails ⇄ myelin: ground people made, darker with more of it */
         --lid: #52514e;
         --input: #0b0b0b;
         --seq-0: #eef4fd;
@@ -56,6 +58,8 @@
           --farm: #2c4128;
           --farm-line: #36502f;
           --paved: #33322f;
+          --water: #1f3550;
+          --made: #b8ad9a;
           --lid: #c3c2b7;
           --input: #ffffff;
           --seq-0: #1d2733;
@@ -85,6 +89,8 @@
         --farm: #2c4128;
         --farm-line: #36502f;
         --paved: #33322f;
+        --water: #1f3550;
+        --made: #b8ad9a;
         --lid: #c3c2b7;
         --input: #ffffff;
         --seq-0: #1d2733;
@@ -932,7 +938,7 @@
             <div class="eq-line">
               U<sub>kj</sub> = <span class="t" data-term="distance">− t·d(s, j)</span> <span class="t" data-term="interaction">+ s·κ·Σ<sub>q</sub> W<sub>kq</sub>·(B<sub>kq</sub> ∗ r<sub>q</sub>)<sub>j</sub></span> <span class="t" data-term="price">− p<sub>j</sub></span>
               <span class="t" data-term="tuning">− m·(1 − fit<sub>kj</sub>)</span> <span class="t" data-term="nuisance">− ν·κ·r<sub>j,−k</sub></span>
-              <span class="t" data-term="scale">+ ρ·log(1 + r<sub>j</sub>/r<sub>0</sub>)</span> <span class="t" data-term="tax">− H</span>
+              <span class="t" data-term="scale">+ ρ·log(1 + r<sub>j</sub>/r<sub>0</sub>)</span> <span class="t" data-term="tax">− H</span> <span class="t" data-term="technology">+ κ·(w·e<sup>−γT<sub>j</sub></sup>·g<sub>j</sub> + v·T<sub>j</sub>)</span>
             </div>
             <div class="eq-line">
               <span class="t" data-term="choice">P(k from s picks j) ∝ exp(U<sub>kj</sub> / τ)</span>
@@ -1032,6 +1038,16 @@
             where the others are. Optionally a type’s gain saturates, $x_0·log(1 + field/x_0)$: one job, one input, is what a unit needs.
           </li>
           <li>
+            <b>Geography and technology.</b> A layer $g_m(j)$ over the sites (a coast ⇄ where a sensory input arrives) is worth
+            $κ·w_{km}$ per unit to type $k$. Technology $T_j$ is a layer the arrivals make: it grows with the load using a site, spreads
+            to neighbours through a kernel of reach $ℓ_T$ (knowledge propagation ⇄ myelin along used tracts) and decays,
+            $dT_j/dt = α·r_j + D·((B_T ∗ T)_j − T_j) − δ·T_j$. It is worth $κ·v·T_j$ to everyone, it fades the given layers,
+            $w_{km}·e^{−γ·T_j}$, and it lengthens the reach of dealings between two sites by their mean technology,
+            $ℓ_{ij} = ℓ·(1 + β·(T_i + T_j)/2)$, with the kernel renormalized to its own reach so the same pull is spread over more
+            partners. So an arrival’s cost gains $−κ·(Σ_m w_{km}·e^{−γT_j}·g_m(j) + v·T_j)$, and for a given $T$ every term is still
+            the slope of one function: $F$ gains $−κ·Σ_j r_j·(Σ_m w·e^{−γT_j}·g_m(j) + v·T_j)$.
+          </li>
+          <li>
             <b>Taxes.</b> A tax on buildings at rate $θ$ turns $κ$ into $(1 + θ)·κ$ in the price. A tax per resident adds the same $H$ to
             every $c_j$. A Pigouvian charge adds, a second time, the nuisance an arrival causes the others, $ν·κ·r_{j,−k}$. A tax on land
             value takes a share $L$ of the landowner’s residual $p_j·r_j − (1 + θ)·κ·r_j^2/2$, which is in no $c_j$. The
@@ -1043,7 +1059,7 @@
         <p class="gl-scan">
           With more and smaller agents ($s → ∞$) the loads follow the average flows exactly: the [[fluidlimit|fluid limit]] [[@kurtz1970]].
           For steady demand, fixed tuning and prices without memory, those flows settle where the [[freeenergy|free energy]]
-          <span class="m-blk">$F = Σ_{c,j} x_{cj}·(t·d + m·(1 − fit)) + Σ_j κ·r_j^2/2 + ν·κ·Σ_j r_{jA}·r_{jB} − (s·κ/2)·Σ_{k,q} W_{kq}·Σ_{i,j} r_{ik}·B_{kq}(d_{ij})·r_{jq} − ρ·Σ_j G(r_j) + τ·Σ_{c,j} x_{cj}·log(x_{cj} ÷ λ_c)$</span>
+          <span class="m-blk">$F = Σ_{c,j} x_{cj}·(t·d + m·(1 − fit)) + Σ_j κ·r_j^2/2 + ν·κ·Σ_j r_{jA}·r_{jB} − (s·κ/2)·Σ_{k,q} W_{kq}·Σ_{i,j} r_{ik}·B_{kq}(d_{ij})·r_{jq} − κ·Σ_j r_j·(Σ_m w·e^{−γT_j}·g_m(j) + v·T_j) − ρ·Σ_j G(r_j) + τ·Σ_{c,j} x_{cj}·log(x_{cj} ÷ λ_c)$</span>
           is lowest. $x_{cj}$ is the flow of class $c$ to site $j$, and $G$ is the function whose slope is $log(1 + r/r_0)$. Under a fixed
           supply, the constraint $r_j = c$ takes the place of $κ·r_j^2/2$. Every price is the slope of $F$ at its site’s load, a
           [[lagrange|Lagrange multiplier]], which makes the model a [[potential|potential game]] [[@monderer1996;sandholm2001]].
@@ -1111,6 +1127,7 @@
             <tr><td class="sym">$w_j$ → the mix served</td><td>Refitting toward current use</td><td>[[competitive|Competitive learning]]: weights move toward the inputs won [[@grossberg1976;rumelhart1985]]</td><td class="how">The same rule</td></tr>
             <tr><td class="sym">$σ$</td><td>[[localization|Localization economies]]: firms learn from nearby firms [[@marshall1890;lucas2002]]</td><td>The neighbourhood of a [[som|self-organizing map]] [[@kohonen1982]]</td><td class="how">The same kernel</td></tr>
             <tr><td class="sym">$s·κ·Σ_q W_{kq}·(B_{kq} ∗ r_q)_j$</td><td>[[agglomeration|Agglomeration]]: the gain from being near the types one deals with, falling off with distance [[@beckmann1976;fujita1982]]</td><td>[[wiringeconomy|Wiring economy]]: short wires to the populations a neuron reads from [[@chklovskii2004;chen2006]]</td><td class="how">The same term; with symmetric $W$ it is the slope of a pairwise term of $F$, so prices stay multipliers. A bump that forms with no input given is a [[neuralfield|neural field]]’s [[@amari1977]]</td></tr>
+            <tr><td class="sym">$κ·(w·e^{−γT_j}·g_j + v·T_j)$</td><td>[[geography|Geography]] given (a coast) and made ([[technology|roads, a port]]); the made kind grows with use, spreads [[@hagerstrand1965]] and changes what the given kind is worth [[@bleakley2012]]</td><td>The substrate’s fixed structure (a sensory edge) and [[myelination|myelin]] that follows use, spreads along tracts and extends reach [[@fields2015;gibson2014]]</td><td class="how">The same form: a site value that accumulates where activity is, diffuses, and reshapes the cost of distance. Myelin’s dynamics differ in detail; the pairing is of resting states</td></tr>
             <tr><td class="sym">$ν·κ·r_{j,−k}$</td><td>[[nuisance|Nuisance]] from another use there [[@coase1960]]</td><td>[[interference|Interference]] from another feature on the same neuron [[@elhage2022]]</td><td class="how">The same term; in the toy models, interference grows with the overlap squared times how often the other feature is active</td></tr>
             <tr><td class="sym">$ρ·log(1 + r_j/r_0)$</td><td>[[scale|Economies of scale]], learning by doing [[@arrow1962]]</td><td>Rich-get-richer routing; [[collapse|expert collapse]] [[@shazeer2017]]</td><td class="how">The same term: the pull grows as $(1 + r/r_0)^{ρ/τ}$, an [[urn|urn]] process [[@arthur1989]], and even loads break when $ρ/τ > 1 + r_0/r$</td></tr>
             <tr><td class="sym">$B_j$</td><td>[[built|Built stock]], durable [[@glaeser2005durable]]</td><td>Capacity kept for a neuron, like the metabolic machinery that follows its activity [[@wongriley1989]]</td><td class="how">The same bookkeeping; no choice depends on it</td></tr>
@@ -1297,6 +1314,19 @@
           // compete.strength·κ·Σ_q C_kq·(B_long ∗ r_q)_j. Firms that gain from neighbours but share their customers
           // with everyone in a wider market ⇄ a neural field with local excitation and longer-range inhibition.
           interaction: { strength: 0, reach: 3, matrix: null, memory: 20, saturate: null, compete: { strength: 0, reach: 6, matrix: null } },
+          // Geography: fixed layers over the sites, each a function (x, y) → value (a coast, a river, fertile land ⇄
+          // where a sensory input arrives, a vascular bed), and what each type will pay to be on them, in rent
+          // units: weights[k][name]. A type-k arrival at j gains κ·Σ_m w_km·e^{−γ·T_j}·g_m(j): the desire for a
+          // layer fades with the local technology T_j at rate γ (technology.fade).
+          geography: { layers: null, weights: null },
+          // Technology ⇄ infrastructure that follows use: a field T_j that grows with the load using it
+          // (learn), spreads to neighbours through a kernel of reach `reach` (spread: knowledge propagation ⇄
+          // myelin along used tracts), and decays. It is geography that people make: a site is worth κ·value·T_j
+          // to everyone (roads, a port, a university ⇄ a myelinated, vascularized patch). And it changes desires:
+          // it fades the given geography (fade) and lengthens the reach of dealings, ℓ_ij = ℓ·(1 + boost·(T_i +
+          // T_j)/2), with the kernel renormalized to its own reach so a longer reach spreads the same pull over
+          // more partners rather than adding to it; kernels are rebuilt every `rebuild` time units.
+          technology: { learn: 0, spread: 0, reach: 3, decay: 0.01, value: 0, fade: 0, boost: 0, by: null, rebuild: 10 },
           zoning: 'none', // 'none' | 'single-use'
           similarity: null, // K×K: how well a site tuned to type q serves type k (default identity)
           scale: { strength: 0, ref: 0.2 }, // economies of scale ⇄ rich-get-richer
@@ -1371,6 +1401,11 @@
           const field = new Float64Array(N * K * K); // (B_kq ∗ hAtt_q)_j: recent use of type q near j, as type k weighs it
           const fieldC = new Float64Array(N * K * K); // the same through the competition kernel
           const hAtt = new Float64Array(N * K); // recent use by type as the interaction term sees it, with its own memory
+          const geoPart = new Float64Array(N * K); // minus what a site's geography is worth to each type, at the local technology
+          const T = new Float64Array(N); // technology ⇄ infrastructure, by site
+          let geoLayers = null; // { name: Float64Array(N) }
+          let IT = null; // the knowledge kernel: { B, M }
+          let lastRebuild = 0;
           let IB = null; // interaction kernels: IB[k][q] = { B: N × N, Z }
           let IC = null; // competition kernels, the same shape
           let ID = null; // site-pair distances, N × N
@@ -1458,6 +1493,38 @@
             nbrW = Float64Array.from(wt);
             nbrStart = Int32Array.from(start);
           }
+          function buildGeography() {
+            geoLayers = null;
+            if (!cfg.geography.layers) return;
+            geoLayers = {};
+            for (const [name, fn] of Object.entries(cfg.geography.layers)) geoLayers[name] = Float64Array.from({ length: N }, (_, j) => (typeof fn === 'function' ? fn(L.x[j], L.y[j]) : fn[j]));
+          }
+          function technologyOn() {
+            return cfg.technology.learn > 0 || cfg.technology.spread > 0;
+          }
+          function buildKnowledge() {
+            IT = null;
+            if (!technologyOn()) return;
+            const ell = Math.max(1e-6, cfg.technology.reach);
+            const B = new Float32Array(N * N);
+            const Mloc = new Float32Array(N);
+            for (let j = 0; j < N; j++) {
+              let t = 0;
+              for (let i = 0; i < N; i++) {
+                const v = i === j ? 0 : Math.exp(-Math.hypot(L.x[i] - L.x[j], L.y[i] - L.y[j]) / ell);
+                B[j * N + i] = v;
+                t += v;
+              }
+              Mloc[j] = t;
+            }
+            IT = { B, M: Mloc };
+          }
+          // Technology lengthens the reach of dealings between two sites by the mean technology at the two ends,
+          // so the kernel stays symmetric and the free energy keeps its pairwise term for a given T.
+          function reachAt(i, j, ell) {
+            const boost = cfg.technology.boost;
+            return boost > 0 ? ell * (1 + (boost * (T[i] + T[j])) / 2) : ell;
+          }
           function buildInteraction() {
             IB = IC = null;
             if (!(cfg.interaction.strength > 0)) return;
@@ -1481,10 +1548,18 @@
                   const ell = Math.max(1e-6, typeof reach === 'number' ? reach : reach[k][q]);
                   if (!kernels.has(ell)) {
                     const B = new Float32Array(N * N);
-                    for (let i = 0; i < N * N; i++) B[i] = Math.exp(-ID[i] / ell);
-                    // normalize by the kernel's sum from the most central site, so a uniform load r gives a field of r
+                    const boosted = cfg.technology.boost > 0;
+                    // normalize by the kernel's sum from the most central site, so a uniform load r gives a field of r.
+                    // A reach lengthened by technology is renormalized by (ℓ_ij/ℓ)², the plane's kernel mass ratio, so
+                    // it spreads the same pull over more partners instead of adding to it.
                     let Z = 0;
-                    for (let i = 0; i < N; i++) Z += B[c * N + i];
+                    for (let i = 0; i < N; i++) Z += Math.exp(-ID[c * N + i] / ell);
+                    for (let j = 0; j < N; j++) {
+                      for (let i = 0; i < N; i++) {
+                        const lij = boosted ? reachAt(i, j, ell) : ell;
+                        B[j * N + i] = Math.exp(-ID[j * N + i] / lij) / (boosted ? (lij / ell) ** 2 : 1);
+                      }
+                    }
                     // and each site's own kernel mass, for fields read as a local density (competition)
                     const Mloc = new Float32Array(N);
                     for (let j = 0; j < N; j++) {
@@ -1540,6 +1615,9 @@
             h.fill(0);
             if (cfg.nuisance.strength > 0 || cfg.scale.strength > 0 || cfg.interaction.strength > 0) for (let i = 0; i < N * K; i++) h[i] = 0.02 * (cfg.demand / N) * rand();
             if (cfg.interaction.strength > 0) for (let i = 0; i < N * K; i++) hAtt[i] = 0.02 * (cfg.demand / N) * rand();
+            T.fill(0);
+            lastRebuild = 0;
+            if (cfg.technology.boost > 0) buildInteraction();
           }
           function initSchedule() {
             const s = cfg.schedule;
@@ -1770,7 +1848,7 @@
                 const idx = j * K + k;
                 if (full || (zoned && zone[j] !== k)) {
                   sitePart[idx] = Infinity;
-                  misPart[idx] = nuiPart[idx] = taxPart[idx] = attPart[idx] = 0;
+                  misPart[idx] = nuiPart[idx] = taxPart[idx] = attPart[idx] = geoPart[idx] = 0;
                   continue;
                 }
                 let fit = 0;
@@ -1798,7 +1876,16 @@
                 let crowd = 0;
                 if (comp > 0) for (let q = 0; q < K; q++) crowd += (C ? C[k][q] : 1) * fieldC[(j * K + k) * K + q];
                 attPart[idx] = -att * kappa * gain + comp * kappa * crowd;
-                sitePart[idx] = p + mis + nui + taxPart[idx] + attPart[idx];
+                // what the site's geography is worth to this type, fading with the technology in use there
+                let geo = 0;
+                if (geoLayers && cfg.geography.weights && cfg.geography.weights[k]) {
+                  const fade = cfg.technology.fade > 0 ? Math.exp(-cfg.technology.fade * T[j]) : 1;
+                  for (const [name, w] of Object.entries(cfg.geography.weights[k])) geo += w * fade * geoLayers[name][j];
+                }
+                // the geography people made: what the site's own infrastructure is worth
+                if (cfg.technology.value > 0) geo += cfg.technology.value * T[j];
+                geoPart[idx] = -kappa * geo;
+                sitePart[idx] = p + mis + nui + taxPart[idx] + attPart[idx] + geoPart[idx];
               }
             }
           }
@@ -2001,6 +2088,26 @@
               const da = Math.min(1, dt / Math.max(1e-6, cfg.interaction.memory));
               for (let i = 0; i < N * K; i++) hAtt[i] += (rk[i] - hAtt[i]) * da;
             }
+            if (technologyOn()) {
+              // learning by doing where the load is, knowledge spreading to neighbours, and forgetting
+              const tc = cfg.technology;
+              const by = tc.by;
+              const use = (j) => (by == null ? r[j] : rk[j * K + by]);
+              const next = new Float64Array(N);
+              for (let j = 0; j < N; j++) {
+                let nb = 0;
+                if (IT && tc.spread > 0) {
+                  for (let i = 0; i < N; i++) nb += IT.B[j * N + i] * T[i];
+                  nb = IT.M[j] > 0 ? nb / IT.M[j] : 0;
+                }
+                next[j] = T[j] + dt * (tc.learn * use(j) + tc.spread * (nb - T[j]) - tc.decay * T[j]);
+              }
+              T.set(next);
+              if (tc.boost > 0 && time - lastRebuild >= tc.rebuild) {
+                buildInteraction();
+                lastRebuild = time;
+              }
+            }
             if (agents) {
               const f = Math.min(1, dt / stayMean());
               const fade = Math.exp(-dt / stayMean());
@@ -2166,7 +2273,7 @@
               const j = cl.sites[q];
               const idx = j * K + k;
               const head = cfg.tax.head || 0;
-              return { commute: -cl.base[q], price: a[j] + b[j], scale: a[j] + b[j] + misPart[idx] + nuiPart[idx] + taxPart[idx] + attPart[idx] - sitePart[idx], mismatch: misPart[idx], nuisance: nuiPart[idx], head, pigou: taxPart[idx] - head, attraction: -attPart[idx] };
+              return { commute: -cl.base[q], price: a[j] + b[j], scale: a[j] + b[j] + misPart[idx] + nuiPart[idx] + taxPart[idx] + attPart[idx] + geoPart[idx] - sitePart[idx], mismatch: misPart[idx], nuisance: nuiPart[idx], head, pigou: taxPart[idx] - head, attraction: -attPart[idx], geography: -geoPart[idx] };
             };
             // With dropped overflow the choice can land on a full site, which then turns it away.
             const full = !leaves && agentsOn() && dropOverflow() && capped[cl.sites[best]] && occ[cl.sites[best]] >= capCount();
@@ -2202,7 +2309,9 @@
             if (['distanceCost', 'types', 'sources', 'sourceAt', 'reach', 'causal', 'content'].some(has)) buildClasses();
             if (has('similarity')) buildSimilarity();
             if (has('tuning') && 'spill' in patch.tuning) buildKernel();
-            if (has('interaction')) buildInteraction();
+            if (has('interaction') || has('technology')) buildInteraction();
+            if (has('geography')) buildGeography();
+            if (has('technology')) buildKnowledge();
             if (has('cap')) markCapped();
             if (has('schedule') && cfg.schedule.kind !== prevSchedule) initSchedule();
             if (has('tuning') && cfg.tuning.mode !== prevMode && cfg.tuning.mode !== 'learned') initTuning();
@@ -2367,6 +2476,26 @@
                 if (top) peaks++;
               }
             }
+            // technology: its mean over the load, its peak, and the mean effective reach; geography: the share of
+            // the load on each layer (where the layer is at least half its maximum)
+            let techMean = 0;
+            let techMax = 0;
+            for (let j = 0; j < N; j++) {
+              techMean += R[j] * T[j];
+              if (T[j] > techMax) techMax = T[j];
+            }
+            techMean = tot > 0 ? techMean / tot : 0;
+            const reachMean = typeof cfg.interaction.reach === 'number' ? cfg.interaction.reach * (1 + cfg.technology.boost * techMean) : NaN;
+            const onLayer = {};
+            if (geoLayers) {
+              for (const [name, g] of Object.entries(geoLayers)) {
+                let gm = 0;
+                for (let j = 0; j < N; j++) gm = Math.max(gm, g[j]);
+                let on = 0;
+                for (let j = 0; j < N; j++) if (g[j] >= 0.5 * gm) on += R[j];
+                onLayer[name] = tot > 0 ? on / tot : 0;
+              }
+            }
             // concentration: the share of type 0's load on its busiest tenth of sites; mixing: cosine of two types' loads
             const sorted0 = Array.from({ length: N }, (_, j) => rk[j * K]).sort((p, q) => q - p);
             let top = 0;
@@ -2395,6 +2524,10 @@
               hops,
               hopsShuffled,
               peaks,
+              techMean,
+              techMax,
+              reachMean,
+              onLayer,
               concentration,
               mixing,
               imbalance: mean > 0 ? peak / mean : 0,
@@ -2418,6 +2551,8 @@
           buildClasses();
           buildSimilarity();
           buildKernel();
+          buildGeography();
+          buildKnowledge();
           buildInteraction();
           markCapped();
           initTuning();
@@ -2469,6 +2604,9 @@
             agentLoad,
             kappaEff,
             attPart,
+            geoPart,
+            T,
+            geography: () => geoLayers,
             kernel: () => ({ B: IB, C: IC, D: ID }),
             price: (j) => a[j] + b[j],
             run,
@@ -2557,6 +2695,23 @@
               temperature: 0.15,
               types: [{ share: 1 / 3, cost: 1 }, { share: 1 / 3, cost: 0 }, { share: 1 / 3, cost: 0 }],
               interaction: { strength: 2.5, reach: 2, matrix: [[1, 1, 0], [1, 1, 1], [0, 1, 1]], memory: 40 },
+            },
+            unitsPerFrame: 4,
+          },
+          {
+            id: 'geography',
+            econ: 'A coast, then roads and rails',
+            net: 'A sensory edge, then myelin',
+            types: [{ econ: 'Households', net: 'Input events' }],
+            config: {
+              layout: SHEET,
+              sources: 'anywhere',
+              distanceCost: 0,
+              demand: LAND,
+              temperature: 0.15,
+              interaction: { strength: 2, reach: 2, memory: 40 },
+              geography: { layers: { coast: (x) => (x <= -9 ? 1 : 0) }, weights: [{ coast: 0.3 }] },
+              technology: { learn: 0.005, spread: 0.03, reach: 3, decay: 0.001, value: 1, fade: 4, boost: 0.5 },
             },
             unitsPerFrame: 4,
           },
@@ -2746,6 +2901,8 @@
             shared: v('--shared'),
             building: v('--building'),
             farm: v('--farm'),
+            water: v('--water'),
+            made: v('--made'),
             farmLine: v('--farm-line'),
             paved: v('--paved'),
             lid: v('--lid'),
@@ -2841,6 +2998,15 @@
           ermentrout1979: { a: 'Ermentrout & Cowan', A: 'G. B. Ermentrout and J. D. Cowan', y: 1979, t: 'A mathematical theory of visual hallucination patterns', v: 'Biological Cybernetics 34(3): 137–150', u: 'https://doi.org/10.1007/BF00336965', why: 'A neural field with local excitation and wider inhibition breaks into periodic patterns.' },
           achterberg2023: { a: 'Achterberg et al.', A: 'J. Achterberg, D. Akarca, D. J. Strouse, J. Duncan and D. E. Astle', y: 2023, t: 'Spatially embedded recurrent neural networks reveal widespread links between structural and functional neuroscience findings', v: 'Nature Machine Intelligence 5(12): 1369–1381', u: 'https://doi.org/10.1038/s42256-023-00748-9', why: 'Recurrent networks trained with a wiring cost in space grow modular, brain-like structure.' },
           margalit2024: { a: 'Margalit et al.', A: 'E. Margalit, H. Lee, D. Finzi, J. J. DiCarlo, K. Grill-Spector and D. L. K. Yamins', y: 2024, t: 'A unifying framework for functional organization in early and higher ventral visual cortex', v: 'Neuron 112(14): 2435–2451', u: 'https://doi.org/10.1016/j.neuron.2024.04.018', why: 'A deep network with a spatial smoothness cost on a sheet grows orientation maps and category patches like cortex’s.' },
+          bleakley2012: { a: 'Bleakley & Lin', A: 'H. Bleakley and J. Lin', y: 2012, t: 'Portage and path dependence', v: 'Quarterly Journal of Economics 127(2): 587–644', u: 'https://doi.org/10.1093/qje/qjs011', why: 'Cities that formed where goods had to be carried around rapids stayed large long after that reason was gone.' },
+          hagerstrand1965: { a: 'Hägerstrand', A: 'T. Hägerstrand', y: 1965, t: 'A Monte Carlo approach to diffusion', v: 'European Journal of Sociology 6(1): 43–67', u: 'https://doi.org/10.1017/S0003975600001132', why: 'Innovations spread from person to person through a contact field that falls off with distance: the mean information field.' },
+          jaffe1993: { a: 'Jaffe, Trajtenberg & Henderson', A: 'A. B. Jaffe, M. Trajtenberg and R. Henderson', y: 1993, t: 'Geographic localization of knowledge spillovers as evidenced by patent citations', v: 'Quarterly Journal of Economics 108(3): 577–598', u: 'https://doi.org/10.2307/2118401', why: 'Patents cite earlier patents from nearby far more often than chance: knowledge spills over locally.' },
+          baumsnow2007: { a: 'Baum-Snow', A: 'N. Baum-Snow', y: 2007, t: 'Did highways cause suburbanization?', v: 'Quarterly Journal of Economics 122(2): 775–805', u: 'https://doi.org/10.1162/qjec.122.2.775', why: 'Each new highway through a central city cut its population by about a sixth: longer reach spreads the city.' },
+          gaspar1998: { a: 'Gaspar & Glaeser', A: 'J. Gaspar and E. L. Glaeser', y: 1998, t: 'Information technology and the future of cities', v: 'Journal of Urban Economics 43(1): 136–156', u: 'https://doi.org/10.1006/juec.1996.2031', why: 'Cheaper communication at a distance complements meeting in person rather than replacing it, so cities need not empty.' },
+          comin2012: { a: 'Comin, Dmitriev & Rossi-Hansberg', A: 'D. Comin, M. Dmitriev and E. Rossi-Hansberg', y: 2012, t: 'The spatial diffusion of technology', v: 'NBER Working Paper 18534', u: 'https://doi.org/10.3386/w18534', why: 'Technology adoption falls off with distance from where a technology is already in use.' },
+          gibson2014: { a: 'Gibson et al.', A: 'E. M. Gibson, D. Purger, C. W. Mount and others', y: 2014, t: 'Neuronal activity promotes oligodendrogenesis and adaptive myelination in the mammalian brain', v: 'Science 344(6183): 1252304', u: 'https://doi.org/10.1126/science.1252304', why: 'Driving neurons to fire makes new myelin form on their axons.' },
+          mckenzie2014: { a: 'McKenzie et al.', A: 'I. A. McKenzie, D. Ohayon, H. Li and others', y: 2014, t: 'Motor skill learning requires active central myelination', v: 'Science 346(6207): 318–322', u: 'https://doi.org/10.1126/science.1254960', why: 'Mice that cannot make new myelin cannot learn a new motor skill.' },
+          fields2015: { a: 'Fields', A: 'R. D. Fields', y: 2015, t: 'A new mechanism of nervous system plasticity: activity-dependent myelination', v: 'Nature Reviews Neuroscience 16(12): 756–767', u: 'https://doi.org/10.1038/nrn4023', why: 'Review: myelin is laid down where activity is, and it tunes conduction delays.' },
           sandholm2001: { a: 'Sandholm', A: 'W. H. Sandholm', y: 2001, t: 'Potential games with continuous player sets', v: 'Journal of Economic Theory 97(1): 81–108', u: 'https://doi.org/10.1006/jeth.2000.2696', why: 'Potential games for large populations, congestion games like this one among them.' },
           erlang1917: { a: 'Erlang', A: 'A. K. Erlang', y: 1917, t: 'Solution of some problems in the theory of probabilities of significance in automatic telephone exchanges', v: 'Elektroteknikeren 13', u: wp('Erlang (unit)#Erlang B formula'), why: 'The share of calls lost when c lines serve randomly arriving calls: the Erlang B formula.' },
           little1961: { a: 'Little', A: 'J. D. C. Little', y: 1961, t: 'A proof for the queuing formula L = λW', v: 'Operations Research 9(3): 383–387', u: 'https://doi.org/10.1287/opre.9.3.383', why: 'The number present equals the arrival rate times the time each stays.' },
@@ -2968,6 +3134,10 @@
           centralplace: { t: 'Central places', d: 'Christaller’s account of why towns of a given size are spaced evenly across a plain: each serves the customers within its reach, and towns too close compete for the same ones [[@christaller1933]]. Krugman derived the spacing from a pull toward other firms against a push from competition for customers, a Turing-type instability [[@krugman1996]]. The same pull-and-push forms a periodic array of bumps in a [[neuralfield|neural field]] [[@ermentrout1979]].', n: 'A periodic array of activity bumps; modules', l: [wp('Central place theory')] },
           lateralinhibition: { t: 'Lateral inhibition', d: 'Neurons suppress their neighbours over some range. With local excitation and wider inhibition (a “Mexican hat”), a sheet of neurons breaks into a regular pattern of active patches [[@amari1977;ermentrout1979]]; the same shape of interaction forms ocular-dominance columns [[@miller1989]]. Here: a second kernel of the opposite sign and a longer reach.', e: 'Competition for the same customers over a wider market [[@krugman1996]]', f: 'compete.strength · κ · Σ_q C_{kq}·(B_long ∗ r_q)_j', l: [wp('Lateral inhibition')] },
           latency: { t: 'Latency', d: 'How long an answer takes. In a layout with wiring costs, a message’s latency is the length of wire ⇄ road it crosses, so the layout fixes the latency of every path. A feedforward pass crosses a chain of areas once, a fixed latency; recurrent and predictive-coding networks keep exchanging messages between neighbours until they agree, so they can answer early and roughly or late and exactly, as vision does with a fast feedforward sweep and slower recurrent refinement [[@lamme2000]]. In the port-city setting the readout sums the hops from the harbour ⇄ input to the last kind.', e: 'The corner shop answers now; the specialist downtown answers later and better', l: [wp('Latency (engineering)')] },
+          geography: { t: 'Geography', d: 'What a site is worth before anyone is there: a coast or river for trade, fertile land, a pass. Here a layer over the sites and a weight each type puts on it; the pinned downtown and the harbour are the point case. Cities start where geography says, and the question is whether they stay once it stops mattering: portage sites did [[@bleakley2012]].', n: 'The substrate’s fixed structure: where sensory inputs arrive, where vessels run', f: '$κ·w_{km}·g_m(j)$', l: [wp('Economic geography')] },
+          technology: { t: 'Technology', d: 'Here, geography that people make: a level that grows where they are (learning by doing), spreads to neighbours through a kernel of distance (Hägerstrand’s mean information field [[@hagerstrand1965]]; knowledge spillovers fall off with distance [[@jaffe1993]]) and decays with disuse. It is worth living on (roads, a port, schools), it fades the need for the given geography, and it lengthens the reach of dealings, which spreads the city as highways did [[@baumsnow2007]] without emptying it [[@gaspar1998]]. Adoption itself falls off with distance from where a technology is used [[@comin2012]].', n: '[[myelination|Myelin]] and vessels laid down by use', f: '$dT_j/dt = α·r_j + D·((B_T ∗ T)_j − T_j) − δ·T_j$', l: [wp('Diffusion of innovations')] },
+          myelination: { t: 'Activity-dependent myelination', d: 'Neuronal activity makes oligodendrocytes wrap the active axons in myelin, which speeds conduction; learning a motor skill needs it [[@gibson2014;mckenzie2014;fields2015]]. Faster conduction brings farther partners within the same latency, so the effective reach of connections grows along used tracts: infrastructure that follows use, laid down where the activity was and kept after.', e: '[[technology|Roads and rails]] built where the city already was', l: [wp('Myelin')] },
+          pathdependence: { t: 'Path dependence', d: 'When where you ended up depends on where you started, not only on where it is now best to be. Small early advantages decide which of several stable arrangements forms, and the arrangement outlives the advantage [[@arthur1989;krugman1991]]. Cities founded at river portages stayed large long after portage stopped mattering [[@bleakley2012]]; here the made geography is what keeps a city where the given geography put it.', n: 'A map stays where it formed against the input, a critical period [[@hubel1970]]', l: [wp('Path dependence')] },
           interference: { t: 'Interference', d: 'When two features share a neuron and are active at the same time, each blurs the other’s signal. In Toy Models of Superposition, a feature’s error from sharing grows with the overlap squared times how often the other feature is active [[@elhage2022]].', e: '[[nuisance|Nuisance]]', f: '$ν·κ·r_{j,−k}$' },
           superposition: { t: 'Superposition', d: 'A network representing more features than it has neurons by letting features share neurons. It works when features are rarely active together [[@elhage2022]].', e: 'Uses taking turns in the same buildings', l: [['Toy Models of Superposition', 'https://transformer-circuits.pub/2022/toy_model/index.html']] },
           polysemantic: { t: 'Polysemantic neuron', d: 'A neuron that responds to several unrelated features [[@olah2020]].', e: 'A building that serves several uses', f: 'A site at least 20% of whose use, over its lifetime, is not its main type', l: [wp('Polysemanticity')] },
@@ -3100,6 +3270,12 @@
             same: 'The “input” of the land market was a point; here it is a population whose place is itself chosen, and so on down the chain. This is the sense in which downtown is the output of other neurons. The cost each hop adds is the wire ⇄ road it crosses, so the layout fixes the [[latency|latency]] of every path. A feedforward pass crosses the chain once; a recurrent or predictive-coding network keeps passing messages between neighbours until they agree, and can answer early and roughly or late and exactly [[@lamme2000]]. Cities answer the same way: the corner shop now, the specialist downtown later.',
             try: 'move the input to the centre: the areas become rings around it and the hops get longer. Lower the wiring strength and the areas spread and overlap.',
           },
+          geography: {
+            econ: 'The plain has a coast along its west side, and the coast is worth something: trade comes by sea. Nothing else is given. Households settle on the coast and deal with each other there. Then they build: a [[technology|technology]] level grows where people are, spreads to neighbours, and fades where nobody uses it. It does three things. It is [[geography|geography]] people made, worth living on in itself (roads, a port, a university); it fades the need for the coast (rail and road carry what ships did); and it lengthens the reach of dealings. Watch the city start on the coast, build inland, spread out as reach grows, and stay near the coast long after the coast stopped mattering: Bleakley and Lin’s portage cities [[@bleakley2012]].',
+            net: 'A sensory input arrives along one edge of the sheet, and being next to it is worth something. Activity gathers there. Then the tissue builds: use lays down [[myelination|myelin]] and vessels where activity is [[@gibson2014;mckenzie2014]], the change spreads along used tracts, and it is lost with disuse. Myelinated ground is cheaper to use, so activity stays on it; faster conduction lengthens the effective reach of connections, so the same neuron reads farther partners; and the map that formed against the input edge no longer needs it. The map stays where it formed.',
+            same: 'Geography is a layer over the sites and a weight each type puts on it; the land market’s pinned centre and the port’s harbour were the point case. [[technology|Technology]] is a second layer, one the arrivals make: it grows with use, spreads through the same kind of kernel as dealings (Hägerstrand’s mean information field [[@hagerstrand1965]]), and changes the weights and the reach. So desires are functions of a field. Each effect has its own readout: with the coast faded and no made value the city drifts inland toward the plain’s middle; with made value it stays within a few parcels of the coast; with a longer reach it spreads over twice the land at half the density, as highways spread American cities [[@baumsnow2007]]. For a given technology the prices are still multipliers of one free energy; technology moves slowly through it.',
+            try: 'set the value of made ground to 0: with nothing of its own to stand on, the city leaves the coast. Set it back and set reach growth to 0: it stays compact. Set the coast’s fading to 0: it never leaves the shore, however much it builds.',
+          },
           lid: {
             econ: 'A [[heightlimit|height limit]] caps how many households a building can hold. Full buildings turn people away, so demand spills to the suburbs: more land, longer commutes, higher rents. Exempt downtown and it builds taller than with no limit at all. Let people [[leaving|move away]] and they leave instead of sprawling.',
             net: 'A [[ratecap|firing-rate cap]] limits how often a neuron can fire. Saturated neurons can’t take more spikes, so inputs spill to neurons farther from the input: more active neurons, longer wiring, higher thresholds. Leave the hub uncapped and it fires faster than with no cap at all. Allow inputs to be dropped and they are dropped instead of spreading.',
@@ -3167,6 +3343,10 @@
             return view === 'econ'
               ? 'Workers live everywhere and commute to nearby firms. Colour: which industry a block’s firms serve; height: how many work there.'
               : 'The dotted grid above is the input layer: both eyes project to every point. Each disc below is a neuron in cortex; colour: which eye it prefers ([[tuning|tuning]]).';
+          if (sim.cfg.sources === 'anywhere' && sim.cfg.geography.layers)
+            return view === 'econ'
+              ? `The pale blue strip is the coast, worth something to settle on; the darker the ground, the more [[technology|technology]] (roads, rails) has been built there. Each tile is a parcel; ${agents ? 'each floor is one [[agent|household]] living there now' : 'a building’s height is its [[floorspace|floor space in use]]'}. The dashed ring marks the centre.`
+              : `The shaded strip is where a sensory input arrives; the darker the ground under a neuron, the more [[myelination|myelin]] use has laid down there. Each disc is a neuron; its size is how many of its [[spike|spikes]] are still in effect. The dashed ring marks the bump’s centre.`;
           if (sim.cfg.sources === 'anywhere')
             return view === 'econ'
               ? `No centre is given. Each tile is a parcel; ${agents ? 'each floor is one [[agent|household]] living there now' : 'a building’s height is its [[floorspace|floor space in use]]'}${sim.K > 1 ? '; walls show who is inside' : ''}. Each arrival goes where the others it deals with are; the dashed ring marks where the centre formed.`
@@ -3184,6 +3364,7 @@
           { id: 'choice', sym: 'τ', econ: 'Variety of tastes in a [[logit|logit choice]]', net: '[[softmax|Softmax]] [[temperature|temperature]]; [[escapenoise|escape noise]]', short: 'taste variety ⇄ temperature' },
           { id: 'distance', sym: 't·d', econ: '[[commute|Commute cost]]', net: '[[wiring|Wiring cost]]; [[alibi|ALiBi]] distance penalty', short: 'commute ⇄ wiring cost' },
           { id: 'interaction', sym: 's, W, ℓ', econ: '[[agglomeration|Agglomeration]]: nearness to the types one deals with', net: '[[wiringeconomy|Wiring economy]]: nearness to the populations one reads from', short: 'agglomeration ⇄ wiring economy' },
+          { id: 'technology', sym: 'g, T', econ: '[[geography|Geography]], given and made; [[technology|technology]] that changes what people want from it', net: 'The substrate’s fixed structure; [[myelination|myelin]] that follows use and extends reach', short: 'geography and technology ⇄ substrate and myelin' },
           { id: 'price', sym: 'p', econ: '[[rent|Rent]] or fee, adjusted to load', net: '[[adaptation|Adaptation]], [[homeostasis|set point]] or [[balancing|balancing bias]]', short: 'prices ⇄ adaptation' },
           { id: 'cap', sym: 'cap', econ: '[[heightlimit|Height]] or capacity limit', net: '[[ratecap|Maximum firing rate]], [[capfactor|capacity factor]]', short: 'a height limit ⇄ a rate cap' },
           { id: 'exit', sym: 'V₀', econ: 'Moving away, staying home: an [[outside|outside option]]', net: 'Dropping, [[sink|attention sink]]', short: 'an outside option: leaving ⇄ dropping' },
@@ -3220,7 +3401,8 @@
                     ? dual('map, homes everywhere', 'sheet, topographic input')
                     : dual('corridor, every block', 'sequence, every token'),
             distance: liveTerms.has('distance') ? (cfg.sourceAt ? dual('docks only', 'area 1 only') : `t = ${cfg.distanceCost}`) : off,
-            interaction: liveTerms.has('interaction') ? (p.id === 'agglomeration' ? dual('pull, optional push', 'excitation, optional inhibition') : p.id === 'firmshomes' ? dual('pull, optional push', 'excitation, optional inhibition') : dual('pull, in a chain', 'excitation, in a chain')) : off,
+            interaction: liveTerms.has('interaction') ? (p.id === 'agglomeration' ? dual('pull, optional push', 'excitation, optional inhibition') : p.id === 'firmshomes' ? dual('pull, optional push', 'excitation, optional inhibition') : p.id === 'geography' ? dual('pull, reach grows', 'excitation, reach grows') : dual('pull, in a chain', 'excitation, in a chain')) : off,
+            technology: liveTerms.has('technology') ? dual('a coast; made ground', 'an edge; myelin') : cfg.geography.layers ? dual('a coast', 'a sensory edge') : off,
             price: priceWords[cfg.price.rule],
             cap: capWords,
             exit: cfg.exit.mode === 'none' && p.id === 'taxes' ? dual('optional', 'optional') : exitWords[cfg.exit.mode] || off,
@@ -3236,6 +3418,7 @@
           const s = new Set(['choice']);
           if (cfg.distanceCost > 0 || cfg.types.some((t) => t.cost > 0)) s.add('distance');
           if (cfg.interaction.strength > 0) s.add('interaction');
+          if (cfg.technology.learn > 0 || cfg.technology.spread > 0) s.add('technology');
           if (cfg.price.rule !== 'none') s.add('price');
           if (Number.isFinite(cfg.cap.rate)) s.add('cap');
           if (cfg.exit.mode !== 'none') s.add('exit');
@@ -3261,6 +3444,7 @@
           if (cfg.layout.kind !== base.layout.kind) other.push({ ring: 'a market of firms ⇄ a router and experts', line: 'a corridor ⇄ a token sequence' }[cfg.layout.kind]);
           if (cfg.sources !== base.sources) other.push({ everywhere: 'arrivals from everywhere ⇄ topographic input', sequence: 'arrivals from every position ⇄ a query per token', anywhere: 'no starting point ⇄ no input neuron: arrivals go where the others are' }[cfg.sources]);
           if (cfg.sourceAt) other.push('the one given point at the edge: a harbour ⇄ a sensory input');
+          if (cfg.geography.layers) other.push('a geography layer, a coast ⇄ a sensory edge, worth something to arrivals');
           if (cfg.types.length > 1) other.push(`${cfg.types.length} kinds of arrival`);
           if (cfg.price.rule !== base.price.rule && cfg.price.rule !== 'none') other.push({ capacity: 'a fixed supply per site ⇄ a homeostatic set point', balance: 'relative fees ⇄ a balancing bias' }[cfg.price.rule]);
           if (cfg.price.rule === 'supply' && cfg.price.memory >= 500 && base.price.memory < 500) other.push('rents that remember through vacancies ⇄ thresholds that remember through pauses');
@@ -3307,6 +3491,14 @@
               get: (c) => (c.sourceAt && c.sourceAt[0] !== 0 ? 'edge' : 'centre'),
               set: (v) => ({ sourceAt: v === 'edge' ? [-11, 0] : [0, 0] }),
             },
+            { kind: 'button', econ: 'Restart', net: 'restart', act: (sim) => sim.reset() },
+          ],
+          geography: [
+            { kind: 'range', econ: 'Worth of the coast', net: 'worth of the sensory edge', min: 0, max: 1, step: 0.05, get: (c) => c.geography.weights[0].coast, set: (v) => ({ geography: { weights: [{ coast: v }] } }), f: (v) => (v ? v.toFixed(2) : 'none') },
+            { kind: 'range', econ: 'Learning by doing ([[technology|technology]] grows with use)', net: 'activity-dependent [[myelination|myelination]]', min: 0, max: 0.02, step: 0.001, get: (c) => c.technology.learn, set: (v) => ({ technology: { learn: v } }), f: (v) => (v ? v.toFixed(3) : 'none') },
+            { kind: 'range', econ: 'Worth of made ground (roads, port, schools)', net: 'cheaper use of myelinated ground', min: 0, max: 1.5, step: 0.05, get: (c) => c.technology.value, set: (v) => ({ technology: { value: v } }), f: (v) => (v ? v.toFixed(2) : 'none') },
+            { kind: 'range', econ: 'How fast technology frees the city from the coast', net: 'how fast the map stops needing the edge', min: 0, max: 8, step: 0.5, get: (c) => c.technology.fade, set: (v) => ({ technology: { fade: v } }), f: (v) => (v ? v.toFixed(1) : 'none') },
+            { kind: 'range', econ: 'How much it lengthens the reach of dealings', net: 'how much faster conduction extends reach', min: 0, max: 1, step: 0.05, get: (c) => c.technology.boost, set: (v) => ({ technology: { boost: v } }), f: (v) => (v ? v.toFixed(2) : 'none') },
             { kind: 'button', econ: 'Restart', net: 'restart', act: (sim) => sim.reset() },
           ],
           lid: [
@@ -3493,6 +3685,10 @@
           meanDistance: { econ: 'Average [[commute|commute]]', net: 'average [[wiring|wiring]] distance', v: (m) => fmt(m.meanDistance) },
           centerPrice: { econ: '[[rent|Rent]] downtown', net: '[[threshold|threshold]] by the input', v: (m) => fmt(m.centerPrice) },
           centreAt: { econ: 'Where the centre formed', net: 'where the bump sits', v: (m) => `(${fmt(m.centroid[0], 1)}, ${fmt(m.centroid[1], 1)})` },
+          coastShare: { econ: 'Households on the coast', net: 'spikes at the sensory edge', v: (m) => pct(m.onLayer.coast || 0) },
+          inland: { econ: 'Centre’s distance inland from the shore', net: 'bump’s distance from the edge', v: (m) => fmt(m.centroid[0] + 12, 1) },
+          tech: { econ: '[[technology|Technology]] where people are (peak)', net: '[[myelination|myelin]] where activity is (peak)', v: (m) => `${fmt(m.techMean)} (${fmt(m.techMax)})` },
+          reachMean: { econ: 'Reach of dealings, with technology', net: 'effective connection range', v: (m) => fmt(m.reachMean) },
           peaks: { econ: 'Centres (of firms, where there are two kinds)', net: 'bumps of A', v: (m) => `${m.peaks}` },
           pairDistance: { econ: 'Average distance to a partner', net: 'average [[wiring|wire]] length', v: (m) => fmt(m.pairDistance) },
           concentration: { econ: 'Share of firms on the busiest tenth of parcels', net: 'share of A on its busiest tenth of neurons', v: (m) => pct(m.concentration) },
@@ -3524,6 +3720,7 @@
           agglomeration: ['centreAt', 'peaks', 'used', 'pairDistance', 'peak', 'cost'],
           firmshomes: ['peaks', 'concentration', 'mixing', 'pairDistance', 'cost'],
           hierarchy: ['typeDist', 'hops', 'latency', 'latencyShuffled', 'cost'],
+          geography: ['coastShare', 'inland', 'tech', 'reachMean', 'used', 'peak'],
           lid: ['used', 'meanDistance', 'centerPrice', 'peak', 'left', 'cost'],
           sorting: ['used', 'meanDistance', 'mismatch', 'custom', 'cost'],
           districts: ['width', 'custom', 'meanDistance', 'mismatch', 'cost'],
@@ -3571,6 +3768,7 @@
             ['layout', 'Space', 'layout'],
             ['distance', '[[commute|Commute]]', '[[wiring|wiring]]'],
             ['interaction', '[[agglomeration|Agglomeration]]', '[[wiringeconomy|wiring economy]]'],
+            ['technology', '[[geography|Geography]], [[technology|technology]]', 'substrate, [[myelination|myelin]]'],
             ['price', '[[rent|Price]] rule', '[[adaptation|adaptation]] rule'],
             ['cap', '[[heightlimit|Height limit]]', '[[ratecap|rate cap]]'],
             ['exit', '[[outside|Leaving]]', 'dropping'],
@@ -3857,6 +4055,7 @@
         }
         function updateMetrics() {
           const m = S.sim.metrics();
+          S.techMax = m.techMax || 0;
           const e = S.ema;
           if (e && e.flow > 0) {
             m.costPerTrip = (e.cost - e.tax) / e.flow;
@@ -4059,7 +4258,12 @@
               const used = Math.max(sim.r[j], sim.built[j]) > floor;
               const wgt = costMap && !used ? costMap[j] : -1;
               diamond(ctx, g, L.x[j], L.y[j], 0.5);
-              ctx.fillStyle = wgt >= 0 ? mix(COL.seq0, COL.seq1, wgt) : used ? COL.paved : COL.farm;
+              const geo = sim.geography();
+              const coast = geo && geo.coast && geo.coast[j] > 0;
+              let ground = wgt >= 0 ? mix(COL.seq0, COL.seq1, wgt) : coast ? COL.water : used ? COL.paved : COL.farm;
+              // made ground: roads and rails darken the tile with the technology there
+              if (wgt < 0 && !coast && S.techMax > 0) ground = mix(ground, COL.made, Math.min(1, sim.T[j] / S.techMax) * 0.6);
+              ctx.fillStyle = ground;
               ctx.fill();
               if (!used && wgt < 0) {
                 ctx.strokeStyle = COL.farmLine;
@@ -4370,6 +4574,21 @@
           } else {
             diamond(ctx, g, 0, 0, L.radius + 1.6);
             ctx.fill();
+            // the sensory edge, and myelinated ground under the neurons
+            const geo = sim.geography();
+            if (geo && geo.coast) {
+              ctx.fillStyle = alpha(COL.input, 0.12);
+              for (let j = 0; j < L.n; j++) if (geo.coast[j] > 0) { diamond(ctx, g, L.x[j], L.y[j], 0.5); ctx.fill(); }
+            }
+            if (S.techMax > 0) {
+              for (let j = 0; j < L.n; j++) {
+                const t = sim.T[j] / S.techMax;
+                if (t < 0.05) continue;
+                ctx.fillStyle = alpha(COL.made, 0.45 * t);
+                diamond(ctx, g, L.x[j], L.y[j], 0.5);
+                ctx.fill();
+              }
+            }
           }
           // Lateral connections when neighbours learn together
           if (sim.cfg.tuning.mode === 'learned' && sim.cfg.tuning.spill > 0) {
@@ -5196,6 +5415,19 @@
               chartRows = xs.map((x, i) => [x, ...loads.map((ys) => fmt(ys[i], 3))]);
               chartRows.head = ['Distance', ...S.preset.types.map((t) => t.econ)];
             }
+          } else if (id === 'geography') {
+            const hist = S.hist.filter((hh) => hh.extra).slice(-400);
+            const xs = hist.map((hh) => hh.time);
+            const xMax = Math.max(1, ...xs);
+            const xMin = Math.min(...xs);
+            const c1 = axisChart({ w, h: 140, xs, series: [{ ys: hist.map((hh) => hh.extra.coast), color: COL.series[0] }, { ys: hist.map((hh) => hh.extra.inland / 24), color: COL.series[1] }], xLabel: 'time', yLabel: 'share on the coast; centre’s distance inland ÷ 24', xMin, xMax, yMax: 1 });
+            const tMax = niceCeil(Math.max(0.2, ...hist.map((hh) => hh.extra.tech)) * 1.15);
+            const c2 = axisChart({ w, h: 130, xs, series: [{ ys: hist.map((hh) => hh.extra.tech), color: COL.series[2] }], xLabel: 'time', yLabel: 'technology ⇄ myelin where people are', xMin, xMax, yMax: tMax });
+            html = c1.svg + c2.svg;
+            title = 'The coast, the centre and technology over time';
+            note = 'Blue: the share of households on the coast ⇄ spikes at the sensory edge. Orange: how far inland the centre sits (÷ 24). Green: the technology ⇄ myelin where people are. The coast empties as technology grows, and the centre moves inland but stops short of the plain’s middle.';
+            chartRows = hist.slice(-12).map((hh) => [fmt(hh.time, 0), pct(hh.extra.coast), fmt(hh.extra.inland, 1), fmt(hh.extra.tech)]);
+            chartRows.head = ['Time', 'On the coast', 'Centre inland', 'Technology'];
           } else if (id === 'districts') {
             const acf = S.acf;
             if (acf) {
@@ -5511,14 +5743,15 @@
             if (x.head >= 0.05) parts.push(`${fmt(x.head, 1)} ${which ? 'global inhibition' : 'tax'}`);
             if (x.pigou >= 0.05) parts.push(`${fmt(x.pigou, 1)} ${which ? 'interference caused' : 'charge for nuisance caused'}`);
             if (Math.abs(x.attraction) >= 0.05) parts.push(`− ${fmt(x.attraction, 1)} ${which ? 'for short wires' : 'for being near partners'}`);
+            if (Math.abs(x.geography || 0) >= 0.05) parts.push(`− ${fmt(x.geography, 1)} ${which ? 'for its ground' : 'for the site’s geography'}`);
             const sum = parts.join(' + ').replace(/\+ −/g, '−');
             return `#${ev.sites[q]}: ${sum || '0'} = ${fmt(ev.cost[q], 1)}`;
           };
           const top3 = (which) => fo.top.map((q) => breakdown(q, which)).join('; ');
           const flat = rule === 'supply' && lay === 'sheet' && fo.top.length === 3 && Math.max(...fo.top.map((q) => ev.cost[q])) - Math.min(...fo.top.map((q) => ev.cost[q])) < 0.35 && new Set(fo.top.map((q) => Math.round(ev.parts(q).commute))).size > 1;
           const tuned = sim.cfg.tuning.mode !== 'none' && sim.cfg.tuning.mismatch > 0;
-          const partsE = [lay !== 'ring' ? 'the [[commute|commute]]' : null, priceW ? `its ${lay === 'sheet' ? '[[rent|rent]]' : lay === 'ring' ? '[[balancing|fee]]' : '[[sinkhorn|congestion charge]]'}` : null, tuned ? (lay === 'line' ? 'how much worse a small workplace is than a big employer' : lay === 'ring' ? 'any mismatch with what the firm specializes in' : 'any mismatch with what the building is [[fit|fitted for]]') : null, sim.cfg.nuisance.strength > 0 ? '[[nuisance|nuisance]] from other uses there' : null, sim.cfg.interaction.strength > 0 ? 'minus the gain from being [[agglomeration|near the others it deals with]]' : null, sim.cfg.scale.strength > 0 ? 'minus a bonus for firms already busy ([[scale|economies of scale]])' : null, sim.cfg.tax.head > 0 ? 'the [[headtax|tax per resident]], the same everywhere' : null, sim.cfg.tax.pigou && sim.cfg.nuisance.strength > 0 ? 'a [[pigou|charge]] for the nuisance it would cause' : null].filter(Boolean);
-          const partsN = [lay !== 'ring' ? (lay === 'line' ? 'the [[alibi|distance penalty]]' : 'the [[wiring|wiring cost]]') : null, priceW ? (lay === 'sheet' ? (sim.cfg.tax.head > 0 ? 'the neuron’s [[adaptation|adaptation]]' : 'the neuron’s [[threshold|threshold]]') : lay === 'ring' ? 'minus its [[balancing|balancing bias]]' : `its [[sinkhorn|${priceW[1]}]]`) : null, tuned ? (lay === 'line' ? 'how much less relevant the key is than an anchor' : lay === 'ring' ? 'any mismatch with what the expert specializes in' : '[[tuning|tuning]] mismatch') : null, sim.cfg.nuisance.strength > 0 ? '[[interference|interference]] from other features' : null, sim.cfg.interaction.strength > 0 ? 'minus the gain from [[wiringeconomy|short wires]] to the neurons it reads from' : null, sim.cfg.scale.strength > 0 ? 'minus a [[collapse|rich-get-richer]] bonus' : null, sim.cfg.tax.head > 0 ? '[[globalinhibition|global inhibition]], the same for every neuron' : null, sim.cfg.tax.pigou && sim.cfg.nuisance.strength > 0 ? 'the [[interference|interference]] it would cause the other feature' : null].filter(Boolean);
+          const partsE = [lay !== 'ring' ? 'the [[commute|commute]]' : null, priceW ? `its ${lay === 'sheet' ? '[[rent|rent]]' : lay === 'ring' ? '[[balancing|fee]]' : '[[sinkhorn|congestion charge]]'}` : null, tuned ? (lay === 'line' ? 'how much worse a small workplace is than a big employer' : lay === 'ring' ? 'any mismatch with what the firm specializes in' : 'any mismatch with what the building is [[fit|fitted for]]') : null, sim.cfg.nuisance.strength > 0 ? '[[nuisance|nuisance]] from other uses there' : null, sim.cfg.interaction.strength > 0 ? 'minus the gain from being [[agglomeration|near the others it deals with]]' : null, sim.cfg.geography.layers || sim.cfg.technology.value > 0 ? 'minus what the site’s [[geography|geography]], given and made, is worth to it' : null, sim.cfg.scale.strength > 0 ? 'minus a bonus for firms already busy ([[scale|economies of scale]])' : null, sim.cfg.tax.head > 0 ? 'the [[headtax|tax per resident]], the same everywhere' : null, sim.cfg.tax.pigou && sim.cfg.nuisance.strength > 0 ? 'a [[pigou|charge]] for the nuisance it would cause' : null].filter(Boolean);
+          const partsN = [lay !== 'ring' ? (lay === 'line' ? 'the [[alibi|distance penalty]]' : 'the [[wiring|wiring cost]]') : null, priceW ? (lay === 'sheet' ? (sim.cfg.tax.head > 0 ? 'the neuron’s [[adaptation|adaptation]]' : 'the neuron’s [[threshold|threshold]]') : lay === 'ring' ? 'minus its [[balancing|balancing bias]]' : `its [[sinkhorn|${priceW[1]}]]`) : null, tuned ? (lay === 'line' ? 'how much less relevant the key is than an anchor' : lay === 'ring' ? 'any mismatch with what the expert specializes in' : '[[tuning|tuning]] mismatch') : null, sim.cfg.nuisance.strength > 0 ? '[[interference|interference]] from other features' : null, sim.cfg.interaction.strength > 0 ? 'minus the gain from [[wiringeconomy|short wires]] to the neurons it reads from' : null, sim.cfg.geography.layers || sim.cfg.technology.value > 0 ? 'minus the worth of the site’s ground: the sensory edge, and [[myelination|myelin]] laid down by use' : null, sim.cfg.scale.strength > 0 ? 'minus a [[collapse|rich-get-richer]] bonus' : null, sim.cfg.tax.head > 0 ? '[[globalinhibition|global inhibition]], the same for every neuron' : null, sim.cfg.tax.pigou && sim.cfg.nuisance.strength > 0 ? 'the [[interference|interference]] it would cause the other feature' : null].filter(Boolean);
           const list = (a) => (a.length > 1 ? `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}` : a[0] || 'nothing');
           const j = ev.pick >= 0 ? ev.sites[ev.pick] : -1;
           const minCost = Math.min(...ev.cost);
@@ -5599,7 +5832,22 @@
             sim.cfg.schedule.kind === 'alternate'
               ? Array.from({ length: sim.K }, (_, k) => (Math.floor(sim.time / sim.cfg.schedule.period + 1e-9) % sim.K === k ? 1 : 0))
               : [...sim.on];
-          S.hist.push({ time: sim.time, cost: sim.acc.flow > 0 ? (sim.acc.cost - sim.acc.tax) / sim.acc.flow : NaN, on });
+          let extra = null;
+          if (S.preset.id === 'geography') {
+            const g = sim.geography();
+            let coast = 0;
+            let tot = 0;
+            let cx = 0;
+            let tech = 0;
+            for (let j = 0; j < sim.N; j++) {
+              tot += sim.rAvg[j];
+              cx += sim.rAvg[j] * sim.layout.x[j];
+              tech += sim.rAvg[j] * sim.T[j];
+              if (g && g.coast[j] > 0) coast += sim.rAvg[j];
+            }
+            extra = tot > 0 ? { coast: coast / tot, inland: cx / tot + 12, tech: tech / tot } : null;
+          }
+          S.hist.push({ time: sim.time, cost: sim.acc.flow > 0 ? (sim.acc.cost - sim.acc.tax) / sim.acc.flow : NaN, on, extra });
           if (S.hist.length > 400) S.hist.shift();
         }
         let last = performance.now();

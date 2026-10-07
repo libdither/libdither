@@ -685,3 +685,72 @@ test('hierarchy: a chain of populations lays itself out in order of distance fro
   const ag = makeA('hierarchy').run(1200).metrics();
   assert.ok(ag.typeDist[0] < ag.typeDist[1] && ag.typeDist[1] < ag.typeDist[2], `agents: in order (${ag.typeDist.map((v) => v.toFixed(1))})`);
 });
+
+// ---------------------------------------------------------------- geography, and the geography people make
+// A coast along the west side is worth something; technology grows where people are, spreads, and changes what
+// they want: it is worth living on itself, it fades the need for the coast, and it lengthens the reach of dealings.
+const siteNear = (sim, x, y) => {
+  let best = 0;
+  for (let j = 1; j < sim.N; j++) if (Math.hypot(sim.layout.x[j] - x, sim.layout.y[j] - y) < Math.hypot(sim.layout.x[best] - x, sim.layout.y[best] - y)) best = j;
+  return best;
+};
+const noTech = { technology: { learn: 0, spread: 0, value: 0, fade: 0, boost: 0 } };
+const pctOf = (v) => `${Math.round(100 * v)}%`;
+
+test('geography: a coast worth a little decides where the city starts; technology grows where people are and spreads inland', () => {
+  const coastal = make('geography', noTech).run(800).metrics();
+  assert.ok(coastal.centroid[0] < -8 && coastal.onLayer.coast > 0.5, `the city hugs the coast: centre at x = ${coastal.centroid[0].toFixed(1)}, ${pctOf(coastal.onLayer.coast)} on it`);
+  const plain = make('geography', { ...noTech, geography: { layers: null, weights: null } }).run(800).metrics();
+  assert.ok(Math.hypot(...plain.centroid) < 0.6, 'without the coast it forms in the middle');
+  const sim = make('geography');
+  const atCoast = siteNear(sim, -11, 0), inland = siteNear(sim, -5, 0), middle = siteNear(sim, 0, 0);
+  sim.run(300);
+  assert.ok(sim.T[atCoast] > sim.T[inland] && sim.T[inland] > sim.T[middle] && sim.T[middle] > 0.05, `early on, technology is highest at the coast and already spreading: ${[atCoast, inland, middle].map((j) => sim.T[j].toFixed(2))}`);
+  sim.run(1700);
+  assert.ok(sim.T[middle] > 0.5 * sim.T[atCoast], `by t = 2000 it has spread to the middle of the plain: ${sim.T[middle].toFixed(2)} against ${sim.T[atCoast].toFixed(2)} at the coast`);
+});
+
+test('geography: technology that only fades the coast lets the city drift inland; technology that is worth living on keeps it near the shore (path dependence)', () => {
+  const freed = make('geography', { technology: { value: 0, boost: 0 } }).run(3000).metrics();
+  const anchored = make('geography', { technology: { boost: 0 } }).run(3000).metrics();
+  const coastal = make('geography', noTech).run(800).metrics();
+  assert.ok(freed.centroid[0] > coastal.centroid[0] + 3 && freed.onLayer.coast < 0.2, `freed: the centre moves inland from ${coastal.centroid[0].toFixed(1)} to ${freed.centroid[0].toFixed(1)}, ${pctOf(freed.onLayer.coast)} left on the coast`);
+  assert.ok(anchored.centroid[0] < freed.centroid[0] - 2 && anchored.onLayer.coast > 0.25, `anchored: it stays nearer the shore (${anchored.centroid[0].toFixed(1)}, ${pctOf(anchored.onLayer.coast)} on the coast)`);
+  const glued = make('geography', { technology: { fade: 0, boost: 0 } }).run(3000).metrics();
+  assert.ok(glued.onLayer.coast > 0.5, `with no fading it never leaves the shore (${pctOf(glued.onLayer.coast)})`);
+});
+
+test('geography: a longer reach spreads the city over more land at lower density, and both solvers agree on the whole course', () => {
+  const compact = make('geography', { technology: { fade: 0, value: 0, boost: 0 } }).run(2000).metrics();
+  const spread = make('geography', { technology: { fade: 0, value: 0, boost: 0.5 } }).run(2000).metrics();
+  assert.ok(spread.used > 1.4 * compact.used && spread.peak < 0.8 * compact.peak, `reach ${spread.reachMean.toFixed(2)}: ${compact.used} → ${spread.used} parcels, peak ${compact.peak.toFixed(2)} → ${spread.peak.toFixed(2)}`);
+  const fl = make('geography').run(2000).metrics();
+  const ag = makeA('geography').run(2000).metrics();
+  assert.ok(Math.abs(fl.centroid[0] - ag.centroid[0]) < 1 && Math.abs(fl.onLayer.coast - ag.onLayer.coast) < 0.08 && Math.abs(fl.techMean - ag.techMean) < 0.1, `agents vs flows: centre ${ag.centroid[0].toFixed(1)}/${fl.centroid[0].toFixed(1)}, coast ${pctOf(ag.onLayer.coast)}/${pctOf(fl.onLayer.coast)}, technology ${ag.techMean.toFixed(2)}/${fl.techMean.toFixed(2)}`);
+  // for a given technology the prices are still multipliers: price = κ·load, and transfers raise F with the
+  // interaction, geography and made-ground terms included
+  const sim = make('geography').run(2000);
+  sim.setConfig({ technology: { learn: 0, spread: 0, decay: 0 } });
+  sim.run(600);
+  let gap = 0;
+  for (let j = 0; j < sim.N; j++) gap = Math.max(gap, Math.abs(sim.a[j] - sim.cfg.price.kappa * sim.r[j]));
+  assert.ok(gap < 1e-3, `price = κ·load (${gap})`);
+  const { F, x } = freeEnergyWithInteraction(sim);
+  const geo = sim.geography().coast;
+  const kappa = sim.cfg.price.kappa;
+  const w = sim.cfg.geography.weights[0].coast;
+  const Fg = (y) => { let v = F(y); for (let j = 0; j < sim.N; j++) v -= kappa * y[j] * (w * Math.exp(-sim.cfg.technology.fade * sim.T[j]) * geo[j] + sim.cfg.technology.value * sim.T[j]); return v; };
+  const F0 = Fg(x);
+  const rnd = M.rng32(5);
+  const loaded = [...Array(sim.N).keys()].filter((j) => x[j] > 1e-6);
+  let raised = 0, tries = 0;
+  for (let t = 0; t < 40; t++) {
+    const a = loaded[Math.floor(rnd() * loaded.length)], b = Math.floor(rnd() * sim.N);
+    if (a === b) continue;
+    const d = Math.min(x[a] * 0.5, 0.01);
+    const x2 = Float64Array.from(x); x2[a] -= d; x2[b] += d;
+    tries++;
+    if (Fg(x2) > F0) raised++;
+  }
+  assert.ok(raised >= tries - 1 && tries > 25, `random transfers raise F: ${raised}/${tries}`);
+});

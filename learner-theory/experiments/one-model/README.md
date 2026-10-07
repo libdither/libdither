@@ -9,14 +9,14 @@ row ids work as links. **Follow one arrival** pauses the simulation and walks th
 both vocabularies: what every option costs this arrival, its own taste noise, what it picks, and how that
 moves the rent ⇄ adaptation.
 
-Underlined terms (126, in `GLOSSARY`) and blue author–year citations (106 references, in `REFS`)
+Underlined terms (130, in `GLOSSARY`) and blue author–year citations (115 references, in `REFS`)
 open a popup on hover. Click, tap or press Enter to pin it: a pinned popup's own terms and citations open
 in place (Back returns), and its links go out to Wikipedia, DOIs and arXiv. Write `[[key|text]]` for a
 term, `[[@key]]` or `[[@a;b]]` for a citation, and `$r_j^2$` for inline math. Every DOI and arXiv id
 was checked against its metadata, and every Wikipedia title against the API.
 
 ```bash
-node --test experiments/one-model/model.test.mjs   # ≈4 min: each setting with both solvers, plus the formal claims
+node --test experiments/one-model/model.test.mjs   # ≈7 min: each setting with both solvers, plus the formal claims
 ```
 
 ## The model
@@ -72,6 +72,7 @@ that are built but empty are drawn faded.
 | `agglomeration` | A downtown forms by itself | A bump forms by itself |
 | `firmshomes` | Firms and homes place themselves | Connected populations settle side by side |
 | `hierarchy` | A port city: docks, works, homes | A hierarchy fans out from the input |
+| `geography` | A coast, then roads and rails | A sensory edge, then myelin |
 | `lid` | Height limit | Firing-rate cap |
 | `taxes` | Taxes on land, buildings and residents | Global inhibition and stronger adaptation |
 | `sorting` | Offices take the centre, homes the rings | Fast inputs claim the nearest neurons |
@@ -102,6 +103,11 @@ Every claim is checked with the average flows, and again with individual agents.
 - **Hierarchy:** three kinds in a chain from a harbour ⇄ sensory input at the edge settle in order of distance from it,
   on separate ground, with hops less than 60% of a random placement's; an input in the middle gives rings and longer
   hops.
+- **Geography and technology:** a coast worth a little decides where the city starts; technology grows where
+  people are and spreads inland. Technology that only fades the coast lets the city drift inland (14% left on
+  the coast at t = 3000); technology worth living on keeps it near the shore (42%); a longer reach spreads
+  the city over 1.6× the land at lower density. Both solvers agree on the whole course, and for a frozen
+  technology prices are still κ × load with random transfers raising F.
 - **Height limit:**
   - A limit spreads the city when nobody can leave, and raises rents.
   - An exempt downtown builds taller than with no limit at all.
