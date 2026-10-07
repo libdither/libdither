@@ -1,9 +1,10 @@
 # One model, two readings
 
 One model of how located capacity gets shared out, which reads exactly as a land economy and exactly as a
-layer of neurons. Its nine settings line up named architectures in both fields: a height limit is a
+layer of neurons. Its twelve settings line up named architectures in both fields: a height limit is a
 firing-rate cap, firms with fees are a mixture of experts with load balancing, commuting along a corridor is
-attention over a sequence.
+attention over a sequence. Three of them give the model no centre at all: arrivals go where the others they
+deal with are, and the downtown ⇄ the hub is an outcome.
 
 The interactive page is [`../experiments/one-model/index.html`](../experiments/one-model/index.html): one
 self-contained file you open in a browser. It draws the same simulated agents in both views, and every
@@ -13,7 +14,9 @@ term and citation on it opens a popup. This doc is the same content without the 
 
 Agents arrive one at a time. Each compares what every site would cost it, adds its own random taste,
 picks one, stays a while and leaves. A site's price rises with how many agents are there, and a site's
-"fit" adapts to what it serves.
+"fit" adapts to what it serves. What a site costs can include the distance to one given point (downtown ⇄ an
+input neuron) or, instead, how far it is from the other agents this one deals with (agglomeration ⇄ wiring
+economy); in the second case nothing fixes where the centre will be.
 
 - **As an economy**, agents are households choosing parcels, sites are parcels, the price is rent, and fit
   is what a building is fitted for.
@@ -26,10 +29,10 @@ picks one, stays a while and leaves. A site's price rises with how many agents a
    a type k and a starting point s (its class c), arriving at rate λ_c.
 2. **What an option costs.** For an arrival of type k from s, site j costs
 
-   c_j = t·d(s, j) + p_j + m·(1 − fit_kj) + ν·κ·r_{j,−k} − ρ·log(1 + r_j/r_0) + H
+   c_j = t·d(s, j) + p_j + m·(1 − fit_kj) + ν·κ·r_{j,−k} − ρ·log(1 + r_j/r_0) + H − s·κ·Σ_q W_kq·(B_kq ∗ r_q)_j
 
    distance, price, mismatch, the other types' load at j (nuisance), a bonus for busy sites (economies of
-   scale), and a tax per resident H.
+   scale), a tax per resident H, and the gain from being near the types this one deals with (item 7).
 3. **Choice.** The arrival takes the site with the lowest c_j − τ·ε_j, each ε_j a fresh Gumbel draw, unless
    an outside option worth V_0 beats them all. So P(j) = e^{−c_j/τ} / (e^{V_0/τ} + Σ_i e^{−c_i/τ}): the
    logit ⇄ softmax.
@@ -45,7 +48,13 @@ picks one, stays a while and leaves. A site's price rises with how many agents a
    drops them, as a full expert does.
 6. **Tuning.** fit_kj = Σ_q w_jq·S_kq. The fitted shares w_j move toward the mix of types that j and its
    neighbours serve (neighbours weighted by a Gaussian of width σ).
-7. **Taxes.** See [doc 4](4-taxes.md).
+7. **Interaction.** (B_kq ∗ r_q)_j = Σ_i B_kq(d_ij)·r_iq is how much of type q is near j, through a kernel
+   B_kq(d) = e^{−d/ℓ_kq} ÷ Z_kq scaled so that a uniform load r gives r. W_kq is how much type k deals with
+   type q. The field follows the load with a memory (arrivals learn where the others are). An optional second
+   kernel of the opposite sign and a longer reach, read as a local density, is competition for customers ⇄
+   lateral inhibition. With `sources: 'anywhere'` there is no starting point and this term alone places
+   arrivals. Derivation and results in [doc 6 §19](6-derivations.md#19-a-centre-that-isnt-given-agglomeration--wiring-economy).
+8. **Taxes.** See [doc 4](4-taxes.md).
 
 ## Why each pairing is exact
 
@@ -62,6 +71,7 @@ picks one, stays a while and leaves. A site's price rises with how many agents a
 | w_j → mix served | Refitting toward current use | Competitive learning ([Rumelhart & Zipser 1985](https://doi.org/10.1207/s15516709cog0901_5)) | The same rule |
 | σ | Firms learn from nearby firms ([Lucas & Rossi-Hansberg 2002](https://doi.org/10.1111/1468-0262.00338)) | A self-organizing map's neighbourhood ([Kohonen 1982](https://doi.org/10.1007/BF00337288)) | The same kernel |
 | ν·κ·r_{j,−k} | Nuisance from another use ([Coase 1960](https://doi.org/10.1086/466560)) | Interference from another feature on the same neuron ([Elhage et al. 2022](https://transformer-circuits.pub/2022/toy_model/index.html)) | The same term |
+| s·κ·Σ_q W_kq·(B_kq ∗ r_q)_j | Agglomeration: the gain from being near the types one deals with (Beckmann 1976, revisited by [Mossay & Picard 2011](https://doi.org/10.1016/j.jet.2011.06.009); [Fujita & Ogawa 1982](https://doi.org/10.1016/0166-0462(82)90031-X)) | Wiring economy: short wires to the populations a neuron reads from ([Chklovskii & Koulakov 2004](https://doi.org/10.1146/annurev.neuro.27.070203.144226); [Chen, Hall & Chklovskii 2006](https://doi.org/10.1073/pnas.0506806103)) | The same term; with symmetric W it is the slope of a pairwise term of F. A bump that forms with no input given is a neural field's ([Amari 1977](https://doi.org/10.1007/BF00337259)) |
 | ρ·log(1 + r_j/r_0) | Economies of scale ([Arrow 1962](https://doi.org/10.2307/2295952)) | Rich-get-richer routing; expert collapse ([Shazeer et al. 2017](https://arxiv.org/abs/1701.06538)) | The same term; an urn process ([Arthur 1989](https://doi.org/10.2307/2234208)) |
 | agents ⇄ flows | Households ⇄ the continuum of urban models | Spiking, hard attention, top-1 routing ⇄ rate models, soft attention | The flows are the agents' many-agent limit ([Kurtz 1970](https://doi.org/10.2307/3212147)) |
 
@@ -69,7 +79,7 @@ picks one, stays a while and leaves. A site's price rises with how many agents a
 
 For steady demand, fixed tuning and prices without memory, the average flows x_cj settle where
 
-F = Σ x_cj·(t·d + m·(1 − fit)) + Σ_j κ·r_j²/2 + ν·κ·Σ_j r_jA·r_jB − ρ·Σ_j G(r_j) + τ·Σ x_cj·log(x_cj/λ_c)
+F = Σ x_cj·(t·d + m·(1 − fit)) + Σ_j κ·r_j²/2 + ν·κ·Σ_j r_jA·r_jB − (s·κ/2)·Σ_{k,q} W_kq·Σ_{i,j} r_ik·B_kq(d_ij)·r_jq − ρ·Σ_j G(r_j) + τ·Σ x_cj·log(x_cj/λ_c)
 
 is lowest (G is the function whose slope is log(1 + r/r_0)). Every price is the slope of F at its site's
 load, a Lagrange multiplier, which makes the model a potential game
@@ -90,11 +100,22 @@ second half (a Pigouvian tax) makes the true cost the potential. With weak nuisa
 total cost (tested); with strong nuisance several separated layouts are each stable, and the charge only
 guarantees one of them.
 
-## The nine settings
+F also needs the nuisance to be mutual. If use A minds use B more than B minds A, there is no F, but two uses
+still settle in every case tried: at a site the split between two uses can only move one way, so nothing can
+rotate. Three uses that each mind the next (A minds B, B minds C, C minds A) never settle once ν passes
+2τ/(κ·x), with x a use's load at the busiest site, while a symmetric control with the same symmetric part
+separates there and stops. A Pigouvian charge makes any nuisance mutual, so it restores a potential and
+settles them. Derivation in [doc 6 §17](6-derivations.md#17-without-a-shared-potential); the page's
+`nuisance.matrix` setting runs it (tested, not drawn).
+
+## The twelve settings
 
 | Setting | Economy | Network | What it shows (each is a test) |
 |---|---|---|---|
-| `land` | Land market | Competitive layer with adaptation | Rents approach Alonso's bid-rent line as taste variety ⇄ temperature goes to zero |
+| `land` | Land market, downtown given | Competitive layer with adaptation, input neuron given | Rents approach Alonso's bid-rent line as taste variety ⇄ temperature goes to zero |
+| `agglomeration` | A downtown forms by itself | A bump forms by itself | With no centre given, one forms at the plain's most accessible point, with rent and density falling from it; a harbour pulling a twentieth as hard as the land market's commute moves the whole city; a strong short-range pull alone makes one tower; a longer-range push breaks it into a ring of towns |
+| `firmshomes` | Firms and homes place themselves | Connected populations settle side by side | Spillovers: one dense firm centre with homes around it. Need for each other: a mixed sheet. Spillovers plus competition for customers: several towns, each a firm cluster apart from its homes (Fujita & Ogawa's three regimes) |
+| `hierarchy` | A port city: docks, works, homes | A hierarchy fans out from the input | A chain of kinds settles in order of distance from a pinned harbour ⇄ sensory input, on separate ground, with hops under 60% of a random placement's; an input in the middle gives rings and longer hops |
 | `lid` | Height limit | Firing-rate cap | Sprawl when nobody can leave; an exempt centre builds taller than with no limit; when people can leave, most sprawl goes away |
 | `taxes` | Taxes on land, buildings, residents | Global inhibition, stronger adaptation | See [doc 4](4-taxes.md) |
 | `sorting` | Offices take the centre, homes the rings | Fast inputs claim the nearest neurons | Von Thünen rings; when retuning is costly, a random layout locks in |
@@ -146,3 +167,11 @@ Running both caught three artifacts in my own solvers, each of which had produce
   matter here and in cities. (Argued, not simulated; see [`../NEXT_STEPS.md`](../NEXT_STEPS.md).)
 - **One layer only.** Backprop's error signals are like the prices of intermediate goods in a production
   chain, which this model doesn't cover. [Doc 5](5-learners-as-economies.md) does.
+- **A bounded plain.** With no centre given, the centre forms at the disc's middle because that is its most
+  accessible point; a harbour moves it. On a plain large next to the reach of dealings, or a torus, where the
+  centre forms would be set by history, and an array of towns would fill the interior instead of sitting in
+  a ring. Neither is simulated.
+- **Dealings are a field.** A unit gains in proportion to how many partners are within reach. That is right
+  for spillovers and wires, not for a job, which a household needs one of. The saturating option covers the
+  gain; the one-to-one matching of workers to jobs, which gives Fujita and Ogawa their polycentric regime, is
+  not modelled, and towns here come from competition instead.

@@ -27,10 +27,13 @@ state of the world.
 
 1. **Allocation:** dense, soft, or hard. A softmax at temperature τ slides from soft to hard as τ → 0.
    This is the logit allocation of [doc 3](3-one-model-two-readings.md).
-2. **Rivalry.** An activation is *non-rival*: every unit of the next layer reads it at once, so its value is
-   the sum of its users' marginal values, which is
+2. **Rivalry and excludability.** An activation is *non-rival*: every unit of the next layer reads it at
+   once, so its value is the sum of its users' marginal values, which is
    [Samuelson (1954)](https://doi.org/10.2307/1925895)'s condition for a public good, and exactly backprop's
    backward step. Control of the world is *rival*: one agent at a time, so it goes to one buyer by auction.
+   Separately, a good is *excludable* if its supplier can withhold it from a buyer who doesn't pay. A
+   broadcast activation isn't, which is what makes it a public good rather than a club good; see the
+   dense-layer market below.
 3. **White box or black box.** If a stage is known and differentiable, every coordinate can be priced. If
    it's an environment, prices can only be scalars: forecasts, payments or broadcasts. Computing a
    supplier's exact price needs the buyer's weights (the "weight transport" problem), which is also
@@ -48,7 +51,9 @@ state of the world.
    | One broadcast scalar | REINFORCE ([Williams 1992](https://doi.org/10.1007/BF00992696)), node perturbation, three-factor rules |
    | None | Hebbian and competitive learning |
 
-5. **Granularity:** a price per coordinate, per agent, or one for everything.
+5. **Granularity:** a price per coordinate, per agent, or one for everything; and across examples, one
+   price per example (state-contingent, as in backprop) or one posted price for all. Only per-example
+   prices teach a hidden unit which feature to compute (below).
 6. **Accounting:** prices as signals nobody pays (backprop), or real money that is conserved and can be
    taxed (markets, classifier systems).
 7. **Response:** follow a gradient, revise a bid, move toward the inputs won (Hebbian), or be selected.
@@ -124,6 +129,75 @@ direct feedback alignment 0.0175, half-right feedback 0.0206, feedback alignment
 often, [DeSieno 1988](https://doi.org/10.1109/ICNN.1988.23839)) covers all 3. That price is the same fix as
 the load-balancing bias in mixtures of experts.
 
+## A market for a dense layer
+
+Can the units of a dense layer trade their way to backprop? Each unit buys its inputs at a price per unit
+and sells its output; the last layer is paid by the customer, y − h per unit; every unit raises its own
+profit at the prices it faces. (Charging a unit its inputs' marginal contribution instead leaves a
+bias-free ReLU unit's profit at zero for every weight, so it learns nothing; [doc 6 §13](6-derivations.md#13-a-market-for-a-dense-layer-what-a-unit-buys).)
+The designs differ in what a hidden unit is told. On the supervised task above, with a bias-free ReLU
+network (best readout on the starting features: 0.254):
+
+| Design | A hidden unit is told | Loss | Best readout on its features |
+|---|---|---|---|
+| Honest per-example prices; VCG | its exact price, each example | 0.0077 | 0.0072 |
+| Excludable access sold at its true value | what its buyers would lose without it, each example | 0.020 | 0.015 |
+| Node perturbation (for comparison) | one broadcast change in loss | 0.061 | 0.042 |
+| Honest price, averaged over examples | its exact price, averaged | 0.21 | 0.20 |
+| Voluntary payment | nothing: buyers get its output anyway | 0.27 | 0.25 (unchanged) |
+| Excludable posted asks | the asks its buyers accept | 0.70 | 0.26 |
+
+"Best readout" is the lowest loss any linear readout could reach on the hidden layer: how much the hidden
+layer itself learned. Four findings, each derived in [doc 6](6-derivations.md) §13–16 and tested:
+
+- **Voluntary payment buys nothing.** A buyer gets the activation whether it pays or not, so a
+  self-interested buyer pays nothing and only the last layer learns: Samuelson's free-rider problem, exactly.
+- **VCG fixes honesty and leaves a budget gap.** With Clarke payments each buyer pays v²/2, reporting truly
+  is dominant, and learning is backprop's. Payments fall short of the cost of the supplier's push by
+  Σ_{j<k} v_j·v_k, the amount its buyers agree: they covered 95% with independent outputs and 80% with
+  nearly identical ones. That gap is the planner's subsidy.
+- **Prices must vary with the example.** A hidden unit's average update is E[price]·E[f′·x] +
+  Cov(price, f′·x), and only the covariance can turn a unit toward a new feature. A posted price, even
+  honest and signed, keeps only the first term. Backprop is a complete market of state-contingent prices
+  ([Arrow 1964](https://doi.org/10.2307/2296188)); one price for all examples is an incomplete one.
+- **Exclusion makes counterfactual credit measurable.** A supplier that can withhold its output can learn
+  what buyers lose without it: Wolpert & Tumer's difference reward. Correlated with the supplier's own jitter
+  it is unbiased, has a tenth of node perturbation's variance, and learns features within 2× of backprop.
+  But charging that value example by example needs honest buyers or a view of their losses, which is the
+  reporting problem again.
+
+So a market of units matches backprop on dense features only with three things a planner provides for
+free: a price per example, signed, and honestly reported for a good every buyer gets at once. Drop any one
+and the hidden layer stops learning.
+
+## One price for rationing and credit
+
+A mixture of experts runs two prices that real markets merge. A balancing bias rations capacity, and the
+gradient through the router's gate assigns credit. Can one price do both? Experts bid their forecast of the
+loss reduction they'd deliver on each token; an ascending auction with one price per expert assigns tokens
+within capacity; each expert moves its bid toward the loss reduction it realized, which is what it's paid.
+There is no router gradient and no bias. The task has 4 linear experts and inputs from 4 clusters, each
+with its own linear map (derivation in [doc 6 §18](6-derivations.md#18-one-price-per-expert-rationing-by-auction-credit-by-bids)):
+
+| Design | Loss, capacity 1× | Loss, 1.25× | Dropped tokens' worth ÷ average (1×) | Worst cluster's best expert fit |
+|---|---|---|---|---|
+| Gate + bias, overflow dropped in arrival order | 0.489 | 0.158 | 1.02 | 0.003 |
+| Gate + bias, overflow dropped by gate probability | 0.349 | 0.123 | 0.74 | 0.001 |
+| Auction, quadratic bids | 0.317 | 0.218 | 0.38 | 0.013 |
+| Auction, linear bids | 0.568 | 0.427 | 0.57 | 0.091 |
+
+- **One price can do both jobs.** The auction keeps every expert within capacity with no bias, and its
+  allocation is optimal for the bids: tokens' surplus plus experts' capacity rents equals the value served.
+- **It rations better.** When capacity binds it drops the tokens worth least, so at 1× it has the lowest
+  loss.
+- **It assigns credit worse.** A bid must be right as an amount, while a router score only needs the right
+  ranking. Experts trained under the auction fit their clusters 4–10× worse, and with capacity to spare
+  the bid errors turn tokens away, so at 1.25× the gate wins.
+
+So the engineered split is not just convenience: it buys cheap, precise credit at the cost of cruder
+rationing. Tokens are rival (one expert each), so there is no free-rider problem here, unlike the
+dense-layer market above. What a price costs is precision.
+
 ## Combinations that don't work
 
 - **Exact vector prices through a black box:** there's nothing to differentiate.
@@ -134,6 +208,9 @@ the load-balancing bias in mixtures of experts.
   also shade their bids; Vickrey pricing removes that incentive.
 - **Competition with no price:** dead units stay dead.
 - **Selection alone as credit assignment:** far slower than agents that learn their valuations.
+- **Voluntary payment for activations:** self-interested buyers pay nothing for a good they get anyway.
+- **Posted prices for features:** one price for every example can't turn a hidden unit toward a feature,
+  and a non-negative ask only ever says "produce more".
 
 ## How this answers the tax question
 
@@ -147,5 +224,6 @@ exactly a discount factor.
   and the allocation rule but are separate code.
 - **Small tasks only.** The tests establish identities and fixed points, not performance at scale.
 - **The Hayek population is minimal.** Its weak result is about this version, not Baum's.
-- **The spectrum is supported at its ends and some points between,** but no market learner here learns a
-  representation. [`../NEXT_STEPS.md`](../NEXT_STEPS.md) starts there.
+- **The spectrum is supported at its ends and some points between.** The only market design here that
+  learns a representation, access sold at its true value per example, assumes buyers' losses can be seen.
+  [`../NEXT_STEPS.md`](../NEXT_STEPS.md) lists what's left.

@@ -255,8 +255,11 @@ inhibition between co-active neurons (a tax on overlap), and the neurons differe
   questions (who gets land rent, and whether to tax it) have no counterpart inside one network with one
   objective. They need several agents with separate goals. [Doc 4](4-taxes.md) and
   [doc 5](5-learners-as-economies.md) follow this up.
-- **One centre.** Real cortex gets input everywhere. The one-model page's "districts" setting covers the
-  many-centre case, where columns form by themselves.
+- **One centre, given.** In this experiment the centre is an input: everything commutes to one point, and
+  the point is fixed in advance. Real cortex has no such point except its sensory inputs; a city's downtown is
+  itself where other people chose to be. The one-model page's agglomeration settings lift this: arrivals go
+  where the others they deal with are, and the centre, the towns and a hierarchy of areas form by themselves
+  ([doc 3](3-one-model-two-readings.md#the-twelve-settings)).
 
 ## Prior work
 

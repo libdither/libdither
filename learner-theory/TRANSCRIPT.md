@@ -1,7 +1,7 @@
 # Research log
 
 A structured account of how this research went, from 24 September to 1 October 2026, in one long chat
-between the user and Claude. Each phase gives the prompt that started it (verbatim), what was built or
+between the user and Claude, and of the sessions in this repository that followed (phases 13–15). Each phase gives the prompt that started it (verbatim), what was built or
 argued, what came out, and what turned out wrong. The prompts and full answers are in
 [`transcript/conversation.md`](transcript/conversation.md); the explanations are in [`docs/`](docs/).
 
@@ -265,6 +265,118 @@ The allocation correspondence is essentially finished; the learner generalizatio
 sound identities but no market learner that learns a representation. The gaps identified then are the
 items in [`NEXT_STEPS.md`](NEXT_STEPS.md).
 
+## 13. The next steps, in order (1 Oct, a second session)
+
+A later session in this repository reviewed the folder, then was asked:
+
+> lets do the next steps in order.
+
+The steps were the four it had proposed: name what the results share, build a market for a dense layer,
+break the shared potential in the one-model page, and test one price for rationing and credit.
+
+**Built:**
+
+- [`docs/7-the-common-core.md`](docs/7-the-common-core.md): every price in the folder is a Lagrange
+  multiplier. It adds the prior work from networking (Kelly's network utility maximization, layering as
+  optimization decomposition) and markets for computing, joins the two halves through the soft Bellman
+  equation (the one-model page's logsum is a soft value), and sorts every result into textbook and new.
+- Part D of the learners engine, a market for a dense layer, with 5 tests.
+- A nuisance matrix in the one-model page, with 2 tests.
+- Part E, one auction price for a mixture of experts, with 2 tests.
+
+**Found** (each predicted before it was run unless noted):
+
+- **Dense layer.** Honest per-example prices are backprop; voluntary payment for a broadcast activation is
+  nothing, so only the last layer learns; VCG recovers backprop with a budget gap Σ_{j<k} v_j·v_k, covering
+  95% of the cost with independent outputs and 80% with nearly identical ones (measured, not predicted).
+  A price fixed across examples can't turn a hidden unit toward a feature, because only the covariance of
+  price and input can. Access sold at its true per-example value is a difference reward, close to backprop.
+- **No shared potential.** Two uses settle even with one-sided nuisance. Three uses that each mind the next
+  never settle past ν = 2τ/(κ·x), predicted at 0.116 and observed between 0.11 and 0.12, while a symmetric
+  control separates and stops. A Pigouvian charge symmetrizes any nuisance and restores a potential.
+- **One price.** An auction price per expert rations better than a balancing bias (it drops the least
+  valuable tokens) but assigns credit worse (a bid must be right as an amount), so it wins at tight capacity
+  and loses at slack capacity.
+
+**Wrong turns during building:**
+
+- Posted-price buyers first judged inputs at their current weights; early in training every input looked
+  harmful, every buyer refused, and a refused connection could never be learned. Buyers now value access
+  at its best use.
+- A refused buyer compared its value with a stale running average of past payments instead of the current
+  ask. Fixed.
+- The first experts auction had to serve every token and so sent overflow to the wrong expert; it now has
+  an outside option worth zero. Its first version took thousands of tiny price steps per batch; a minimum
+  step ε made it 90× faster and was checked against brute force.
+- The draft of the page paragraph called strong one-sided nuisance a stable game. It isn't; it settles for a
+  different reason (two uses leave no room to rotate). Fixed before landing.
+- The draft of doc 7 cited Neu et al. for discounted problems and attributed a Boyd quote to the wrong
+  method; both were checked against the sources and corrected.
+
+## 14. A visual walkthrough (2 Oct)
+
+> Can you explain what these models look like visually? Make a walkthrough
+
+**Built:** [`WALKTHROUGH.md`](WALKTHROUGH.md), with screenshots of both interactive pages and six figures
+drawn from the engines: the learner as a chain of stages, what one hidden unit is told under each market
+design, how much its features improve, the three cyclic uses on the sheet, and one batch of tokens under
+three routers. `walkthrough/capture.mjs` drives headless Chromium over its DevTools protocol;
+`walkthrough/figures.mjs` regenerates the figures.
+
+**Caught while checking the captions against the sources:** the walkthrough first called #223 a household
+(it's the parcel and the neuron picked), said the expert biases equal the firms' fees (they're the fees
+with the sign flipped), and said selling access at its true value "tracks" backprop's price (on single
+examples the correlation is only 0.33; it's right on average). Two capture bugs also had to be fixed:
+capturing beyond the viewport resized the page and blanked its canvases, and the first auction figure
+let one noise spike set the scale for every row.
+
+## 15. The centre is an input (7 Oct)
+
+> Hmm... I think the downtown city model is not quite right, because the downtown is the input, but that is
+> the output of other neurons. I think we need a better model of agglomeration, i.e. I guess its just a matter
+> of maximum connectiveness given some physical substrate? neural networks and brains try to maximize this for
+> 3d space, and cities I guess do too, at the cost of some theoretical min latency, but also predictive coding
+> networks can respond at a variety of latency levels for different requests, unlike neural network forward
+> passes (i think?). Can we think of a more general model here and update the website. Think in-depth,
+> iterate until you've found a model that is closer to what the real world looks like.
+
+The user was right: the land market pins every household to one point and every spike to one input neuron,
+and that point is the one thing a city or a cortex builds itself.
+
+**Built:** an interaction term on the one-model page. A type-k arrival at j gains s·κ·Σ_q W_kq·(B_kq ∗ r_q)_j:
+how much of each type it deals with is within reach, through a kernel over distance. With symmetric dealings
+the term is the slope of a pairwise term of the free energy, so prices stay multipliers. Options: no starting
+point at all (`sources: 'anywhere'`), a pinned point anywhere (`sourceAt`: a harbour ⇄ a sensory input), a
+memory on the field, a saturating gain, and a second repelling kernel with a longer reach (competition for
+customers ⇄ lateral inhibition). Three settings use it: a downtown that forms by itself ⇄ a neural-field bump;
+firms and homes placing themselves ⇄ connected populations settling side by side; a port city ⇄ a hierarchy of
+areas fanning out from the input. Four tests, both solvers. Docs 2, 3 and 6 updated, 19 references added, and
+the walkthrough regenerated.
+
+**Found** ([docs/6 §19](docs/6-derivations.md#19-a-centre-that-isnt-given-agglomeration--wiring-economy)):
+a centre forms where none was given, at the plain's most accessible point; a harbour pulling a twentieth as
+hard as the land market's commute moves the whole city to it; a strong short-range pull alone collapses the
+city into one tower (Krugman's black hole), and a longer-range push breaks it into towns; firms and homes give
+Fujita and Ogawa's three regimes from three connection strengths; a chain of three kinds settles in order of
+distance from a pinned input with hops under half a random placement's. The agents and flows agree in every
+preset regime.
+
+**Wrong turns:**
+
+- The agents' bump wandered the plain at random. The attraction field used the instantaneous occupancy; with a
+  memory of 40 time units (arrivals learn where the others are) it sits still and matches the flows within
+  5–9%.
+- A repelling kernel read as a sum of competitors drove every town to the rim of the disc, where competitors
+  are fewest; what looked like an array of 8–12 towns was a ring on the edge. Competition is now read as a
+  local density. Interior towns then need short reaches.
+- The saturating gain (one job is what a home needs) was expected to split the firm cluster into towns. It
+  dissolves the cluster into a mixed carpet instead. Splitting needs a push.
+- The flows "collapsed" to one site at strong short-range attraction. That is the real equilibrium when the
+  attraction a unit adds at its own site reaches the rent it adds (s·W/Z → 1); it is now a named regime.
+- The 1D line layout also collapsed; that too is 1D's true equilibrium under a kernel normalized to the plain,
+  so the planned 1D-versus-2D substrate comparison was dropped as ill-posed in this form (NEXT_STEPS 10).
+- The follow-one-arrival walkthrough crashed on the new settings: its word tables were keyed by setting.
+
 ## Corrections
 
 Every claim that was made and later withdrawn or narrowed:
@@ -283,6 +395,12 @@ Every claim that was made and later withdrawn or narrowed:
 | Per-resident tax: rents fall by the full tax | Phase 9 (first run) | They do, once agents use a same-solver reference; the 0.18 shortfall was noise | Comparing both solvers |
 | A Pigouvian charge always lowers the true cost | Phase 8 | Only with weak nuisance; otherwise a local optimum | A seed where it came out worse |
 | Holland's classifier system had existence and bid taxes | Phase 11 draft | Not confirmed from primary sources; ZCS and Hayek taxes cited instead | Literature agent |
+| A market for a dense layer: honest reporting is the experiment that tests 1a | NEXT_STEPS, before phase 13 | It equals backprop by construction; the informative designs are voluntary, VCG, averaged and excludable | Working the design out |
+| Excludable posted prices would land near readout-only | Phase 13 plan | Worse than readout-only: half the connections are refused at a time | The simulation |
+| Without a shared potential, cycles would need delays | Phase 13 plan | Two uses settle even with a 50× longer memory; three uses with cyclic nuisance never settle, with no delay needed | The simulation |
+| The one-model page's centre must be given (a pinned downtown ⇄ input neuron) | Phases 4–13 | An interaction term places arrivals by where the others are; the centre, the towns and a hierarchy form by themselves | The user's critique, phase 15 |
+| An array of 8–12 towns forms under long-range competition | Phase 15 draft | A ring on the disc's rim, a boundary effect; competition read as a local density gives interior towns only at short reaches | Checking where the towns sat |
+| A saturating gain would give Fujita–Ogawa's polycentric regime | Phase 15 plan | It dissolves the cluster; towns need a push (competition) | The simulation |
 
 **Still unresolved:** the neural-city script still shows zoning ahead under fast alternation; see
 [`NEXT_STEPS.md`](NEXT_STEPS.md#unresolved-results).

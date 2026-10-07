@@ -1,8 +1,8 @@
 # Derivations
 
 Short proofs of the identities the other docs rely on. Each one is also checked numerically by a test,
-named at the end of its section. Notation follows [doc 3](3-one-model-two-readings.md) (sections 1–6) and
-[doc 5](5-learners-as-economies.md) (sections 7–12).
+named at the end of its section. Notation follows [doc 3](3-one-model-two-readings.md) (sections 1–6, 17 and 19)
+and [doc 5](5-learners-as-economies.md) (sections 7–16 and 18).
 
 ## 1. The logit is a race of exponential clocks
 
@@ -59,7 +59,7 @@ a stationary point of W instead of F.
 When ν is small, W is convex and the charged equilibrium is the optimum. When ν is large, the bilinear term
 makes W non-convex: several separated layouts are local minima, and the charge only guarantees reaching one
 of them. A network trained by gradient descent on a total loss computes the slope of W, not F, which is why
-it "internalizes" interference without a tax.
+it "internalizes" interference without a tax. For nuisance that isn't mutual, see section 17.
 Test: `formal: the equilibrium counts half the nuisance…`.
 
 ## 4. Taxes: shift invariance and capitalization
@@ -190,3 +190,281 @@ propagation, [Scellier & Bengio 2017](https://doi.org/10.3389/fncom.2017.00024))
 under 0.01 at β = 0.001 and shrinks in proportion to β. The prices are found by local trial and error, a
 tâtonnement, rather than a sweep.
 Test: `predictive coding…`.
+
+## 13. A market for a dense layer: what a unit buys
+
+Let each unit of a dense network be a firm. Unit k sells its output h_k at a price c_k per unit, and buys
+each input h_i. There are two ways to charge it for inputs.
+
+- **Its marginal contribution,** c_k·f′(z_k)·W_ki·h_i, as in section 8. Then its profit is
+  c_k·(f(z_k) − f′(z_k)·z_k), which for bias-free ReLU units is zero **for every weight**. "Raise your
+  profit" gives no learning signal at all.
+- **A price per unit of input,** q_ki·h_i, with q_ki fixed by the market rather than by k's own weights.
+  Then ∂profit/∂W_ki = c_k·f′(z_k)·h_i, backprop's update when c_k is backprop's price.
+
+So the market below uses per-unit prices. Buyer k's marginal value for one more unit of h_i is
+v_ki = c_k·f′(z_k)·W_ki, and supplier i learns from its credit c_i, whatever it is told:
+
+- **Honest:** c_i = Σ_k v_ki each example, the Samuelson sum of section 7, so the market is backprop.
+- **Voluntary:** each buyer chooses what to pay. It gets h_i whether it pays or not (the good is
+  non-excludable), and its payment only helps later, through the supplier's learning, and helps every
+  other buyer just as much. With a small learning rate the benefit to the payer is of order η against a
+  cost of order 1, so it pays nothing: the private provision of a public good, where contributions fall
+  short ([Bergstrom, Blume & Varian 1986](https://doi.org/10.1016/0047-2727(86)90024-1)). Then c_i = 0 and
+  only the last layer learns.
+
+Test: `a market for a dense layer…`.
+
+## 14. Clarke payments for a feature, and who pays the gap
+
+Take one supplier and one example. The decision is how far to push the supplier, d. Buyer k gains v_k·d,
+and the push costs d²/2: the step a gradient update takes is the d that maximizes g·d − d²/(2η), so the
+quadratic is the step's own cost. Welfare Σ_k v_k·d − d²/2 is highest at d* = Σ_k v_k, backprop's price.
+
+Clarke's payment ([Clarke 1971](https://doi.org/10.1007/BF01726210); a
+[Groves 1973](https://doi.org/10.2307/1914085) mechanism) charges buyer k what its report costs everyone
+else. With A the sum of the others' values and r_k its report,
+
+t_k = max_d (A·d − d²/2) − (A·(A + r_k) − (A + r_k)²/2) = r_k²/2
+
+Buyer k's utility v_k·(A + r_k) − r_k²/2 is highest at r_k = v_k whatever A is, so reporting truly is a
+dominant strategy, and the supplier learns exactly as under backprop. The payments total Σ_k v_k²/2, while
+the push costs (Σ_k v_k)²/2. The gap is
+
+(Σ_k v_k)²/2 − Σ_k v_k²/2 = Σ_{j<k} v_j·v_k
+
+It is positive when buyers' values agree and negative when they conflict. With n buyers who agree exactly,
+payments cover 1/n of the cost. With uncorrelated values they cover it on average. No truthful mechanism of
+this kind balances its budget in general
+([Green & Laffont 1977](https://doi.org/10.2307/1911219)), so if the supplier must be paid for its push,
+someone outside the market makes up Σ_{j<k} v_j·v_k: a planner's subsidy that grows with how much the
+buyers agree about the feature. On the ladder task the payments cover 95% of the cost with independent
+outputs and 80% when the outputs are made nearly alike.
+
+Test: `VCG for a feature…`.
+
+## 15. Prices that don't vary with the example can't teach a feature
+
+Supplier i's average update is E[c_i·f′(z_i)·x]. Split it:
+
+E[c·f′(z)·x] = E[c]·E[f′(z)·x] + Cov(c, f′(z)·x)
+
+A price fixed across examples keeps only the first term: a fixed vector E[f′(w·x)·x] times a number. For
+inputs symmetric about zero, tanh′ is even, so E[tanh′(w·x)·x] = 0: no drift at all. For Gaussian inputs
+and a bias-free ReLU, E[1(w·x > 0)·x] = w / (|w|·√(2π)): the update points along the unit's own weights, so
+a price can make it grow or shrink but never turn. Everything a hidden unit learns about *which* feature to
+compute is in the covariance term: the part of its price that varies with the example. In economic terms,
+backprop runs a complete set of state-contingent prices, one per unit per example
+([Arrow 1964](https://doi.org/10.2307/2296188)); a posted price is one price for all states.
+
+This bites in two designs:
+
+- **An honest price averaged over examples** (signed, true, but not per example) improves the hidden
+  features by at most about 1.3×, against 6× (tanh) to 35× (ReLU) for per-example prices.
+- **Excludable posted asks** are worse. A supplier asks each buyer a price per unit; a buyer keeps
+  access while its value at best use, (E[r·h])²/(2·E[h²]) with r its error without the input, covers the
+  ask. The ask is non-negative, so it only ever says "produce more": ReLU suppliers grow along their own
+  weights (hidden weights double in size), and about half the connections are refused at any moment as
+  asks bounce around buyers' values. When suppliers instead set each ask at 90% of the buyer's true value,
+  every connection is bought, and suppliers grow until the buyers' learning diverges.
+
+Valuing access at the buyer's current weights instead of at best use made every buyer refuse early in
+training, when random weights make most inputs look harmful, and a refused connection could never be learned
+again. That was a design error, found while building, not a result.
+
+Tests: `a price that doesn't vary with the example…`; `excludable posted prices…`.
+
+## 16. Access sold at its true value is a difference reward
+
+If a supplier can exclude, its buyers' loss without it is measurable: D_i = L(without i) − L(with i). That
+is the "wonderful life utility" of [Wolpert & Tumer (1999)](https://arxiv.org/abs/cs/9908014), now usually
+called a **difference reward**. It says how much the
+supplier is worth, not which way to change, so each supplier jitters its own net input by ξ_i and
+correlates the change in D_i with ξ_i. With every hidden unit jittered and g = ∂L/∂z,
+
+D_i(ξ) − D_i(0) = Σ_{j≠i} (g_j^{(−i)} − g_j)·ξ_j − g_i·ξ_i + O(σ²)
+
+where g^{(−i)} is the same price in the network without i. So E[(D_i(ξ) − D_i(0))·ξ_i]/σ² = −g_i: unbiased.
+Node perturbation's broadcast change in loss carries Σ_{j≠i} g_j·ξ_j as noise; here the other units enter
+only through how much removing i changes their prices. In the test the variance is about 9% of node
+perturbation's, and on the ladder task its features come within 2× of backprop's best-readout loss,
+against 3× (tanh) to 6× (ReLU) for node perturbation.
+
+It is an idealization: a supplier charging every buyer its true value example by example needs either
+honest buyers or a view of their losses, which is the reporting problem of section 14 again.
+
+Test: `excludable access sold at its true value…`.
+
+## 17. Without a shared potential
+
+Let the nuisance be a matrix: use k at site j suffers ν·κ·Σ_{q≠k} N_kq·r_jq, where N_kq says how much k
+minds q (all ones is the symmetric model above). Use k's cost then responds to use q's load with slope
+κ·(1 + ν·N_kq), the 1 coming from the shared rent. A potential needs these cross-slopes to match both ways
+([Monderer & Shapley 1996](https://doi.org/10.1006/game.1996.0044)), so F exists only when N is symmetric.
+What decides whether the model still settles?
+
+**A sufficient condition.** If the symmetric part of how costs respond to loads, together with the entropy
+term, pushes back against every shift, the game is *stable*, and many adjustment rules settle at its one
+equilibrium with or without a potential
+([Hofbauer & Sandholm 2009](https://doi.org/10.1016/j.jet.2009.01.007)). A chase, N = [[0, 1], [−1, 0]]
+(A avoids B, B seeks A), has no symmetric nuisance at all, so it is stable at any ν.
+
+**At one site.** Take a site where each use's load is x, and shift how that load is split among the uses
+while keeping the total, so the shared rent doesn't change. Once the nuisance memory has caught up, a logit
+choice moves each use's load by −(x/τ) times the change in its cost, so a shift δ in the split produces
+−g·N·δ with g = ν·κ·x/τ. The split relaxes as δ′ = −δ − g·N·δ, and the mixed state breaks when some
+eigenvalue λ of N, on shifts that sum to zero, has −1 − g·Re λ > 0.
+
+- **Two uses.** The shifts that sum to zero are one direction, (δ, −δ), so λ = −(N_AB + N_BA)/2 is real and
+  nothing can rotate. One-sided nuisance (λ = −1/2) breaks at g = 2 into separation, and the separated
+  layout is stable: B doesn't mind A. A chase (λ = 0) never breaks.
+- **Three uses that each mind the next** (A minds B, B minds C, C minds A). The shifts that sum to zero are
+  a plane, and there N has λ = −1/2 ± i·√3/2; its symmetric part (N + Nᵀ)/2 has λ = −1/2 twice. Both
+  break at g = 2, that is at ν = 2τ/(κ·x). The symmetric control breaks into separated uses, a minimum of F,
+  and stops. The cyclic one breaks into rotation, and there is no separated layout for it to rest in:
+  whichever use moves away from the one it minds lands next to the one that minds it.
+
+With the busiest site's per-use load x = 0.2585, τ = 0.15 and κ = 10, the predicted threshold is
+ν = 0.116. Both the cyclic uses and the control are mixed and still at 0.11 and moving at 0.12. Past it the
+control separates and stops, while the cyclic uses' loads keep moving by 70–110% of their size every 1000
+time units, with individual agents too. The motion is irregular rather than a clean cycle. It is the
+spatial rock–paper–scissors of ecology, where cyclic dominance keeps populations on the move
+([Reichenbach, Mobilia & Frey 2007](https://doi.org/10.1038/nature06095)). Two uses settled in every case
+tried, including a nuisance memory 50× longer.
+
+**The Pigouvian charge restores a potential.** The nuisance actually suffered is
+ν·κ·Σ_j Σ_k Σ_{q≠k} N_kq·r_jk·r_jq, and its slope for use k at site j is ν·κ·Σ_q (N_kq + N_qk)·r_jq: what k
+suffers plus what it causes. Charging each arrival the nuisance it causes therefore replaces N by N + Nᵀ,
+which is symmetric, so the true total cost is a potential whatever N was. One-sided nuisance with the charge
+is exactly symmetric nuisance, and the charge settles the cyclic uses.
+
+Tests: `formal: one-sided nuisance has no free energy…`; `formal: three uses that each mind the next…`.
+
+## 18. One price per expert: rationing by auction, credit by bids
+
+Tokens t, experts e with capacity c each, and bids v_te, each expert's forecast of the loss reduction it
+would deliver on token t; serving nobody is worth 0. The best allocation solves
+
+maximize Σ v_te·x_te subject to Σ_e x_te ≤ 1 for each token, Σ_t x_te ≤ c for each expert, x ≥ 0
+
+whose dual is: minimize Σ_t u_t + c·Σ_e λ_e subject to u_t + λ_e ≥ v_te and u, λ ≥ 0. Here λ_e is expert
+e's capacity price (the multiplier of its capacity) and u_t is token t's surplus.
+
+**The auction.** Each token takes the expert with the highest v_te − λ_e, or nothing if all are negative.
+An overloaded expert raises its price by its (c+1)-th largest margin (a token's lead over its next option),
+plus a small ε, so exactly c tokens stay. Prices only rise, and tokens leave an expert only when its own
+price rises, so a full expert stays full. At the end every token holds its best option at the posted
+prices, so u_t = max(0, max_e (v_te − λ_e)) is dual feasible; each served token has u_t = v_te − λ_e, each
+unserved one u_t = 0, and every expert with a positive price is full. That is complementary slackness, so
+the allocation is optimal and the value served splits exactly into token surplus plus capacity rents:
+Σ u_t + c·Σ λ_e. (Within ε per token; the ε is what keeps displaced tokens from trading places in tiny
+steps, as in [Bertsekas 1988](https://doi.org/10.1007/BF02186476).)
+
+**Why it rations better than a bias.** When capacity binds, a token stays served only if its lead over its
+next option beats the price, so the tokens that lose out are those worth least. A balancing bias shifts every
+token's choice by the same amount and then drops overflow in arrival order, or by gate probability as in
+batch prioritized routing ([Riquelme et al. 2021](https://arxiv.org/abs/2106.05974)), which tracks value only
+loosely. On the ladder task the dropped tokens are worth 0.38 of an average token under the auction, 0.74
+when dropped by gate probability and 1.02 in arrival order.
+
+**Why it assigns credit worse.** The auction compares bids across tokens, so each bid must be right as an
+*amount*, a forecast of ½‖y‖² − ½‖y − W_e·x‖². A router score only needs the right ranking for each token,
+and its gradient through the gate reaches every expert's score on every token. With linear bids, which can't
+represent that quadratic, experts fit their clusters 30–90× worse than under the gate (0.091 against
+0.001–0.003); quadratic bids narrow it to 4–10× (0.013). Letting every expert learn its value on every token made things worse, not better: each bid
+then has to fit its value on clusters it never serves. So the gap comes from forecasting amounts, not from
+learning only on the tokens won. With capacity to spare, those bid errors turn away 4% of tokens, against
+1.8% dropped under the gate.
+
+Tests: `one price per expert…`; `mixture of experts: one auction price…`.
+
+## 19. A centre that isn't given: agglomeration ⇄ wiring economy
+
+The land market pins every arrival to one point: households commute downtown, spikes arrive from one input
+neuron. Replace the point with the arrivals themselves. A type-k arrival at site j gains
+
+G_kj = s·κ·Σ_q W_kq·(B_kq ∗ r_q)_j,   (B_kq ∗ r_q)_j = Σ_i B_kq(d_ij)·r_iq,   B_kq(d) = e^{−d/ℓ_kq} ÷ Z_kq
+
+where W_kq is how much type k deals with type q (trips ⇄ connections), ℓ_kq the reach of those dealings, and
+Z_kq the kernel's sum from the sheet's most central site, so a uniform load r gives a field of r. Its cost
+c_kj loses G_kj. With a pinned source and s = 0 this is the land market; with no source (`sources: 'anywhere'`)
+the term alone places arrivals.
+
+**The potential.** Add to F the pairwise term −(s·κ/2)·Σ_{k,q} W_kq·Σ_{i,j} r_ik·B_kq(d_ij)·r_jq. Its slope in
+r_jk is −(s·κ/2)·Σ_q [W_kq·(B_kq ∗ r_q)_j + W_qk·(B_qk ∗ r_q)_j], which equals −G_kj exactly when W and ℓ are
+symmetric. So with symmetric dealings every price stays a Lagrange multiplier of one function, and section 17
+applies as before: asymmetric W (B reads A, A doesn't read B) has no potential. Rent is still κ·r_j and still
+the slope of the building cost ⇄ self-inhibition.
+Test: `agglomeration: with no centre given…` (price = κ·load to 10⁻⁴; 40 of 40 random transfers raise F).
+
+**When a uniform plain breaks.** On an unbounded sheet with one type, the uniform load r is an equilibrium.
+Perturb it by a wave of wavenumber k. The attraction changes the cost by −s·κ·B̂(k)·δr, with B̂ the kernel's
+Fourier transform normalized to B̂(0) = 1; the rent by κ·δr; and the logit's entropy pushes back with
+τ/r per unit. The wave grows when
+
+s·B̂(k) > 1 + τ/(κ·r)
+
+For an exponential kernel B̂ is largest at k = 0, so the first mode to break is the longest one: the whole
+plain's load gathers into one centre as soon as s > 1 + τ/(κ r) ≈ 1.13 here. Below that the plain stays
+flat. With a second kernel of the opposite sign and a longer reach ℓ_C (competition ⇄ lateral inhibition),
+the condition is s·B̂(k) − b·B̂_C(k) > 1 + τ/(κ r). The long kernel's transform falls off faster in k, so the
+k = 0 mode can be stable while a finite k is not: a pattern with a wavelength of order the kernels' reaches,
+Turing's mechanism in the form Krugman used for the spacing of business districts and Amari and Ermentrout &
+Cowan for periodic activity in neural fields.
+
+**The black hole.** At a single site the kernel's own weight is B(0)/Z = 1/Z. If s·W_kk/Z approaches 1 the
+attraction a unit of load exerts on its own site matches the rent it adds, and everything piles onto one site:
+the whole city in one tower. Z grows with the reach (≈ 2πℓ² on the plane: 6 at ℓ = 1, 25 at ℓ = 2), so short
+reaches collapse first. Krugman's core–periphery model has the same condition and name
+([Krugman 1991](https://doi.org/10.1086/261763)).
+Test: `agglomeration: a strong short-range pull alone collapses…` (s = 5, ℓ = 1.25: 1 parcel in the flows,
+16 with agents).
+
+**A bounded plain.** The sheet is a disc of radius 12, and that decides where things form. The attraction
+is a sum over partners within reach, so the disc's middle, with partners on every side, is the most
+accessible site and the centre forms there in both solvers (centroid within 0.2 of the origin). A pinned
+feature elsewhere wins if its pull beats that advantage: a harbour at (7, 2) pulling at 0.05, a twentieth of
+the land market's commute cost, moves the centroid to (5.3, 1.5). Competition has the opposite boundary
+effect: a site at the rim has fewer competitors within reach, so a repelling kernel read as a sum drives the
+towns onto the rim, where they form a ring at mean distance 9–10 whatever the reach. The competition field is
+therefore read as a local density, the kernel sum divided by the site's own kernel mass, which treats rim and
+interior alike. Only short reaches then give interior towns on a disc this size: for one type a ring of
+3–4 towns around a hollow middle (s = 5, ℓ = 1.25, competition 10 at reach 3); for firms among homes, 5–7
+dense towns at mean distance 6 from the centre (spillovers 3 at reach 1, competition 20 at reach 3). On a
+much larger plain, or a torus, the array would fill the interior and the centre's position would be set by
+history rather than geometry; that isn't simulated.
+
+**Why a field, and when it fails.** Attraction here is a *field*: a unit gains in proportion to how many
+partners are within reach, like a spillover or a wire to each partner. One job is not like that: a household
+needs one, and a second firm nearby adds little. The model has an optional saturating gain
+x₀·log(1 + field/x₀) for that case, but saturation alone never produced towns: it dissolves the firm cluster
+into a mixed carpet rather than splitting it. What splits a cluster is a push, not a weaker pull. Fujita and
+Ogawa's polycentric regime comes from a rival, one-to-one commute cost against a non-rival spillover
+([Fujita & Ogawa 1982](https://doi.org/10.1016/0166-0462(82)90031-X)); here the push is competition for
+customers, with the same qualitative result.
+
+**The neural field.** With one type, each site's load follows the logit with cost κ·r_j − G_j and a fixed
+total. That is local excitation through the kernel, inhibition of a neuron by its own activity (adaptation),
+and a global constraint on the total (the softmax's normalization: divisive inhibition). Amari's field
+equation has the same ingredients and the same solutions: a bump wherever activity happens to start, captured
+by a weak external input; periodic arrays under longer-range inhibition
+([Amari 1977](https://doi.org/10.1007/BF00337259); [Ermentrout & Cowan 1979](https://doi.org/10.1007/BF00336965)).
+The dynamics differ (his is a differential equation on activity, this a logit over sites with a lagged
+field), so the pairing is of resting states, not trajectories.
+
+**What the three settings measure.**
+
+| Setting | Flows | Agents |
+|---|---|---|
+| One type, pull 2 at reach 2 | centre at (0.0, 0.0), 241 parcels, peak load 0.64, partners 5.8 apart | (0.2, 0.0), 214, 0.67, 5.7; profile about the centre within 15% |
+| … with a harbour at (7, 2) pulling 0.05 | centroid (5.3, 1.5) | (5.4, 1.5) |
+| … pull 5 at reach 1.25 | one tower: 1 parcel | 16 parcels |
+| … and competition 10 at reach 3 | 4 towns in a ring, 420 parcels, hollow middle | 3 towns, 353 parcels |
+| Firms and homes, spillovers 1.5 at reach 1 | firms on 1 parcel in 10 hold 100%; overlap with homes 0%; firms at distance 1.3, homes at 7.1 | the same (1.6, 6.9) |
+| … spillovers 0.5, need for each other 2 | overlap 62%, firms spread (66% on the busiest tenth) | overlap 50% |
+| … spillovers 3, competition 20 at reach 3 | 7 firm towns, each dense (90%) and apart from homes (1%), at mean distance 6.0 | 5 towns, 93%, 1%, 6.2 |
+| Hierarchy, input at the edge | kinds at 1.8 < 4.6 < 7.8 from the input; hops 4.1 + 5.2 against 22.5 shuffled | 1.9 < 4.6 < 7.5; 4.1 + 4.7 |
+| … input in the middle | 1.6 < 3.6 < 6.1; hops 10.5: rings cost more | — |
+
+Tests: `agglomeration: with no centre given…`; `agglomeration: a strong short-range pull alone…`;
+`firms and homes: spillovers give one segregated centre…`; `hierarchy: a chain of populations…`.

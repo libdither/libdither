@@ -10,50 +10,56 @@ the idea.
 
 - Land markets and competitive layers of neurons are one model for *allocation*: logit choice is a race of
   noisy neurons, rent is adaptation, fees are load-balancing biases, and all of them are multipliers of one
-  free energy ([docs/3](docs/3-one-model-two-readings.md)).
+  free energy ([docs/3](docs/3-one-model-two-readings.md)). The centre is an outcome, not an input: with an
+  interaction term (agglomeration ⇄ wiring economy) a downtown forms by itself, a harbour moves it, firms and
+  homes show Fujita & Ogawa's three regimes, and a chain of kinds lays itself out from a pinned input in order
+  ([docs/6 §19](docs/6-derivations.md#19-a-centre-that-isnt-given-agglomeration--wiring-economy)).
 - For *credit*, backprop's signals are prices, an activation's price is a public-good sum, and bias-free
   linear or ReLU networks keep exact money accounts. Auction markets for control are Q-learning or SARSA
   depending on the price rule; the bucket brigade is TD(0) with its tax as the discount
   ([docs/5](docs/5-learners-as-economies.md)).
 
 **Open:** the claim that one model runs continuously from a market of agents to backprop. It holds at both
-ends and at several points between, but the two ends are separate engines, and no market learner here learns
-a representation.
+ends and at several points between, but the two ends are separate engines. Item 1 below found what a market
+needs to learn a representation: prices per example, signed, and honestly reported for a good every buyer
+gets at once.
 
-## 1. A market for a dense layer
+[Doc 7](docs/7-the-common-core.md) names what the settled results share (every price is a Lagrange
+multiplier), sorts them into textbook and new, and adds the prior work from networking. Its last section
+maps each item below to the assumption of that common core that it breaks.
 
-*The most informative next experiment: it tests gaps 1a and 1b at once.*
+## 1. A market for a dense layer (done, 1 Oct)
 
-**1a. Activations are public goods, so markets may need a planner for them.** An activation's backprop
-price is the sum of what every reader would pay for it ([Samuelson 1954](https://doi.org/10.2307/1925895)).
-Samuelson's own point in that paper is that no decentralized price system finds such values, because each
-reader gains by understating its share. That may explain why markets work for rival goods (control of the
-world) but have never matched backprop on dense representations. This is a hypothesis; nothing here tests
-it yet.
+**Found** ([docs/5](docs/5-learners-as-economies.md#a-market-for-a-dense-layer); derivations in
+[docs/6 §13–16](docs/6-derivations.md#13-a-market-for-a-dense-layer-what-a-unit-buys); Part D of
+`experiments/learners/`, 5 tests). Units buy inputs at a price per unit and maximize their own profit.
 
-**1b. No market learner here learns a representation.** In the market engine each agent's technology is a
-fixed action; only bids adapt. So moving from Hayek to backprop changes two things at once: how credit is
-priced, and whether units learn continuous features.
+- **Honest per-example prices are backprop,** by construction. Charging units their inputs' marginal
+  contribution instead gives bias-free ReLU units zero profit at every weight, so no signal.
+- **Voluntary payment is nothing.** A buyer gets a broadcast activation anyway, so it pays nothing and
+  only the last layer learns. Samuelson's free-rider problem bites completely.
+- **VCG recovers backprop** (Clarke tax v²/2, truthful reports dominant). Its budget gap is Σ_{j<k} v_j·v_k:
+  payments covered 95% of the supplier's cost with independent outputs, 80% with nearly identical ones.
+- **Prices must vary with the example.** Only Cov(price, f′·x) can turn a unit toward a new feature. An
+  honest price averaged over examples barely improves features (≤ 1.3×, against 6–35× for per-example
+  prices); excludable posted asks are worse (suppliers only grow; half the connections are refused at a
+  time).
+- **Exclusion makes counterfactual credit measurable.** Access sold at each buyer's true per-example value
+  is a difference reward: unbiased, ≈ 9% of node perturbation's variance, features within 2× of backprop.
 
-**What to do.** Build a dense layer whose units buy their inputs from the layer below and sell their output
-to the layer above, and that learn their weights to maximize their own profit at the prices they face. Run
-three versions on the supervised task in `ladder.mjs`:
+So 1a holds, and needed one refinement: the obstacle is not only that activations are public goods, but
+that useful prices must also be per example and signed. Backprop supplies all three for free.
 
-1. Buyers report their marginal values honestly. If prices then converge to backprop's, the market is a
-   decentralized way to compute backprop (expected, given section 7 of docs/6).
-2. Buyers report strategically, to maximize their own profit. Samuelson predicts under-reporting and
-   under-supplied features.
-3. Buyers pay Clarke–Groves (VCG) prices, the standard mechanism that makes honest reporting of public-good
-   values a dominant strategy ([Clarke 1971](https://doi.org/10.1007/BF01726210);
-   [Groves 1973](https://doi.org/10.2307/1914085)). VCG doesn't balance its budget; note who pays the gap.
+**Still open:**
 
-[Schmidhuber's neural bucket brigade (1989)](https://doi.org/10.1080/09540098908915650), where winning units
-pass "weight substance" back to the connections that set them up, is the closest prior design and the
-first thing to reimplement.
-
-**What would count.** Support: version 1 matches backprop's loss, version 2 is clearly worse, version 3
-recovers version 1. Against: version 2 learns about as well as version 1 (free-riding doesn't bite), or
-version 1 fails even with honest values (the obstacle is elsewhere).
+- **Forward-looking buyers.** Buyers here are myopic. A buyer that weighs how its payment improves the
+  supplier later plays a dynamic contribution game; [Bergstrom, Blume & Varian (1986)](https://doi.org/10.1016/0047-2727(86)90024-1)
+  predict that only the buyers who value the feature most contribute. Simulate it.
+- **Who sees the buyers' losses?** The access design learns well but needs each buyer's true per-example
+  value. Combine it with item 2: buyers who report strategically, under VCG or under exclusion.
+- **[Schmidhuber's neural bucket brigade (1989)](https://doi.org/10.1080/09540098908915650)**, where
+  winning units pass "weight substance" back to the connections that set them up, is still the closest
+  prior design and still not reimplemented.
 
 ## 2. Strategic bidding
 
@@ -74,41 +80,59 @@ here they're cited, not simulated.
 agents; if collusion among clones breaks it, the clean identity needs an extra rule (such as random clone
 pairing) and that rule is part of the theory.
 
-## 3. Two kinds of price that are never unified
+## 3. Two kinds of price that are never unified (done for a mixture of experts, 1 Oct)
 
-**What's missing.** The one-model page's prices *ration capacity* during the forward pass: rent, adaptation,
-balancing biases. The learners' prices *carry credit* backward. In a real economy one price does both, and so
-does a bid in Chang et al.'s market. Engineered networks split them: a mixture of experts has a balancing
-bias for rationing and a gradient for credit. Nothing yet says when one price can do both jobs.
+**Found** ([docs/5](docs/5-learners-as-economies.md#one-price-for-rationing-and-credit); derivation in
+[docs/6 §18](docs/6-derivations.md#18-one-price-per-expert-rationing-by-auction-credit-by-bids); Part E of
+`experiments/learners/`, 2 tests). Experts bid their forecast loss reduction, an ascending auction with one
+price per expert assigns tokens within capacity, and each expert's bid moves toward the loss reduction it
+realized. No router gradient, no balancing bias.
 
-**What to do.** Take a mixture-of-experts layer with capacity limits and replace "router score + balancing
-bias" with experts bidding for each token their expected reduction in loss, paying a Vickrey price, with
-capacity enforced by the auction. Compare with DeepSeek-style balancing plus gradient
-([Wang et al. 2024](https://arxiv.org/abs/2408.15664)) on load evenness, dropped tokens, and loss.
+- **One price can do both jobs.** The auction stays within capacity and is optimal for the bids; the value
+  served splits exactly into tokens' surplus plus experts' capacity rents.
+- **It rations better.** It drops the tokens worth least (0.38 of an average token, against 0.74 when
+  dropping by gate probability and 1.02 in arrival order), so at tight capacity it has the lowest loss.
+- **It assigns credit worse.** A bid must be right as an amount, a router score only as a ranking. Experts
+  fit their clusters 4–10× worse, and at slack capacity the gate wins (0.123 vs 0.218). Linear bids are far
+  worse; learning every expert's value on every token made it worse still, so the gap is the forecast, not
+  learning only from won tokens.
 
-**What would count.** If one auction price balances load and trains as well as the two-signal design, the
-split is an engineering convenience. If it can't, look for the reason in the rival/non-rival distinction:
-tokens are rival (one expert each), activations are not.
+So the split is not just engineering convenience: it trades rationing quality for cheap, precise credit.
+Tokens are rival, so there's no free-riding; what a price costs is precision.
 
-## 4. Games with no shared potential
+**Still open:**
 
-**What's missing.** Both projects assume one function that every choice lowers (a potential game). Many
-learners lack one: GANs ([Goodfellow et al. 2014](https://arxiv.org/abs/1406.2661)), multi-agent RL with
-competing goals, and general exchange economies, where price adjustment can cycle forever
-([Scarf 1960](https://doi.org/10.2307/2556215)). The taxonomy has no dimension for "is there a shared
-potential?"
+- **A hybrid:** experts trained through the gate, with overflow priced by forecast value. It might keep both
+  advantages.
+- **A harder task:** unequal or overlapping clusters, where the gate actually needs its bias.
+- **Strategic experts** (item 2): here every expert bids its forecast honestly.
 
-**What to do.**
+## 4. Games with no shared potential (inside the one-model page: done, 1 Oct)
 
-- **Inside the existing model:** make nuisance one-sided (industry bothers homes, homes don't bother
-  industry). That breaks the symmetry that makes F a potential. Predict whether the two solvers cycle, and
-  test it.
+**Found** ([docs/6 §17](docs/6-derivations.md#17-without-a-shared-potential); 2 tests). The page's nuisance
+can now be a matrix, how much each use minds each other one; unequal entries leave it without a free energy.
+
+- **Two uses settle anyway,** whether only one minds the other or one seeks the other while it avoids it,
+  even with a nuisance memory 50× longer. At a site the split between two uses can only move one way, so
+  nothing can rotate.
+- **Three uses that each mind the next never settle** once ν passes 2τ/(κ·x), predicted before running
+  (0.116; observed between 0.11 and 0.12). A symmetric control with the same symmetric part separates at the
+  same threshold and stops. The cyclic uses keep moving, irregularly, with agents too: spatial
+  rock–paper–scissors.
+- **A Pigouvian charge restores the potential** for any nuisance matrix, because adding the nuisance caused
+  makes the interactions symmetric. It settles the cyclic uses.
+
+So the "one free energy" story has a stated boundary: it needs mutual interactions. Settling needs less (a
+stable game, or only two uses), and cyclic dislike among three or more is where it fails.
+
+**Still open:**
+
 - **In the learners engine:** add a two-objective stage and use the decomposition of
   [Balduzzi et al. (2018)](https://arxiv.org/abs/1802.05642) into a potential part and a rotational part to
   place learners on the new dimension.
-
-**What would count.** If one-sided nuisance produces sustained cycles, the "one free energy" story has a
-clear boundary that the docs should state. If it still settles, find out why.
+- **A network reading of cyclic interference.** Features whose interference runs in a cycle are the
+  network side of the result, but no standard architecture is known to produce them. Look for one before
+  drawing it on the page.
 
 ## 5. Prices on data
 
@@ -174,7 +198,38 @@ In this framework weight decay is depreciation of capital.
 much capacity each solution uses. Test the guess that memorization comes first because each example can be
 developed alone while the compact circuit needs many parts to change together (a land-assembly problem).
 
-## 10. Calibration against real data
+## 10. Where the centre forms, and how many (new, 7 Oct)
+
+The agglomeration settings run on a disc of radius 12, and the disc decides two things that the real world
+decides otherwise.
+
+- **Location by geometry, not history.** The centre forms at the disc's middle, its most accessible point, in
+  both solvers; a harbour moves it. On a plain large next to the reach of dealings, the uniform state has a
+  continuum of equilibria and noise or history picks the spot: Krugman's "history and accident". **What to
+  do:** a torus layout (wrapped distances), or a sheet several times larger with a short reach. Expect the
+  centre's position to differ between seeds, and the agents' bump to drift slowly (a continuous attractor).
+- **Towns on the rim.** A repelling kernel read as a sum drives towns to the edge of a bounded plain, where
+  competitors are fewer. Reading competition as a local density fixed that, but interior arrays still need
+  short reaches. On a torus the array should fill the interior at a spacing set by the two reaches, and the
+  linear condition in docs/6 §19 gives the wavelength to check against.
+- **A job is not a field.** Here a unit gains in proportion to how many partners are within reach. Fujita and
+  Ogawa's polycentric regime comes from one-to-one matching of workers to firms with a linear commute cost,
+  against a non-rival spillover. **What to do:** add a rival interaction, an optimal-transport cost between two
+  types' loads, and check whether it gives towns without the competition kernel. It is also the city side of
+  the rival/non-rival distinction that item 1 found on the learner side.
+- **The substrate's dimension.** Brains are three-dimensional and cities two; the user's conjecture is that
+  both maximize connectivity on their substrate at the cost of a latency floor (Rent's rule:
+  [Bassett et al. 2010](https://doi.org/10.1371/journal.pcbi.1000748)). The 1D line layout was tried and
+  gives a dense spike, the true 1D equilibrium under a normalized kernel, which makes a like-for-like
+  comparison across dimensions ill-posed as the kernel is now. **What to do:** compare total wiring at
+  equilibrium for the same connectivity graph (not field) embedded in 1D, 2D and a 3D lattice.
+- **Latency as an outcome.** The hierarchy setting reports a forward pass's latency as the sum of its hops.
+  Predictive-coding and recurrent networks answer at many latencies, early and rough or late and exact
+  ([Lamme & Roelfsema 2000](https://doi.org/10.1016/S0166-2236(00)01657-X)); a feedforward pass at one. **What
+  to do:** on the hierarchy's layout, run a predictive-coding settle from the learners engine and plot error
+  against time crossed, against a feedforward pass of fixed latency.
+
+## 11. Calibration against real data
 
 **What's missing.** Every calibration is a toy. The city model's free-market city is about 3–4× denser than
 real US metros.
@@ -201,6 +256,10 @@ real US metros.
 - **Holland's own taxes** (existence and bid taxes) couldn't be confirmed from a primary source. The
   learners README cites the later ZCS and Hayek taxes instead. Worth checking Holland (1985) and
   Holland (1986) in print.
+- **Marginal patterns differ between solvers.** Near the threshold where a plain breaks into towns (one type,
+  reach 1.5), the flows find 8 shallow bumps and the agents 3–4; the presets stay in regimes where both agree,
+  and the tests assert only what both give. The saturating gain never produced towns; it dissolves a cluster
+  instead of splitting it.
 
 ## Engineering
 
