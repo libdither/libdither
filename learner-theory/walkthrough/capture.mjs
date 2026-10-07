@@ -129,18 +129,23 @@ for (const [id, units] of SETTINGS) {
   await shoot(`one-model-${id}`, 'section[aria-label="The same state drawn two ways"] figure', 6);
 }
 // Knob settings of the agglomeration rows: a harbour, and towns
+// the plain knob of the agglomeration setting is a button (it starts a new simulation), so it is clicked
+const wrap = `[...document.querySelectorAll('#controls button')].find((b) => /wraps around/i.test(b.textContent)).click()`;
 const VARIANTS = [
   ['geography', 'early', `h.S.sim.setConfig({})`, 250],
   ['geography', 'freed', `h.S.sim.setConfig({ technology: { value: 0, boost: 0 } })`, 3000],
   ['agglomeration', 'harbour', `h.S.sim.setConfig({ sources: 'center', sourceAt: [7, 2], distanceCost: 0.1 })`, 900],
+  ['agglomeration', 'map', `h.S.sim.setConfig({})`, 900, 'chart'],
+  ['agglomeration', 'torus', wrap, 2500],
+  ['agglomeration', 'torus-towns', `${wrap}; h.S.sim.setConfig({ interaction: { strength: 5, reach: 1.25, compete: { strength: 10, reach: 3 } } })`, 3000, 'chart'],
   ['firmshomes', 'towns', `h.S.sim.setConfig({ interaction: { matrix: [[3, 1], [1, 0]], compete: { strength: 20, reach: 3, matrix: [[1, 0], [0, 0]] } } })`, 1500],
 ];
-for (const [id, name, patch, units] of VARIANTS) {
+for (const [id, name, patch, units, chart] of VARIANTS) {
   await evaluate(`(() => { const h = window.__oneModel; h.S.paused = true; h.loadPreset(${JSON.stringify(id)}); h.S.paused = true; ${patch}; h.S.sim.reset(); h.step(${units}); h.render(); })()`);
   await sleep(400);
   await evaluate(`window.__oneModel.render()`);
   await sleep(200);
-  await shoot(`one-model-${id}-${name}`, 'section[aria-label="The same state drawn two ways"] figure', 6);
+  await shoot(`one-model-${id}-${name}`, chart ? '#chart, #chart-note' : 'section[aria-label="The same state drawn two ways"] figure', 6);
 }
 // Follow one arrival: the walkthrough panel for a single choice
 await evaluate(`(() => { const h = window.__oneModel; h.S.paused = true; h.loadPreset('land'); h.S.paused = true; h.step(600); h.render(); })()`);

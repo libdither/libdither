@@ -9,7 +9,7 @@ row ids work as links. **Follow one arrival** pauses the simulation and walks th
 both vocabularies: what every option costs this arrival, its own taste noise, what it picks, and how that
 moves the rent ⇄ adaptation.
 
-Underlined terms (130, in `GLOSSARY`) and blue author–year citations (115 references, in `REFS`)
+Underlined terms (132, in `GLOSSARY`) and blue author–year citations (117 references, in `REFS`)
 open a popup on hover. Click, tap or press Enter to pin it: a pinned popup's own terms and citations open
 in place (Back returns), and its links go out to Wikipedia, DOIs and arXiv. Write `[[key|text]]` for a
 term, `[[@key]]` or `[[@a;b]]` for a citation, and `$r_j^2$` for inline math. Every DOI and arXiv id

@@ -198,26 +198,33 @@ In this framework weight decay is depreciation of capital.
 much capacity each solution uses. Test the guess that memorization comes first because each example can be
 developed alone while the compact circuit needs many parts to change together (a land-assembly problem).
 
-## 10. Where the centre forms, and how many (new, 7 Oct; geography and technology added the same day)
+## 10. Where the centre forms, and how many (new, 7 Oct; geography, technology and the regime map added the same day)
 
 **Done since:** geography as a layer over the sites, and technology as a layer the arrivals make that grows
 with use, spreads, is worth living on, fades the given geography and lengthens reach
 ([docs/6 §20](docs/6-derivations.md#20-geography-and-the-geography-people-make)). It reproduces Bleakley &
 Lin's path dependence (a city stays where its coast put it only if what it built is worth living on) and
-Baum-Snow's suburbanization (longer reach, 1.6× the land at lower density).
+Baum-Snow's suburbanization (longer reach, 1.6× the land at lower density). Then a regime map
+([docs/6 §21](docs/6-derivations.md#21-what-the-kernels-predict-a-regime-map-and-the-density-gradient)):
+from the two kernels' transforms alone, whether a flat plain stays flat, gathers into one centre or breaks
+into towns, and at what spacing. On a plain that wraps around (a torus knob on the agglomeration setting)
+the predicted threshold and town count are exact: flat at a pull of 1.6, one bump at 2.0 against a
+predicted 1.72; four towns where the two-bumps-per-side wave grows fastest. Clark's density gradient comes
+out as β ≈ 1/ℓ. The first two items below are done by the torus; what the map does not do is new.
 
-The agglomeration settings run on a disc of radius 12, and the disc decides two things that the real world
-decides otherwise. The coast of the geography setting is explicit geography; the disc's rim is still implicit.
-
-- **Location by geometry, not history.** The centre forms at the disc's middle, its most accessible point, in
-  both solvers; a harbour moves it. On a plain large next to the reach of dealings, the uniform state has a
-  continuum of equilibria and noise or history picks the spot: Krugman's "history and accident". **What to
-  do:** a torus layout (wrapped distances), or a sheet several times larger with a short reach. Expect the
-  centre's position to differ between seeds, and the agents' bump to drift slowly (a continuous attractor).
-- **Towns on the rim.** A repelling kernel read as a sum drives towns to the edge of a bounded plain, where
-  competitors are fewer. Reading competition as a local density fixed that, but interior arrays still need
-  short reaches. On a torus the array should fill the interior at a spacing set by the two reaches, and the
-  linear condition in docs/6 §19 gives the wavelength to check against.
+- **Location by history (done).** On the torus the bump forms where the initial ripple was largest, a
+  different place in each run. The agents' bump should drift slowly there (a continuous attractor); not yet
+  measured.
+- **Towns in the interior (done).** On the torus the array fills the interior at the predicted spacing.
+- **The end state at strong pull.** The map predicts onsets. At a pull of 4 or more with reach 1.25 the
+  plain breaks into towns as predicted and the towns then merge until one parcel holds everything (Krugman's
+  black hole). **What to do:** the condition for a single parcel to be stable (one site's pull against the
+  rent and the competition it faces), drawn on the same map; and whether a saturating gain
+  (`interaction.saturate`) turns the black hole into towns of finite size without dissolving them (the
+  earlier attempt in §15 dissolved the cluster at the pull then used).
+- **Growth near threshold is slow.** Just above the threshold the bump takes thousands of time units to
+  appear (critical slowing down), so on the page a knob set barely past the border looks flat for a while.
+  The map could show the predicted onset time.
 - **A job is not a field.** Here a unit gains in proportion to how many partners are within reach. Fujita and
   Ogawa's polycentric regime comes from one-to-one matching of workers to firms with a linear commute cost,
   against a non-rival spillover. **What to do:** add a rival interaction, an optimal-transport cost between two

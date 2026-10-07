@@ -2,7 +2,7 @@
 
 Sources for the whole folder, in three lists. The docs link the ones they use inline.
 
-- **One-model page** (below): the 115 references of [`../experiments/one-model/index.html`](../experiments/one-model/index.html), generated from its `REFS` table. Each DOI and arXiv ID was checked against its metadata, and each Wikipedia link against Wikipedia's API. The line under each entry says what the page uses it for.
+- **One-model page** (below): the 117 references of [`../experiments/one-model/index.html`](../experiments/one-model/index.html), generated from its `REFS` table. Each DOI and arXiv ID was checked against its metadata, and each Wikipedia link against Wikipedia's API. The line under each entry says what the page uses it for.
 - **Learners:** the 38 references at the end of [`../experiments/learners/README.md`](../experiments/learners/README.md#references), each checked against the source, with notes where only partly verified.
 - **Play-dough city:** the sources at the end of [`../experiments/playdough-city/README.md`](../experiments/playdough-city/README.md#sources).
 
@@ -60,6 +60,8 @@ Sources cited only in these docs, `../TRANSCRIPT.md` and `../NEXT_STEPS.md` were
   Cortical maps as solutions to a wiring-economy problem: connected neurons placed close.
 - W. Christaller (1933). *Die zentralen Orte in Süddeutschland*. Gustav Fischer, Jena. [link](https://en.wikipedia.org/wiki/Central_place_theory)
   Towns that serve the customers within their reach space themselves evenly across a plain: central place theory.
+- C. Clark (1951). *Urban population densities*. Journal of the Royal Statistical Society A 114(4): 490–496. [doi:10.2307/2981088](https://doi.org/10.2307/2981088)
+  Population density falls off exponentially with distance from the centre, in city after city.
 - R. H. Coase (1960). *The problem of social cost*. Journal of Law and Economics 3: 1–44. [doi:10.1086/466560](https://doi.org/10.1086/466560)
   Nuisance disputes between neighbours; with free bargaining the efficient use results, whoever holds the right.
 - D. Comin, M. Dmitriev and E. Rossi-Hansberg (2012). *The spatial diffusion of technology*. NBER Working Paper 18534. [doi:10.3386/w18534](https://doi.org/10.3386/w18534)
@@ -162,6 +164,8 @@ Sources cited only in these docs, `../TRANSCRIPT.md` and `../NEXT_STEPS.md` were
   A deep network with a spatial smoothness cost on a sheet grows orientation maps and category patches like cortex’s.
 - A. Marshall (1890). *Principles of Economics*. Macmillan.
   Why firms of one industry cluster: shared suppliers, a pool of skilled workers, and know-how that is “in the air”.
+- J. F. McDonald (1989). *Econometric studies of urban population density: a survey*. Journal of Urban Economics 26(3): 361–385. [doi:10.1016/0094-1190(89)90009-0](https://doi.org/10.1016/0094-1190(89)90009-0)
+  Surveys the estimated gradients: they fell over time as commuting got cheaper.
 - D. McFadden (1974). *Conditional logit analysis of qualitative choice behavior*. In P. Zarembka (ed.), Frontiers in Econometrics, Academic Press, 105–142. [link](https://eml.berkeley.edu/reprints/mcfadden/zarembka.pdf)
   Adding independent Gumbel-distributed tastes to each option’s value gives the logit choice probabilities.
 - I. A. McKenzie, D. Ohayon, H. Li and others (2014). *Motor skill learning requires active central myelination*. Science 346(6207): 318–322. [doi:10.1126/science.1254960](https://doi.org/10.1126/science.1254960)

@@ -66,6 +66,33 @@ decides where a centre forms; the agglomeration does the rest.
 
 ![The same city gathered around a harbour on the coast](walkthrough/img/one-model-agglomeration-harbour.webp)
 
+**The map says what will form.** Under the agglomeration setting the chart is a map computed from the two
+kernels alone: pull on one axis, competition on the other, grey where a flat plain stays flat, blue where
+it gathers into one centre, orange where it breaks into towns, and the current knobs as a dot. Below it is
+the density by distance from the centre that formed; its gradient (Clark's β) is in the readout, and comes
+out as about one over the reach ([doc 6 §21](docs/6-derivations.md#21-what-the-kernels-predict-a-regime-map-and-the-density-gradient)).
+
+![The regime map under the agglomeration setting, with the knobs as a dot](walkthrough/img/one-model-agglomeration-map.webp)
+
+**A plain with no edge.** The disc's rim makes a mound even when the map says flat, so a knob makes the
+plain wrap around instead (a torus). There the flat plain is an exact equilibrium, and the bump forms
+wherever the first ripple was largest, here across the plain's wrap-around edge: on a plain with no
+landmark, history picks the spot.
+
+![On the wrapping plain the bump forms where the first ripple put it](walkthrough/img/one-model-agglomeration-torus.webp)
+
+With a short reach and strong competition the map predicts that the two-bumps-per-side wave grows fastest,
+so four towns; four towns form, and the profile about one of them shows the others at the predicted spacing.
+
+![Four towns on the wrapping plain, as the map predicted](walkthrough/img/one-model-agglomeration-torus-towns.webp)
+
+The figure below is the whole map for two reaches, with eight runs of the model marked: a dot where the
+outcome matched and a cross where it did not. The two crosses are settings where the plain did break into
+towns as predicted, and the towns then merged until one parcel held everything: the map predicts where a
+flat plain breaks and at what spacing, not where the gathering stops.
+
+![Predicted fate of a flat plain over pull and competition, with eight runs marked](walkthrough/img/regime-map.svg)
+
 **Firms and homes place themselves.** Two kinds: firms (blue) gain from firms nearby, firms and homes
 (orange) need each other. Nothing is pinned, yet the classic monocentric city appears as an outcome: a dense
 firm centre with homes around it. On the right, a recurrently connected population forms one hub and the
@@ -209,7 +236,7 @@ smallest. That's the rationing it does better; the doc explains why it assigns c
 Run from this folder:
 
 ```bash
-node walkthrough/figures.mjs    # the SVG figures, from the engines (about 10 s)
+node walkthrough/figures.mjs    # the SVG figures, from the engines (about a minute)
 node walkthrough/capture.mjs    # the page screenshots; needs Chromium (CHROME=/path to override)
 ```
 

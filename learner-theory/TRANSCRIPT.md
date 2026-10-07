@@ -412,6 +412,37 @@ suburbanization. The agents and flows agree on the whole course.
 - The first fade constant bit at tiny technology levels; the fade is now gentler and the made ground's
   worth higher, so the three regimes separate by two parcels or more.
 
+## 17. What the kernels predict (7 Oct)
+
+> lets do next steps, keep going until you feel like you've gotten a really concrete predictive and beautiful
+> thing. Feel free to do rewrites, and just keep going, long-form for an hour
+
+**Built:** a regime map on the agglomeration setting, computed in the page from the two kernels' transforms:
+for each pull and competition, whether a flat plain stays flat, gathers into one centre or breaks into
+towns, with the current knobs as a dot and the simulated outcome in the caption. A knob that makes the plain
+wrap around (a torus), where the flat plain is an exact equilibrium and the test is sharp. A density
+gradient readout (Clark's β and β × reach). Three tests, a figure, two references
+([docs/6 §21](docs/6-derivations.md#21-what-the-kernels-predict-a-regime-map-and-the-density-gradient)).
+
+**Found:** the threshold $θ = 1 + τ/(κ\bar r)$ and the kernel transform predict the model's onsets exactly
+on the torus (flat at a pull of 1.6, one bump at 2.0, predicted 1.72; four towns where the two-bumps wave
+grows fastest; flat where no wave grows). On the disc the border is soft because the rim makes a mound below
+threshold. Clark's gradient is β ≈ 1/ℓ, with the reach-flattening direction of the century-long decline in
+measured gradients.
+
+**Wrong turns:**
+
+- The first torus runs showed nothing forming at a pull of 2 and the threshold looked wrong. The uniform
+  wave is fixed by the total load, so on a finite wrapping plain the longest wave that counts is one bump
+  across it, not $k = 0$: the predicted pull is $θ/\hat B(2π/P)$, higher than θ. On the disc the rim's
+  mound plays the role of the $k = 0$ wave, which is why $s − b > θ$ worked there.
+- A first torus of period 17 put the threshold at 1.93 and the default pull of 2 barely past it, so the bump
+  took thousands of time units to appear; the knob uses period 21 (441 sites, the disc's count).
+- Two settings predicted to give four towns gave one parcel holding everything instead. The map predicts
+  where the flat plain breaks, not where the gathering stops; the doc says so and NEXT_STEPS has the item.
+- The chart's gradient readout showed a meaningless number when several towns had formed; it now shows a
+  dash unless there is one centre and the fit is good.
+
 ## Corrections
 
 Every claim that was made and later withdrawn or narrowed:
@@ -438,6 +469,8 @@ Every claim that was made and later withdrawn or narrowed:
 | A saturating gain would give Fujita–Ogawa's polycentric regime | Phase 15 plan | It dissolves the cluster; towns need a push (competition) | The simulation |
 | A longer reach of dealings spreads the city | Phase 16 draft | Only if the kernel is renormalized; counted as a sum, more partners make it denser | The simulation |
 | Fading the coast is enough for path dependence | Phase 16 plan | The freed city drifts inland; the made layer must be worth living on | The simulation |
+| A flat plain gathers when s − b > θ, sharply | Phase 17 draft | Exact on a wrapping plain for the longest wave that fits, θ/B̂(2π/P); soft on the disc, where the rim makes a mound below threshold | The torus runs |
+| The regime map predicts the end state | Phase 17 draft | It predicts onsets and spacing; at strong pull the towns merge into one parcel | Two of eight runs |
 
 **Still unresolved:** the neural-city script still shows zoning ahead under fast alternation; see
 [`NEXT_STEPS.md`](NEXT_STEPS.md#unresolved-results).

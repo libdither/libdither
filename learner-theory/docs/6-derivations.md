@@ -543,3 +543,99 @@ history places, and in the flows it wandered off-centre after about 2500 time un
 
 Tests: `geography: a coast worth a little…`; `geography: technology that only fades the coast…`;
 `geography: a longer reach spreads the city…`.
+
+## 21. What the kernels predict: a regime map, and the density gradient
+
+Sections 19 and 20 showed that a centre, a ring of towns and a coastal city come out of two kernels. This
+section asks what those kernels predict in advance, and checks the prediction against the model. The answer
+is a map: for each setting of the knobs, whether a flat plain stays flat, gathers into one centre, or breaks
+into towns, and at what spacing.
+
+**The linear condition.** One type, load $r_j$ on $N$ sites, total $D$, so the flat plain has $\bar r = D/N$
+everywhere. A site's cost is rent $κ·r_j$ (the price is the multiplier of section 1), minus the pull
+$s·κ·(B∗r)_j$ of partners within reach ℓ, plus the push $b·κ·(B_C∗r)_j$ of competitors within reach
+$ℓ_C$; the kernels $B(d) = e^{−d/ℓ}/Z$ and $B_C$ are normalized so a flat load gives a flat field of $\bar r$.
+Arrivals choose by a logit with temperature τ. Perturb the flat plain by a wave $δr ∝ \cos(k·x)$. The logit
+answers a cost difference $δc$ with a load difference $δr = −(\bar r/τ)·δc$, and the cost difference is
+$κ·δr·(1 − s·\hat B(k) + b·\hat B_C(k))$, where $\hat B(k) = \sum_i B(d_i)\cos(k x_i)$ is the kernel's
+transform, 1 at $k = 0$ and falling with $k$, faster for a longer reach (on the plane,
+$(1 + k²ℓ²)^{−3/2}$). The interaction term reads the load through a memory with rate $1/m$, so each step the
+wave is multiplied by $1 + \tfrac1m\big((s\hat B(k) − b\hat B_C(k))/θ − 1\big)$ with
+$$θ = 1 + \frac{τ}{κ·\bar r}.$$
+A wave grows when $s·\hat B(k) − b·\hat B_C(k) > θ$. For the page's knobs (τ = 0.15, κ = 10, $\bar r$ =
+0.12) θ = 1.123. Three outcomes:
+
+- **Flat:** no wave grows.
+- **One centre:** the longest wave grows. Without competition this is $s > θ$ on an unbounded plain, the
+  condition of section 19 ("the pull beats rent and taste").
+- **Towns:** some shorter wave grows fastest. This needs the push to have the longer reach, so that it
+  damps long waves more than short ones: Turing's short-range activation with long-range inhibition
+  ([Turing 1952](https://doi.org/10.1098/rstb.1952.0012)), Krugman's argument for the spacing of business
+  districts ([Krugman 1996](https://press.princeton.edu/books/paperback/9780631197072/the-self-organizing-economy)),
+  and the neural-field patterns of
+  [Ermentrout & Cowan 1979](https://doi.org/10.1007/BF00336965). The fastest wave's wavelength is the
+  spacing; $m$ bumps per side of a square plain make $m²$ towns.
+
+The page draws this map for the agglomeration setting: pull on one axis, competition on the other, the
+current knobs as a dot, and the simulated outcome in the caption. The transform is computed from the actual
+sites (`kernelTransform` on the simulation).
+
+**Where the test is exact.** On a disc the flat plain is not an equilibrium: sites near the rim have fewer
+partners in reach, so the edge makes a mild mound even below threshold, and the border between flat and
+centre is soft (peak ÷ mean 1.00 at s = 0, 1.40 at 1.0, 1.62 at 1.2, 5.2 at 2.0, with θ = 1.12). So the
+agglomeration setting has a knob that makes the plain wrap around (a torus of period 21, 441 sites, like the
+disc). There the flat plain is an exact equilibrium, the uniform wave is fixed by the total load, and the
+longest wave that counts is one bump across the plain, $k_1 = 2π/21$. With reach 2 the predicted pull for
+one bump is $s^* = θ/\hat B(k_1) = 1.72$; the model stays flat at s = 1.6 (peak ÷ mean 1.00) and forms one
+bump at s = 2.0 (5.0). With reach 1.25 and a competition reach of 3, at s = 5, b = 10 the two-bumps-per-side
+wave grows fastest (rate 1.43 against θ = 1.12) and the model forms exactly four towns; at s = 3, b = 4 no
+wave grows (best 1.09) and it stays flat. Eight runs against the map, from `walkthrough/figures.mjs`:
+
+| reach ℓ | pull s | competition b | predicted | the model after 3000 time units |
+|---|---|---|---|---|
+| 2 | 1.6 | 0 | flat | flat |
+| 2 | 2.0 | 0 | one centre | one centre |
+| 2 | 4 | 6 | flat | flat |
+| 2 | 6 | 4 | one centre | one centre |
+| 1.25 | 3 | 4 | flat | flat |
+| 1.25 | 5 | 10 | 4 towns | 4 towns |
+| 1.25 | 4 | 4 | 4 towns | everything on one parcel |
+| 1.25 | 6 | 12 | 4 towns | everything on one parcel |
+
+Where the bump forms on the torus is wherever the initial ripple was largest, a different place in each run:
+on a plain with no landmark, history picks the spot ([Krugman 1991](https://doi.org/10.1086/261763)).
+
+**What it does not predict.** The last two rows. The flat plain does break into towns there, as predicted,
+but with a pull that strong the towns go on merging until one parcel holds everything: Krugman's black hole,
+where a concentration pulls harder the bigger it gets and nothing stops it. Linear stability says where the
+flat plain breaks and at what spacing, not where the gathering stops; that is a question about the
+nonlinear end state, and the honest statement is that the map is a map of onsets. On the disc, the earlier
+sweep of 42 knob settings agreed with the map's onset in 35–38 of them depending on the reaches, the
+misses being mild mounds in cells predicted flat (the rim's doing) and patterns whose wavelength is longer
+than the disc, which read as one centre.
+
+**The density gradient.** Clark found that population density falls off from a city's centre as
+$ρ(d) = ρ_0 e^{−βd}$, in city after city ([Clark 1951](https://doi.org/10.2307/2981088)), and the surveys
+since found β falling through the twentieth century as commuting got cheaper
+([McDonald 1989](https://doi.org/10.1016/0094-1190(89)90009-0)). Here the gradient is set by the reach:
+fitting log density against distance over the rings between a tenth and seven tenths of the peak,
+
+| reach ℓ | 1.5 | 2 | 3 | 4 |
+|---|---|---|---|---|
+| β·ℓ (pull 2) | 1.02 | 0.91 | 0.92 | 0.95 |
+| R² | 0.95 | 0.96 | 0.97 | 0.98 |
+
+so β ≈ 1/ℓ: a longer reach flattens the city in proportion, which is the direction of the century-long
+decline. The constant depends on the pull (β·ℓ = 1.6 at a pull of 3), so the law is β = c(s)/ℓ. Two
+details of shape: the core is nearer a Gaussian than an exponential, and far out the load falls as
+$\log ρ ∝ −e^{−d/ℓ}$, the kernel's own tail (the slope of log(−log ρ) against distance is 0.31 at ℓ = 3,
+against 1/ℓ = 0.33). The readout shows β and β·ℓ.
+
+**The network reading.** The same map is the stability diagram of a neural field: a flat sheet, one bump
+([Amari 1977](https://doi.org/10.1007/BF00337259)), or a periodic pattern whose wavelength the kernels set
+([Ermentrout & Cowan 1979](https://doi.org/10.1007/BF00336965)); the density gradient is the bump's width,
+set by the connection range; and the black hole is a winner-take-all sheet with no saturation, where the
+excitation has no ceiling.
+
+Tests: `regime map: on a wrapping plain…`; `regime map: with competition…`; `regime map: on the disc the
+density gradient…`.

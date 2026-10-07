@@ -50,7 +50,7 @@ It started from a video about height limits and urban sprawl, and grew one quest
 |---|---|---|---|
 | [`playdough-city`](experiments/playdough-city/) | Interactive 3D page scoring the video's claims with a standard urban-economics model | Complete | 24 pass |
 | [`neural-city`](experiments/neural-city/) | Scripts showing a competitive network reproduces the city's equilibrium within 1–4% | Superseded by `one-model`; one result disputed (see NEXT_STEPS) | Scripts print their checks |
-| [`one-model`](experiments/one-model/) | One model drawn as an economy and as a neural network, thirteen settings, two solvers, a formal section, taxes, agglomeration, geography and technology, 115 checked references | Mature prototype | 37 pass |
+| [`one-model`](experiments/one-model/) | One model drawn as an economy and as a neural network, thirteen settings, two solvers, a formal section, taxes, agglomeration, geography and technology, a predicted regime map, 117 checked references | Mature prototype | 40 pass |
 | [`learners`](experiments/learners/) | Engine for learners as staged production economies, tested identities, a comparison of all settings, a market for a dense layer, one price for a mixture of experts | First pass: separate engines, no interactive page | 21 pass |
 
 ## Running it
@@ -65,7 +65,7 @@ node --test experiments/playdough-city/model.test.mjs     # 24 tests, about 1 s
 
 # one model, two readings: open the file directly in a browser, no server needed
 xdg-open experiments/one-model/index.html                 # or open it from a file manager
-node --test experiments/one-model/model.test.mjs          # 37 tests, about 7 min
+node --test experiments/one-model/model.test.mjs          # 40 tests, about 8 min
 
 # learners
 node --test experiments/learners/learners.test.mjs        # 21 tests, about 6 s
