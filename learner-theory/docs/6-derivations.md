@@ -1,8 +1,8 @@
 # Derivations
 
 Short proofs of the identities the other docs rely on. Each one is also checked numerically by a test,
-named at the end of its section. Notation follows [doc 3](3-one-model-two-readings.md) (sections 1–6, 17 and 19)
-and [doc 5](5-learners-as-economies.md) (sections 7–16 and 18).
+named at the end of its section. Notation follows [doc 3](3-one-model-two-readings.md) (sections 1–6, 17, 19 and
+20) and [doc 5](5-learners-as-economies.md) (sections 7–16 and 18).
 
 ## 1. The logit is a race of exponential clocks
 
@@ -468,3 +468,78 @@ field), so the pairing is of resting states, not trajectories.
 
 Tests: `agglomeration: with no centre given…`; `agglomeration: a strong short-range pull alone…`;
 `firms and homes: spillovers give one segregated centre…`; `hierarchy: a chain of populations…`.
+
+## 20. Geography, and the geography people make
+
+Section 19 left one thing given: the plain's shape, which put the centre in the middle. Real plains have
+coasts, rivers and passes, and what those are worth changes with what people can build. Both become fields.
+
+**Given geography.** A layer g_m(j) over the sites and a weight w_km per type: an arrival of type k gains
+κ·Σ_m w_km·g_m(j). The pinned downtown and the harbour of section 19 are the case of a layer that is one
+point. The term is linear in r, so F gains −κ·Σ_j r_j·Σ_m w_km·g_m(j) and every price stays a multiplier.
+
+**Made geography.** A level T_j of technology ⇄ infrastructure at each site, with
+
+dT_j/dt = α·r_j + D·((B_T ∗ T)_j − T_j) − δ·T_j
+
+learning by doing where the load is, diffusion to neighbours through a kernel B_T of reach ℓ_T normalized
+to each site's own kernel mass (so a flat field stays flat), and decay with disuse. The first term is
+Arrow's learning by doing; the second is Hägerstrand's mean information field, the contact kernel through
+which innovations spread ([Hägerstrand 1965](https://doi.org/10.1017/S0003975600001132)), and knowledge
+spillovers do fall off with distance ([Jaffe, Trajtenberg & Henderson 1993](https://doi.org/10.2307/2118401)).
+It does three things to the cost:
+
+1. **It is worth living on.** A gain κ·v·T_j, like a given layer: roads, a port, schools ⇄ myelinated,
+   vascularized tissue that is cheaper to use.
+2. **It fades the given layers.** The weight on g_m becomes w_km·e^{−γ·T_j}: with rail and road, the coast
+   carries less of what only ships carried.
+3. **It lengthens the reach of dealings.** ℓ_ij = ℓ·(1 + β·(T_i + T_j)/2), the mean technology at the two
+   ends, which keeps the kernel symmetric, with B normalized by (ℓ_ij/ℓ)² (the plane's kernel mass) so the
+   same total pull spreads over more partners instead of adding to it. Without the renormalization a longer
+   reach counted more partners and made the city denser; with it the city spreads, which is what highways
+   did ([Baum-Snow 2007](https://doi.org/10.1162/qjec.122.2.775)).
+
+For a given T all three are slopes of one function, F gaining −κ·Σ_j r_j·(Σ_m w_km·e^{−γT_j}·g_m(j) + v·T_j)
+with the pairwise term of section 19 built on the lengthened reach. T itself moves slowly through F: the
+model is quasi-static, and the test freezes T to check prices and transfers.
+Test: `geography: a longer reach spreads the city…` (price = κ·load to 10⁻³; 40 of 40 transfers raise F).
+
+**What it shows.** A coast along the west side of the plain, worth 0.3 in rent units to households, with the
+one-type agglomeration of section 19 (pull 2 at reach 2); technology learns at 0.005 per unit load, spreads
+at 0.03 with reach 3, decays at 0.001, is worth 1 per unit, fades the coast at γ = 4 and lengthens reach at
+β = 0.5.
+
+| | Centre's distance inland | Share on the coast | Parcels used |
+|---|---|---|---|
+| No technology | 3.5 | 58% | 114 |
+| Technology that only fades the coast (v = 0, β = 0), t = 3000 | 7.1 | 14% | 216 |
+| … and is worth living on (v = 1, β = 0) | 4.1 | 42% | 104 |
+| … and lengthens reach too (the page's setting) | 5.3 | 29% | 179 |
+
+With the coast's worth gone and nothing of its own to stand on, the city drifts toward the plain's middle,
+where section 19 put it. With made ground worth living on it stays within a few parcels of the shore: the
+made layer is highest where the city already was, so it anchors the city there. That is the mechanism
+Bleakley and Lin found for portage sites, which stayed large long after goods stopped being carried around
+rapids ([Bleakley & Lin 2012](https://doi.org/10.1093/qje/qjs011)): geography decides where a city starts,
+what the city builds decides whether it stays. The reach boost spreads the city over 1.6× the land at lower
+density without emptying it ([Gaspar & Glaeser 1998](https://doi.org/10.1006/juec.1996.2031)). Technology
+spreads inland ahead of the people: by t = 2000 the middle of the plain has more than half the coast's level.
+The agents and flows agree on the whole course (centre within 1 parcel, coast share within 8 points,
+technology within 0.1).
+
+**The network reading.** Myelin forms where axons are active and is lost with disuse
+([Gibson et al. 2014](https://doi.org/10.1126/science.1252304);
+[McKenzie et al. 2014](https://doi.org/10.1126/science.1254960); [Fields 2015](https://doi.org/10.1038/nrn4023)).
+It speeds conduction, so farther partners fall within the same latency: a longer effective reach along used
+tracts. Myelinated ground is cheaper to use (v), and a map that formed against a sensory edge stops needing
+it once its own structure carries the signal (γ). The pairing is of form and resting states; the dynamics of
+myelination are not these equations.
+
+**Two things to know.** The "coast" is still the disc's rim, so the plain's middle keeps its pull from
+section 19, and that pull is what the freed city drifts toward; on a plain large next to the reach of
+dealings there would be nowhere in particular to drift to. And with made geography worth living on and no
+given geography at all, the blob eventually leaves the middle: the made layer is a second attractor that
+history places, and in the flows it wandered off-centre after about 2500 time units.
+
+Tests: `geography: a coast worth a little…`; `geography: technology that only fades the coast…`;
+`geography: a longer reach spreads the city…`.

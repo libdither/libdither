@@ -198,10 +198,16 @@ In this framework weight decay is depreciation of capital.
 much capacity each solution uses. Test the guess that memorization comes first because each example can be
 developed alone while the compact circuit needs many parts to change together (a land-assembly problem).
 
-## 10. Where the centre forms, and how many (new, 7 Oct)
+## 10. Where the centre forms, and how many (new, 7 Oct; geography and technology added the same day)
+
+**Done since:** geography as a layer over the sites, and technology as a layer the arrivals make that grows
+with use, spreads, is worth living on, fades the given geography and lengthens reach
+([docs/6 §20](docs/6-derivations.md#20-geography-and-the-geography-people-make)). It reproduces Bleakley &
+Lin's path dependence (a city stays where its coast put it only if what it built is worth living on) and
+Baum-Snow's suburbanization (longer reach, 1.6× the land at lower density).
 
 The agglomeration settings run on a disc of radius 12, and the disc decides two things that the real world
-decides otherwise.
+decides otherwise. The coast of the geography setting is explicit geography; the disc's rim is still implicit.
 
 - **Location by geometry, not history.** The centre forms at the disc's middle, its most accessible point, in
   both solvers; a harbour moves it. On a plain large next to the reach of dealings, the uniform state has a
@@ -223,6 +229,15 @@ decides otherwise.
   gives a dense spike, the true 1D equilibrium under a normalized kernel, which makes a like-for-like
   comparison across dimensions ill-posed as the kernel is now. **What to do:** compare total wiring at
   equilibrium for the same connectivity graph (not field) embedded in 1D, 2D and a 3D lattice.
+- **Technology as a vector, not a level.** One technology level does three things at fixed ratios (worth,
+  fading, reach). Real technologies differ: rail lengthened reach and freed cities from rivers; air
+  conditioning changed which climates were worth living in; the internet lengthened reach for some dealings
+  and not others ([Gaspar & Glaeser 1998](https://doi.org/10.1006/juec.1996.2031)). **What to do:** several
+  T fields, each with its own use (which types learn it), spread, and effect vector; a technology that fades
+  one layer and raises the worth of another (air conditioning and the sunbelt) is the test case.
+- **Who builds the made ground.** Here everyone's presence raises T and everyone gains from it: a public
+  good with no free-riding, the planner's case. Roads are paid for; myelin costs the cell. **What to do:** a
+  cost of building T charged to those at the site, and see whether towns under-build (item 1's lesson).
 - **Latency as an outcome.** The hierarchy setting reports a forward pass's latency as the sum of its hops.
   Predictive-coding and recurrent networks answer at many latencies, early and rough or late and exact
   ([Lamme & Roelfsema 2000](https://doi.org/10.1016/S0166-2236(00)01657-X)); a feedforward pass at one. **What

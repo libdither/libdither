@@ -8,7 +8,9 @@ results so far:
   load balancing. All their prices are Lagrange multipliers of one free energy. The centre need not be given:
   when each arrival gains from being near the others it deals with, a downtown ⇄ a bump of activity forms by
   itself, firms and homes sort into one centre, a mixed sheet or several towns, and a chain of kinds lays
-  itself out from a harbour ⇄ a sensory input in order, with the shortest wiring.
+  itself out from a harbour ⇄ a sensory input in order, with the shortest wiring. Geography is a layer over
+  the sites, and technology ⇄ myelin a layer the arrivals make that changes what they want: a city founded
+  for its coast stays after the coast stops mattering only if what it built is worth living on.
 - **Credit:** learners from a market of bidding agents down to backprop fit one parametrized model in which
   credit is a price. An auction market for control is Q-learning or SARSA depending on its price rule;
   Holland's bucket brigade is TD(0), with its tax acting as the discount; backprop's signals are shadow
@@ -48,7 +50,7 @@ It started from a video about height limits and urban sprawl, and grew one quest
 |---|---|---|---|
 | [`playdough-city`](experiments/playdough-city/) | Interactive 3D page scoring the video's claims with a standard urban-economics model | Complete | 24 pass |
 | [`neural-city`](experiments/neural-city/) | Scripts showing a competitive network reproduces the city's equilibrium within 1–4% | Superseded by `one-model`; one result disputed (see NEXT_STEPS) | Scripts print their checks |
-| [`one-model`](experiments/one-model/) | One model drawn as an economy and as a neural network, twelve settings, two solvers, a formal section, taxes, agglomeration, 106 checked references | Mature prototype | 34 pass |
+| [`one-model`](experiments/one-model/) | One model drawn as an economy and as a neural network, thirteen settings, two solvers, a formal section, taxes, agglomeration, geography and technology, 115 checked references | Mature prototype | 37 pass |
 | [`learners`](experiments/learners/) | Engine for learners as staged production economies, tested identities, a comparison of all settings, a market for a dense layer, one price for a mixture of experts | First pass: separate engines, no interactive page | 21 pass |
 
 ## Running it
@@ -63,7 +65,7 @@ node --test experiments/playdough-city/model.test.mjs     # 24 tests, about 1 s
 
 # one model, two readings: open the file directly in a browser, no server needed
 xdg-open experiments/one-model/index.html                 # or open it from a file manager
-node --test experiments/one-model/model.test.mjs          # 34 tests, about 5 min
+node --test experiments/one-model/model.test.mjs          # 37 tests, about 7 min
 
 # learners
 node --test experiments/learners/learners.test.mjs        # 21 tests, about 6 s

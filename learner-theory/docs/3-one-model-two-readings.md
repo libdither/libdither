@@ -1,10 +1,11 @@
 # One model, two readings
 
 One model of how located capacity gets shared out, which reads exactly as a land economy and exactly as a
-layer of neurons. Its twelve settings line up named architectures in both fields: a height limit is a
+layer of neurons. Its thirteen settings line up named architectures in both fields: a height limit is a
 firing-rate cap, firms with fees are a mixture of experts with load balancing, commuting along a corridor is
-attention over a sequence. Three of them give the model no centre at all: arrivals go where the others they
-deal with are, and the downtown ⇄ the hub is an outcome.
+attention over a sequence. Four of them give the model no centre at all: arrivals go where the others they
+deal with are, and the downtown ⇄ the hub is an outcome; in the last, geography and the technology people
+build on it decide where, and for how long.
 
 The interactive page is [`../experiments/one-model/index.html`](../experiments/one-model/index.html): one
 self-contained file you open in a browser. It draws the same simulated agents in both views, and every
@@ -54,7 +55,14 @@ economy); in the second case nothing fixes where the centre will be.
    kernel of the opposite sign and a longer reach, read as a local density, is competition for customers ⇄
    lateral inhibition. With `sources: 'anywhere'` there is no starting point and this term alone places
    arrivals. Derivation and results in [doc 6 §19](6-derivations.md#19-a-centre-that-isnt-given-agglomeration--wiring-economy).
-8. **Taxes.** See [doc 4](4-taxes.md).
+8. **Geography and technology.** A layer g_m(j) over the sites (a coast ⇄ where a sensory input arrives) is
+   worth κ·w_km per unit to type k. Technology T_j is a layer the arrivals make: dT_j/dt = α·r_j +
+   D·((B_T ∗ T)_j − T_j) − δ·T_j, learning by doing, spread through a kernel, and decay. It is worth κ·v·T_j
+   to everyone, it fades the given layers (w·e^{−γT_j}), and it lengthens the reach of dealings between two
+   sites by their mean technology, with the kernel renormalized so the same pull spreads over more partners.
+   For a given T every term is still a slope of F. Derivation and results in
+   [doc 6 §20](6-derivations.md#20-geography-and-the-geography-people-make).
+9. **Taxes.** See [doc 4](4-taxes.md).
 
 ## Why each pairing is exact
 
@@ -72,6 +80,7 @@ economy); in the second case nothing fixes where the centre will be.
 | σ | Firms learn from nearby firms ([Lucas & Rossi-Hansberg 2002](https://doi.org/10.1111/1468-0262.00338)) | A self-organizing map's neighbourhood ([Kohonen 1982](https://doi.org/10.1007/BF00337288)) | The same kernel |
 | ν·κ·r_{j,−k} | Nuisance from another use ([Coase 1960](https://doi.org/10.1086/466560)) | Interference from another feature on the same neuron ([Elhage et al. 2022](https://transformer-circuits.pub/2022/toy_model/index.html)) | The same term |
 | s·κ·Σ_q W_kq·(B_kq ∗ r_q)_j | Agglomeration: the gain from being near the types one deals with (Beckmann 1976, revisited by [Mossay & Picard 2011](https://doi.org/10.1016/j.jet.2011.06.009); [Fujita & Ogawa 1982](https://doi.org/10.1016/0166-0462(82)90031-X)) | Wiring economy: short wires to the populations a neuron reads from ([Chklovskii & Koulakov 2004](https://doi.org/10.1146/annurev.neuro.27.070203.144226); [Chen, Hall & Chklovskii 2006](https://doi.org/10.1073/pnas.0506806103)) | The same term; with symmetric W it is the slope of a pairwise term of F. A bump that forms with no input given is a neural field's ([Amari 1977](https://doi.org/10.1007/BF00337259)) |
+| κ·(w·e^{−γT_j}·g_j + v·T_j) | Geography given (a coast) and made (roads, a port); the made kind grows with use, spreads ([Hägerstrand 1965](https://doi.org/10.1017/S0003975600001132)) and changes what the given kind is worth ([Bleakley & Lin 2012](https://doi.org/10.1093/qje/qjs011)) | The substrate's fixed structure (a sensory edge) and myelin that follows use, spreads along tracts and extends reach ([Fields 2015](https://doi.org/10.1038/nrn4023); [Gibson et al. 2014](https://doi.org/10.1126/science.1252304)) | The same form: a site value that accumulates where activity is, diffuses, and reshapes the cost of distance. Myelin's dynamics differ in detail; the pairing is of resting states |
 | ρ·log(1 + r_j/r_0) | Economies of scale ([Arrow 1962](https://doi.org/10.2307/2295952)) | Rich-get-richer routing; expert collapse ([Shazeer et al. 2017](https://arxiv.org/abs/1701.06538)) | The same term; an urn process ([Arthur 1989](https://doi.org/10.2307/2234208)) |
 | agents ⇄ flows | Households ⇄ the continuum of urban models | Spiking, hard attention, top-1 routing ⇄ rate models, soft attention | The flows are the agents' many-agent limit ([Kurtz 1970](https://doi.org/10.2307/3212147)) |
 
@@ -79,7 +88,7 @@ economy); in the second case nothing fixes where the centre will be.
 
 For steady demand, fixed tuning and prices without memory, the average flows x_cj settle where
 
-F = Σ x_cj·(t·d + m·(1 − fit)) + Σ_j κ·r_j²/2 + ν·κ·Σ_j r_jA·r_jB − (s·κ/2)·Σ_{k,q} W_kq·Σ_{i,j} r_ik·B_kq(d_ij)·r_jq − ρ·Σ_j G(r_j) + τ·Σ x_cj·log(x_cj/λ_c)
+F = Σ x_cj·(t·d + m·(1 − fit)) + Σ_j κ·r_j²/2 + ν·κ·Σ_j r_jA·r_jB − (s·κ/2)·Σ_{k,q} W_kq·Σ_{i,j} r_ik·B_kq(d_ij)·r_jq − κ·Σ_j r_j·(Σ_m w·e^{−γT_j}·g_m(j) + v·T_j) − ρ·Σ_j G(r_j) + τ·Σ x_cj·log(x_cj/λ_c)
 
 is lowest (G is the function whose slope is log(1 + r/r_0)). Every price is the slope of F at its site's
 load, a Lagrange multiplier, which makes the model a potential game
@@ -108,7 +117,7 @@ separates there and stops. A Pigouvian charge makes any nuisance mutual, so it r
 settles them. Derivation in [doc 6 §17](6-derivations.md#17-without-a-shared-potential); the page's
 `nuisance.matrix` setting runs it (tested, not drawn).
 
-## The twelve settings
+## The thirteen settings
 
 | Setting | Economy | Network | What it shows (each is a test) |
 |---|---|---|---|
@@ -116,6 +125,7 @@ settles them. Derivation in [doc 6 §17](6-derivations.md#17-without-a-shared-po
 | `agglomeration` | A downtown forms by itself | A bump forms by itself | With no centre given, one forms at the plain's most accessible point, with rent and density falling from it; a harbour pulling a twentieth as hard as the land market's commute moves the whole city; a strong short-range pull alone makes one tower; a longer-range push breaks it into a ring of towns |
 | `firmshomes` | Firms and homes place themselves | Connected populations settle side by side | Spillovers: one dense firm centre with homes around it. Need for each other: a mixed sheet. Spillovers plus competition for customers: several towns, each a firm cluster apart from its homes (Fujita & Ogawa's three regimes) |
 | `hierarchy` | A port city: docks, works, homes | A hierarchy fans out from the input | A chain of kinds settles in order of distance from a pinned harbour ⇄ sensory input, on separate ground, with hops under 60% of a random placement's; an input in the middle gives rings and longer hops |
+| `geography` | A coast, then roads and rails | A sensory edge, then myelin | A coast worth a little decides where the city starts; technology grows where people are and spreads inland. Technology that only fades the coast lets the city drift inland (14% left on the coast); technology worth living on keeps it near the shore (42%): path dependence. A longer reach spreads the city over 1.6× the land at lower density |
 | `lid` | Height limit | Firing-rate cap | Sprawl when nobody can leave; an exempt centre builds taller than with no limit; when people can leave, most sprawl goes away |
 | `taxes` | Taxes on land, buildings, residents | Global inhibition, stronger adaptation | See [doc 4](4-taxes.md) |
 | `sorting` | Offices take the centre, homes the rings | Fast inputs claim the nearest neurons | Von Thünen rings; when retuning is costly, a random layout locks in |

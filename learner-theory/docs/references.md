@@ -2,7 +2,7 @@
 
 Sources for the whole folder, in three lists. The docs link the ones they use inline.
 
-- **One-model page** (below): the 106 references of [`../experiments/one-model/index.html`](../experiments/one-model/index.html), generated from its `REFS` table. Each DOI and arXiv ID was checked against its metadata, and each Wikipedia link against Wikipedia's API. The line under each entry says what the page uses it for.
+- **One-model page** (below): the 115 references of [`../experiments/one-model/index.html`](../experiments/one-model/index.html), generated from its `REFS` table. Each DOI and arXiv ID was checked against its metadata, and each Wikipedia link against Wikipedia's API. The line under each entry says what the page uses it for.
 - **Learners:** the 38 references at the end of [`../experiments/learners/README.md`](../experiments/learners/README.md#references), each checked against the source, with notes where only partly verified.
 - **Play-dough city:** the sources at the end of [`../experiments/playdough-city/README.md`](../experiments/playdough-city/README.md#sources).
 
@@ -30,6 +30,8 @@ Sources cited only in these docs, `../TRANSCRIPT.md` and `../NEXT_STEPS.md` were
   With increasing returns, small early accidents decide which technology takes the whole market, and the outcome locks in.
 - D. S. Bassett, D. L. Greenfield, A. Meyer-Lindenberg, D. R. Weinberger, S. W. Moore and E. T. Bullmore (2010). *Efficient physical embedding of topologically complex information processing networks in brains and computer circuits*. PLoS Computational Biology 6(4): e1000748. [doi:10.1371/journal.pcbi.1000748](https://doi.org/10.1371/journal.pcbi.1000748)
   Brains and chips both obey Rent’s rule: the connections leaving a region scale with its size by an exponent set by how it is embedded in space.
+- N. Baum-Snow (2007). *Did highways cause suburbanization?*. Quarterly Journal of Economics 122(2): 775–805. [doi:10.1162/qjec.122.2.775](https://doi.org/10.1162/qjec.122.2.775)
+  Each new highway through a central city cut its population by about a sixth: longer reach spreads the city.
 - M. Beckmann, C. B. McGuire and C. B. Winsten (1956). *Studies in the Economics of Transportation*. Yale University Press (RAND RM-1488). [link](https://www.rand.org/pubs/research_memoranda/RM1488.html)
   Traffic equilibrium is the minimum of one function, the potential, whose slope on each road is that road’s congestion cost.
 - M. J. Beckmann (1976). *Spatial equilibrium in the dispersed city*. In G. J. Papageorgiou (ed.), Mathematical Land Use Theory, Lexington Books, 117–125.
@@ -38,6 +40,8 @@ Sources cited only in these docs, `../TRANSCRIPT.md` and `../NEXT_STEPS.md` were
   An adaptation current grows with each spike and decays between spikes, lowering the firing rate; one generic model covers many mechanisms.
 - S. T. Berry (1994). *Estimating discrete-choice models of product differentiation*. RAND Journal of Economics 25(2): 242–262. [doi:10.2307/2555829](https://doi.org/10.2307/2555829)
   The outside good: buying none of the products enters the logit as one more option.
+- H. Bleakley and J. Lin (2012). *Portage and path dependence*. Quarterly Journal of Economics 127(2): 587–644. [doi:10.1093/qje/qjs011](https://doi.org/10.1093/qje/qjs011)
+  Cities that formed where goods had to be carried around rapids stayed large long after that reason was gone.
 - J. K. Brueckner (1986). *A modern analysis of the effects of site value taxation*. National Tax Journal 39(1): 49–58. [doi:10.1086/ntj41792157](https://doi.org/10.1086/ntj41792157)
   Works out the long-run effects on buildings, land values and housing prices of shifting the property tax from buildings to land.
 - J. K. Brueckner (1987). *The structure of urban equilibria: a unified treatment of the Muth–Mills model*. Handbook of Regional and Urban Economics, vol. 2, 821–845. [doi:10.1016/S1574-0080(87)80006-8](https://doi.org/10.1016/S1574-0080(87)80006-8)
@@ -58,6 +62,8 @@ Sources cited only in these docs, `../TRANSCRIPT.md` and `../NEXT_STEPS.md` were
   Towns that serve the customers within their reach space themselves evenly across a plain: central place theory.
 - R. H. Coase (1960). *The problem of social cost*. Journal of Law and Economics 3: 1–44. [doi:10.1086/466560](https://doi.org/10.1086/466560)
   Nuisance disputes between neighbours; with free bargaining the efficient use results, whoever holds the right.
+- D. Comin, M. Dmitriev and E. Rossi-Hansberg (2012). *The spatial diffusion of technology*. NBER Working Paper 18534. [doi:10.3386/w18534](https://doi.org/10.3386/w18534)
+  Technology adoption falls off with distance from where a technology is already in use.
 - US Supreme Court (1926). *Village of Euclid v. Ambler Realty Co., 272 U.S. 365*. United States Reports. [link](https://supreme.justia.com/cases/federal/us/272/365/)
   Upheld zoning that separates uses; US single-use zoning is called “Euclidean” after it.
 - M. Cuturi (2013). *Sinkhorn distances: lightspeed computation of optimal transport*. NeurIPS. [arXiv:1306.0895](https://arxiv.org/abs/1306.0895)
@@ -82,6 +88,8 @@ Sources cited only in these docs, `../TRANSCRIPT.md` and `../NEXT_STEPS.md` were
   A neural field with local excitation and wider inhibition breaks into periodic patterns.
 - W. Fedus, B. Zoph and N. Shazeer (2022). *Switch Transformers: scaling to trillion parameter models with simple and efficient sparsity*. JMLR 23(120): 1–39. [arXiv:2101.03961](https://arxiv.org/abs/2101.03961)
   Top-1 routing with a capacity factor: tokens beyond an expert’s capacity skip the layer. Factors of 1.0–1.25 did best, typically dropping under 1% of tokens.
+- R. D. Fields (2015). *A new mechanism of nervous system plasticity: activity-dependent myelination*. Nature Reviews Neuroscience 16(12): 756–767. [doi:10.1038/nrn4023](https://doi.org/10.1038/nrn4023)
+  Review: myelin is laid down where activity is, and it tunes conduction delays.
 - C. Fisk (1980). *Some developments in equilibrium traffic assignment*. Transportation Research B 14(3): 243–255. [doi:10.1016/0191-2615(80)90004-1](https://doi.org/10.1016/0191-2615(80)90004-1)
   Adding an entropy term to Beckmann’s potential gives equilibrium with logit route choice: stochastic user equilibrium.
 - P. Földiák (1990). *Forming sparse representations by local anti-Hebbian learning*. Biological Cybernetics 64(2): 165–170. [doi:10.1007/BF02331346](https://doi.org/10.1007/BF02331346)
@@ -94,18 +102,24 @@ Sources cited only in these docs, `../TRANSCRIPT.md` and `../NEXT_STEPS.md` were
   Synapses that get harder to change as they are reinforced: plastic when new, consolidated later.
 - A. Galichon (2016). *Optimal Transport Methods in Economics*. Princeton University Press. [doi:10.1515/9781400883592](https://doi.org/10.1515/9781400883592)
   Logit matching as entropic optimal transport, with prices as its dual variables.
+- J. Gaspar and E. L. Glaeser (1998). *Information technology and the future of cities*. Journal of Urban Economics 43(1): 136–156. [doi:10.1006/juec.1996.2031](https://doi.org/10.1006/juec.1996.2031)
+  Cheaper communication at a distance complements meeting in person rather than replacing it, so cities need not empty.
 - D. Genesove (2003). *The nominal rigidity of apartment rents*. Review of Economics and Statistics 85(4): 844–853. [doi:10.1162/003465303772815763](https://doi.org/10.1162/003465303772815763)
   Many apartment rents go unchanged from one year to the next: rents are sticky.
 - H. George (1879). *Progress and Poverty*. D. Appleton.
   Land rent is created by the community, not the owner, and should be taxed.
 - W. Gerstner, W. M. Kistler, R. Naud and L. Paninski (2014). *Neuronal Dynamics*. Cambridge University Press, chapter 9. [link](https://neuronaldynamics.epfl.ch/online/Ch9.S1.html)
   Escape noise: a neuron fires in each instant with a chance that grows exponentially as its potential nears threshold.
+- E. M. Gibson, D. Purger, C. W. Mount and others (2014). *Neuronal activity promotes oligodendrogenesis and adaptive myelination in the mammalian brain*. Science 344(6183): 1252304. [doi:10.1126/science.1252304](https://doi.org/10.1126/science.1252304)
+  Driving neurons to fire makes new myelin form on their axons.
 - E. L. Glaeser and J. Gyourko (2005). *Urban decline and durable housing*. Journal of Political Economy 113(2): 345–375. [doi:10.1086/427465](https://doi.org/10.1086/427465)
   Housing outlasts the demand for it, so declining cities keep cheap housing and lose people slowly.
 - E. L. Glaeser, J. Gyourko and R. Saks (2005). *Why is Manhattan so expensive? Regulation and the rise in housing prices*. Journal of Law and Economics 48(2): 331–369. [doi:10.1086/429979](https://doi.org/10.1086/429979)
   The gap between what an apartment sells for and what another floor costs to build measures how much regulation binds: a shadow price.
 - S. Grossberg (1976). *Adaptive pattern classification and universal recoding: I. Parallel development and coding of neural feature detectors*. Biological Cybernetics 23(3): 121–134. [doi:10.1007/BF00344744](https://doi.org/10.1007/BF00344744)
   Competitive learning: the winning unit’s weights move toward the input it won.
+- T. Hägerstrand (1965). *A Monte Carlo approach to diffusion*. European Journal of Sociology 6(1): 43–67. [doi:10.1017/S0003975600001132](https://doi.org/10.1017/S0003975600001132)
+  Innovations spread from person to person through a contact field that falls off with distance: the mean information field.
 - T. K. Hensch (2005). *Critical period plasticity in local cortical circuits*. Nature Reviews Neuroscience 6(11): 877–888. [doi:10.1038/nrn1787](https://doi.org/10.1038/nrn1787)
   Review of what opens and closes critical periods.
 - B. M. Hill, D. Lane and W. Sudderth (1980). *A strong law for some generalized urn processes*. Annals of Probability 8(2): 214–226. [doi:10.1214/aop/1176994772](https://doi.org/10.1214/aop/1176994772)
@@ -118,6 +132,8 @@ Sources cited only in these docs, `../TRANSCRIPT.md` and `../NEXT_STEPS.md` were
   Closing one eye reshapes visual cortex only during a window early in life: a critical period.
 - J. Jacobs (1961). *The Death and Life of Great American Cities*. Random House.
   Mixed primary uses keep streets busy at different hours: sharing by taking turns.
+- A. B. Jaffe, M. Trajtenberg and R. Henderson (1993). *Geographic localization of knowledge spillovers as evidenced by patent citations*. Quarterly Journal of Economics 108(3): 577–598. [doi:10.2307/2118401](https://doi.org/10.2307/2118401)
+  Patents cite earlier patents from nearby far more often than chance: knowledge spills over locally.
 - E. Jang, S. Gu and B. Poole (2017). *Categorical reparameterization with Gumbel-softmax*. ICLR. [arXiv:1611.01144](https://arxiv.org/abs/1611.01144)
   The same trick, softened so that networks can learn through a discrete choice.
 - M. Kaiser and C. C. Hilgetag (2006). *Nonoptimal component placement, but short processing paths, due to long-distance projections in neural systems*. PLoS Computational Biology 2(7): e95. [doi:10.1371/journal.pcbi.0020095](https://doi.org/10.1371/journal.pcbi.0020095)
@@ -148,6 +164,8 @@ Sources cited only in these docs, `../TRANSCRIPT.md` and `../NEXT_STEPS.md` were
   Why firms of one industry cluster: shared suppliers, a pool of skilled workers, and know-how that is “in the air”.
 - D. McFadden (1974). *Conditional logit analysis of qualitative choice behavior*. In P. Zarembka (ed.), Frontiers in Econometrics, Academic Press, 105–142. [link](https://eml.berkeley.edu/reprints/mcfadden/zarembka.pdf)
   Adding independent Gumbel-distributed tastes to each option’s value gives the logit choice probabilities.
+- I. A. McKenzie, D. Ohayon, H. Li and others (2014). *Motor skill learning requires active central myelination*. Science 346(6207): 318–322. [doi:10.1126/science.1254960](https://doi.org/10.1126/science.1254960)
+  Mice that cannot make new myelin cannot learn a new motor skill.
 - K. D. Miller, J. B. Keller and M. P. Stryker (1989). *Ocular dominance column development: analysis and simulation*. Science 245(4918): 605–615. [doi:10.1126/science.2762813](https://doi.org/10.1126/science.2762813)
   Columns form from activity-dependent competition between the eyes plus short-range cooperation; the range of the interactions sets their width.
 - E. Miller (2023). *Attention is off by one*. Blog post. [link](https://www.evanmiller.org/attention-is-off-by-one.html)

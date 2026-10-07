@@ -91,6 +91,25 @@ half).
 
 ![Docks by the harbour, works behind, homes inland; areas in order from the input](walkthrough/img/one-model-hierarchy.webp)
 
+**A coast, then roads and rails.** The one given thing is a coast along the west side (the pale strip),
+worth a little. The city starts there. Then it builds: technology grows where people are and spreads inland
+(the darker ground), and it changes what people want. It is worth living on in itself; it makes the coast
+matter less; and it lengthens the reach of dealings. Early (left) the city hugs the shore; later (right) it
+has spread inland and thinned out, yet it stays within a few parcels of the coast. On the right, a sensory
+input arrives along one edge of the sheet, and myelin laid down by use is the ground the map stands on.
+
+![Early: the city on the coast](walkthrough/img/one-model-geography-early.webp)
+
+![Later: spread inland, thinner, still coastal](walkthrough/img/one-model-geography.webp)
+
+**Freed.** The same run with the made ground worth nothing. Technology still fades the coast, and now
+nothing holds the city, so it drifts inland toward the plain's middle: by the end it sits three parcels
+farther from the shore than the city above, with a third as many households on the coast. That is Bleakley &
+Lin's finding about portage cities turned into a knob: a city stays where geography put it only if what it
+built is worth living on ([doc 6 §20](docs/6-derivations.md#20-geography-and-the-geography-people-make)).
+
+![With nothing of its own to stand on, the city leaves the coast](walkthrough/img/one-model-geography-freed.webp)
+
 **Following one arrival.** The page can pause and walk through a single choice. Here a household adds
 its own random taste to every option and picks parcel #223, which wasn't quite the cheapest (cost 7.5
 against 7.4). On the right, the neurons race to fire and neuron #223 fires first. These are the same random

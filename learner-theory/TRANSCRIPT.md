@@ -377,6 +377,41 @@ preset regime.
   so the planned 1D-versus-2D substrate comparison was dropped as ill-posed in this form (NEXT_STEPS 10).
 - The follow-one-arrival walkthrough crashed on the new settings: its word tables were keyed by setting.
 
+## 16. Geography, and the geography people make (7 Oct)
+
+> commit this with earlier work along multiple commits (and push) and then do next steps, figuring out a
+> simple field-based solution that can model geography *as well as* geographic desires changing based on
+> technology (local to that technology's use and knowledge propagation). Don't stop until you find an elegant
+> solution.
+
+Six commits were made and pushed, one per topic, with the one-model page's two changes split by saved
+intermediate files. Then the model.
+
+**Built:** two more fields on the one-model page. Geography is a layer over the sites and a weight per
+type (a coast ⇄ a sensory edge; the pinned downtown and the harbour are the point case). Technology is a
+layer the arrivals make: it grows with the load using a site, spreads to neighbours through a kernel
+(Hägerstrand's mean information field ⇄ myelin along used tracts), decays, and does three things: it is
+worth living on, it fades the given geography, and it lengthens the reach of dealings. Desires are
+therefore functions of a field. One setting, "A coast, then roads and rails ⇄ A sensory edge, then myelin",
+three tests, both solvers, nine references.
+
+**Found** ([docs/6 §20](docs/6-derivations.md#20-geography-and-the-geography-people-make)): a coast worth a
+little decides where the city starts; technology that only fades the coast lets the city drift inland (14%
+left on the coast); technology worth living on keeps it near the shore (42%): Bleakley & Lin's path
+dependence, by mechanism; a longer reach spreads the city over 1.6× the land at lower density: Baum-Snow's
+suburbanization. The agents and flows agree on the whole course.
+
+**Wrong turns:**
+
+- The reach boost first made the city denser, not sprawlier: a longer reach counted more partners. The
+  kernel is now renormalized to its own reach, so the same pull spreads over more partners.
+- Fading the coast alone gave no path dependence: the freed city drifted inland. Lock-in needs something
+  local that accumulates, so the made layer is worth living on in itself: technology is geography people
+  make. That is the elegant part, and it came from the failure.
+- Technology grew so fast the coastal phase lasted a second on screen; learning and decay were halved.
+- The first fade constant bit at tiny technology levels; the fade is now gentler and the made ground's
+  worth higher, so the three regimes separate by two parcels or more.
+
 ## Corrections
 
 Every claim that was made and later withdrawn or narrowed:
@@ -401,6 +436,8 @@ Every claim that was made and later withdrawn or narrowed:
 | The one-model page's centre must be given (a pinned downtown ⇄ input neuron) | Phases 4–13 | An interaction term places arrivals by where the others are; the centre, the towns and a hierarchy form by themselves | The user's critique, phase 15 |
 | An array of 8–12 towns forms under long-range competition | Phase 15 draft | A ring on the disc's rim, a boundary effect; competition read as a local density gives interior towns only at short reaches | Checking where the towns sat |
 | A saturating gain would give Fujita–Ogawa's polycentric regime | Phase 15 plan | It dissolves the cluster; towns need a push (competition) | The simulation |
+| A longer reach of dealings spreads the city | Phase 16 draft | Only if the kernel is renormalized; counted as a sum, more partners make it denser | The simulation |
+| Fading the coast is enough for path dependence | Phase 16 plan | The freed city drifts inland; the made layer must be worth living on | The simulation |
 
 **Still unresolved:** the neural-city script still shows zoning ahead under fast alternation; see
 [`NEXT_STEPS.md`](NEXT_STEPS.md#unresolved-results).

@@ -104,6 +104,7 @@ const SETTINGS = [
   ['agglomeration', 900],
   ['firmshomes', 1200],
   ['hierarchy', 1200],
+  ['geography', 2400],
   ['lid', 600],
   ['sorting', 1500],
   ['districts', 900],
@@ -129,6 +130,8 @@ for (const [id, units] of SETTINGS) {
 }
 // Knob settings of the agglomeration rows: a harbour, and towns
 const VARIANTS = [
+  ['geography', 'early', `h.S.sim.setConfig({})`, 250],
+  ['geography', 'freed', `h.S.sim.setConfig({ technology: { value: 0, boost: 0 } })`, 3000],
   ['agglomeration', 'harbour', `h.S.sim.setConfig({ sources: 'center', sourceAt: [7, 2], distanceCost: 0.1 })`, 900],
   ['firmshomes', 'towns', `h.S.sim.setConfig({ interaction: { matrix: [[3, 1], [1, 0]], compete: { strength: 20, reach: 3, matrix: [[1, 0], [0, 0]] } } })`, 1500],
 ];

@@ -259,7 +259,7 @@ inhibition between co-active neurons (a tax on overlap), and the neurons differe
   the point is fixed in advance. Real cortex has no such point except its sensory inputs; a city's downtown is
   itself where other people chose to be. The one-model page's agglomeration settings lift this: arrivals go
   where the others they deal with are, and the centre, the towns and a hierarchy of areas form by themselves
-  ([doc 3](3-one-model-two-readings.md#the-twelve-settings)).
+  ([doc 3](3-one-model-two-readings.md#the-thirteen-settings)).
 
 ## Prior work
 
