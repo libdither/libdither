@@ -495,3 +495,73 @@ test('taxes: a tax per resident ⇄ global inhibition moves nobody in a closed c
     assert.ok(after.stay < 0.8 && Math.abs(drop - 1) < 0.15, `${engine}: rents fall by about the tax: ${drop}, stay ${after.stay}`);
   }
 });
+
+// ---------------------------------------------------------------- beyond a shared potential
+// nuisance.matrix[k][q]: how much use k minds use q. Unequal entries leave the model without a free energy.
+const loadGap = (a, b) => {
+  let g = 0;
+  for (let i = 0; i < a.rk.length; i++) g = Math.max(g, Math.abs(a.rk[i] - b.rk[i]));
+  return g;
+};
+// how far the loads move over `units` more time, relative to their size
+const movement = (sim, units) => {
+  const before = Float64Array.from(sim.rk);
+  sim.run(units);
+  let d = 0, n = 0;
+  for (let i = 0; i < before.length; i++) { d += (sim.rk[i] - before[i]) ** 2; n += before[i] ** 2; }
+  return Math.sqrt(d / n);
+};
+const meanOverlap = (sim) => {
+  // mean pairwise cosine between the uses' loads: 1 fully mixed, 0 fully separated
+  const K = sim.K;
+  let s = 0, pairs = 0;
+  for (let p = 0; p < K; p++) for (let q = p + 1; q < K; q++) {
+    let ab = 0, aa = 0, bb = 0;
+    for (let j = 0; j < sim.N; j++) { const A = sim.rk[j * K + p], B = sim.rk[j * K + q]; ab += A * B; aa += A * A; bb += B * B; }
+    s += ab / Math.sqrt(aa * bb);
+    pairs++;
+  }
+  return s / pairs;
+};
+
+test('formal: one-sided nuisance has no free energy, yet two uses still settle; a Pigouvian charge makes any nuisance symmetric and restores one', () => {
+  const steady = { schedule: { kind: 'steady' } };
+  const sym = make('mixed', { ...steady, nuisance: { strength: 2 } }).run(1500);
+  assert.equal(loadGap(sym, make('mixed', { ...steady, nuisance: { strength: 2, matrix: [[0, 1], [1, 0]] } }).run(1500)), 0, 'a matrix of ones is the symmetric model');
+  for (const [name, matrix] of [['one-sided', [[0, 1], [0, 0]]], ['chase', [[0, 1], [-1, 0]]]]) {
+    const sim = make('mixed', { ...steady, nuisance: { strength: 2, matrix } }).run(1500);
+    assert.ok(movement(sim, 500) < 0.01, `${name}: settles`);
+  }
+  // the charge adds the nuisance caused (the transpose), so A minds B and B is charged for it: symmetric
+  const charged = make('mixed', { ...steady, nuisance: { strength: 2, matrix: [[0, 1], [0, 0]] }, tax: { pigou: true } }).run(1500);
+  assert.ok(loadGap(charged, sym) < 1e-12, 'one-sided + Pigouvian charge = symmetric nuisance');
+});
+
+test('formal: three uses that each mind the next never settle past ν = 2τ/(κ·x), where a symmetric control separates and stops; a Pigouvian charge settles them', () => {
+  const three = { types: [{ share: 1 / 3 }, { share: 1 / 3 }, { share: 1 / 3 }], schedule: { kind: 'steady' } };
+  const cyclic = [[0, 1, 0], [0, 0, 1], [1, 0, 0]];
+  const control = [[0, 0.5, 0.5], [0.5, 0, 0.5], [0.5, 0.5, 0]]; // the cyclic matrix's symmetric part
+  // Predicted threshold: at a site where each use's load is x, the split among uses moves by
+  // −(x/τ)·νκ·N times itself; on splits that sum to zero, both matrices have eigenvalues with real part −1/2,
+  // so the mixed state breaks when νκx/τ > 2. The cyclic one's are complex: it breaks into rotation.
+  const weak = make('mixed', { ...three, nuisance: { strength: 0.01, matrix: cyclic } }).run(3000);
+  const x = Math.max(...weak.rk);
+  const nuC = (2 * weak.cfg.temperature) / (weak.cfg.price.kappa * x);
+  assert.ok(nuC > 0.1 && nuC < 0.13, `predicted threshold ${nuC}`);
+  const at = (nu, matrix, patch = {}) => make('mixed', { ...three, nuisance: { strength: nu, matrix }, ...patch }).run(4000);
+  for (const matrix of [cyclic, control]) {
+    const below = at(0.95 * nuC, matrix);
+    assert.ok(meanOverlap(below) > 0.999 && movement(below, 500) < 1e-3, 'below the threshold: mixed and still');
+  }
+  const cyc = at(0.5, cyclic);
+  const ctl = at(0.5, control);
+  assert.ok(meanOverlap(ctl) < 0.05 && movement(ctl, 500) < 0.01, `control: separates and stops (${meanOverlap(ctl)})`);
+  assert.ok(movement(cyc, 500) > 0.3, 'cyclic: keeps moving');
+  assert.ok(meanOverlap(cyc) > meanOverlap(ctl) + 0.05, `cyclic: stays more mixed (${meanOverlap(cyc)} vs ${meanOverlap(ctl)})`);
+  assert.ok(movement(at(0.5, cyclic, { tax: { pigou: true } }), 500) < 0.01, 'a Pigouvian charge settles it');
+  // individual agents: the cyclic uses stay mixed where the control's separate
+  const agents = (matrix) => meanOverlap(makeA('mixed', { ...three, nuisance: { strength: 2, matrix } }).run(1200));
+  const [ac, as] = [agents(cyclic), agents(control)];
+  assert.ok(ac > as + 0.1, `agents: cyclic ${ac} vs control ${as}`);
+});
+

@@ -1063,6 +1063,16 @@
           confirm the true total cost falls. With strong nuisance several separated layouts are each stable, and the charge guarantees
           only one of them.
         </p>
+        <p class="gl-scan">
+          $F$ also needs nuisance to be mutual. If use A minds use B more than B minds A, no single function’s slopes give both their
+          costs, and the model stops being a [[potential|potential game]]. Settling then needs another reason. One is enough: a
+          [[stablegame|stable game]] settles without any potential [[@hofbauer2009]], and a chase, where B seeks A while A avoids B,
+          is one, because its nuisance has no symmetric part. The tests find more. Two uses settle even under strong one-sided
+          nuisance, which isn’t stable, because at a site the split between two uses can only move one way, with no room to rotate.
+          Three uses that each mind the next never settle once $ν$ passes $2τ/(κ·x)$, with $x$ a use’s load at the busiest site, while
+          a symmetric control with the same symmetric part separates there and stops. A Pigouvian charge adds the nuisance caused to
+          the nuisance suffered, which makes any nuisance mutual, so it restores a potential and settles the three uses too.
+        </p>
 
         <h2 id="dict-h">The dictionary</h2>
         <table class="dict">
@@ -1259,7 +1269,9 @@
           cap: { rate: Infinity, exempt: 0, overflow: 'reroute' },
           exit: { mode: 'none', mu: 0.3, value: 0 }, // 'none' | 'migration' | 'outside'
           tuning: { mode: 'none', mismatch: 0, rate: 0.02, spill: 0, noise: 0.02 },
-          nuisance: { strength: 0, memory: 20 },
+          // matrix[k][q]: how much type k minds type q's load, in units of strength (default 1 off the
+          // diagonal: symmetric). Negative entries attract. Unequal entries leave the model without a free energy.
+          nuisance: { strength: 0, memory: 20, matrix: null },
           zoning: 'none', // 'none' | 'single-use'
           similarity: null, // K×K: how well a site tuned to type q serves type k (default identity)
           scale: { strength: 0, ref: 0.2 }, // economies of scale ⇄ rich-get-richer
@@ -1632,6 +1644,7 @@
           function computeSiteParts() {
             const m = cfg.tuning.mode === 'none' ? 0 : cfg.tuning.mismatch;
             const nu = cfg.nuisance.strength;
+            const NU = cfg.nuisance.matrix;
             const kappa = cfg.price.kappa;
             const rho = cfg.scale.strength;
             const zoned = cfg.zoning === 'single-use';
@@ -1653,12 +1666,22 @@
                 let fit = 0;
                 for (let q = 0; q < K; q++) fit += w[j * K + q] * SIM[k][q];
                 const mis = m * (1 - fit);
-                const nui = nu > 0 ? nu * kappa * (hsum - h[idx]) : 0;
+                // The nuisance an arrival suffers from the other types at j, and the nuisance it causes them.
+                // With a symmetric matrix the two are equal, and the Pigouvian charge repeats what it suffers.
+                let nui = 0;
+                let caused = 0;
+                if (nu > 0) {
+                  for (let q = 0; q < K; q++) {
+                    if (q === k) continue;
+                    nui += (NU ? NU[k][q] : 1) * h[j * K + q];
+                    caused += (NU ? NU[q][k] : 1) * h[j * K + q];
+                  }
+                  nui *= nu * kappa;
+                  caused *= nu * kappa;
+                }
                 misPart[idx] = mis;
                 nuiPart[idx] = nui;
-                // The nuisance an arrival causes the others at j equals what it suffers there (ν is
-                // symmetric), so the Pigouvian charge repeats it.
-                taxPart[idx] = head + pigou * nui;
+                taxPart[idx] = head + pigou * caused;
                 sitePart[idx] = p + mis + nui + taxPart[idx];
               }
             }
@@ -2521,6 +2544,7 @@
           weyl2022: { a: 'Weyl & Zhang', A: 'E. G. Weyl and A. L. Zhang', y: 2022, t: 'Depreciating licenses', v: 'American Economic Journal: Economic Policy 14(3): 422–448', u: 'https://doi.org/10.1257/pol.20200426', why: 'Licences that lose value over time, trading the incentive to invest against the incentive to hand an asset to whoever values it most.' },
           george1879: { a: 'George', A: 'H. George', y: 1879, t: 'Progress and Poverty', v: 'D. Appleton', u: wp('Progress and Poverty'), why: 'Land rent is created by the community, not the owner, and should be taxed.' },
           monderer1996: { a: 'Monderer & Shapley', A: 'D. Monderer and L. S. Shapley', y: 1996, t: 'Potential games', v: 'Games and Economic Behavior 14(1): 124–143', u: 'https://doi.org/10.1006/game.1996.0044', why: 'Games in which each player’s gain from switching equals the change in one shared function, the potential.' },
+          hofbauer2009: { a: 'Hofbauer & Sandholm', A: 'J. Hofbauer and W. H. Sandholm', y: 2009, t: 'Stable games and their dynamics', v: 'Journal of Economic Theory 144(4): 1665–1693', u: 'https://doi.org/10.1016/j.jet.2009.01.007', why: 'Games where switching never pays off for everyone at once settle under many adjustment rules, with or without a potential.' },
           sandholm2001: { a: 'Sandholm', A: 'W. H. Sandholm', y: 2001, t: 'Potential games with continuous player sets', v: 'Journal of Economic Theory 97(1): 81–108', u: 'https://doi.org/10.1006/jeth.2000.2696', why: 'Potential games for large populations, congestion games like this one among them.' },
           erlang1917: { a: 'Erlang', A: 'A. K. Erlang', y: 1917, t: 'Solution of some problems in the theory of probabilities of significance in automatic telephone exchanges', v: 'Elektroteknikeren 13', u: wp('Erlang (unit)#Erlang B formula'), why: 'The share of calls lost when c lines serve randomly arriving calls: the Erlang B formula.' },
           little1961: { a: 'Little', A: 'J. D. C. Little', y: 1961, t: 'A proof for the queuing formula L = λW', v: 'Operations Research 9(3): 383–387', u: 'https://doi.org/10.1287/opre.9.3.383', why: 'The number present equals the arrival rate times the time each stays.' },
@@ -2641,6 +2665,7 @@
           localization: { t: 'Localization economies', d: 'Advantages a firm gets from other firms of its own industry nearby: shared suppliers, workers and know-how [[@marshall1890]]. Here only the know-how: a site’s fit learns from its neighbours’ use.', n: 'The neighbourhood of a [[som|self-organizing map]]', l: [wp('Economies of agglomeration')] },
           // interference
           nuisance: { t: 'Nuisance', d: 'The cost one use imposes on another in the same place: noise, traffic, smell. Coase used such disputes to show that who should give way isn’t obvious [[@coase1960]].', n: '[[interference|Interference]]', f: '$ν·κ·r_{j,−k}$, the other types’ load at $j$', l: [wp('Nuisance')] },
+          stablegame: { t: 'Stable game', d: 'A game with self-defeating externalities: when people shift toward some choices, those choices get relatively worse. Only the symmetric part of how costs respond to choices matters for this. Such games settle under many adjustment rules even when no potential exists [[@hofbauer2009]]. Here a chase between two uses (B seeks A, A avoids B) is one; strong nuisance of any other shape is not.', n: 'Features whose interference is opposite in sign: one is helped by the other, which is hurt by it' },
           interference: { t: 'Interference', d: 'When two features share a neuron and are active at the same time, each blurs the other’s signal. In Toy Models of Superposition, a feature’s error from sharing grows with the overlap squared times how often the other feature is active [[@elhage2022]].', e: '[[nuisance|Nuisance]]', f: '$ν·κ·r_{j,−k}$' },
           superposition: { t: 'Superposition', d: 'A network representing more features than it has neurons by letting features share neurons. It works when features are rarely active together [[@elhage2022]].', e: 'Uses taking turns in the same buildings', l: [['Toy Models of Superposition', 'https://transformer-circuits.pub/2022/toy_model/index.html']] },
           polysemantic: { t: 'Polysemantic neuron', d: 'A neuron that responds to several unrelated features [[@olah2020]].', e: 'A building that serves several uses', f: 'A site at least 20% of whose use, over its lifetime, is not its main type', l: [wp('Polysemanticity')] },

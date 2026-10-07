@@ -9,14 +9,14 @@ row ids work as links. **Follow one arrival** pauses the simulation and walks th
 both vocabularies: what every option costs this arrival, its own taste noise, what it picks, and how that
 moves the rent ⇄ adaptation.
 
-Underlined terms (119, in `GLOSSARY`) and blue author–year citations (86 references, in `REFS`)
+Underlined terms (120, in `GLOSSARY`) and blue author–year citations (87 references, in `REFS`)
 open a popup on hover. Click, tap or press Enter to pin it: a pinned popup's own terms and citations open
 in place (Back returns), and its links go out to Wikipedia, DOIs and arXiv. Write `[[key|text]]` for a
 term, `[[@key]]` or `[[@a;b]]` for a citation, and `$r_j^2$` for inline math. Every DOI and arXiv id
 was checked against its metadata, and every Wikipedia title against the API.
 
 ```bash
-node --test experiments/one-model/model.test.mjs   # ≈50 s: each setting with both solvers, plus the formal claims
+node --test experiments/one-model/model.test.mjs   # ≈70 s: each setting with both solvers, plus the formal claims
 ```
 
 ## The model
@@ -117,6 +117,12 @@ Every claim is checked with the average flows, and again with individual agents.
   - A race of exponential clocks picks sites with the logit probabilities.
   - Capacity overflow matches Erlang B and shrinks with more agents.
   - The collapse threshold falls between ρ/τ = 1 and 1.5, as predicted.
+  - Without a shared potential (`nuisance.matrix`, how much each use minds each other one; not drawn on the
+    page): two uses settle even when only one minds the other, or when one seeks the other while it avoids
+    it. Three uses that each mind the next never settle once ν passes 2τ/(κ·x), the predicted threshold,
+    while a symmetric control separates there and stops. A Pigouvian charge, which adds the nuisance
+    caused, makes any matrix symmetric: one-sided plus the charge is exactly symmetric nuisance, and it
+    settles the three uses.
 
 ### Taxes
 
