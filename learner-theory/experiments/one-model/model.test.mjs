@@ -754,3 +754,65 @@ test('geography: a longer reach spreads the city over more land at lower density
   }
   assert.ok(raised >= tries - 1 && tries > 25, `random transfers raise F: ${raised}/${tries}`);
 });
+
+// ---------------------------------------------------------------- what the kernels predict
+// A flat plain with pull s (kernel reach ℓ) and competition b (reach ℓ_C) is linearly unstable to a wave of
+// wavenumber k when s·B̂(k) − b·B̂_C(k) > 1 + τ/(κ·r̄), with B̂ the kernel's transform (docs/6 §21). On a
+// wrapping plain the uniform state is an exact equilibrium, so the threshold can be tested sharply.
+const torus = (patch = {}) => make('agglomeration', M.merge({ layout: { kind: 'sheet', radius: 10, periodic: true }, sources: 'anywhere', sourceAt: null, distanceCost: 0 }, patch));
+const modulation = (sim) => { const m = sim.metrics(); const mean = sim.rAvg.reduce((a, v) => a + v, 0) / sim.N; return { mod: m.peak / mean, peaks: m.peaks, gradient: m.gradient, r2: m.gradientR2 }; };
+const threshold = (sim) => 1 + sim.cfg.temperature / (sim.cfg.price.kappa * (sim.cfg.demand / sim.N));
+
+test('regime map: on a wrapping plain the pull at which a flat plain gathers is the one the kernel transform predicts', () => {
+  const probe = torus();
+  const P = probe.layout.period;
+  const thr = threshold(probe);
+  const k1 = (2 * Math.PI) / P;
+  const sStar = thr / probe.kernelTransform(2)(k1);
+  assert.ok(P === 21 && Math.abs(thr - 1.123) < 0.005 && sStar > 1.6 && sStar < 1.85, `period ${P}, threshold ${thr.toFixed(3)}, predicted pull for one bump s* = ${sStar.toFixed(3)}`);
+  const below = modulation(torus({ interaction: { strength: 1.6 } }).run(2500));
+  const above = modulation(torus({ interaction: { strength: 2.0 } }).run(2500));
+  assert.ok(below.mod < 1.05, `s = 1.6 < s*: stays flat (peak ÷ mean ${below.mod.toFixed(3)})`);
+  assert.ok(above.mod > 2 && above.peaks === 1, `s = 2.0 > s*: one bump (peak ÷ mean ${above.mod.toFixed(2)}, ${above.peaks} peak)`);
+  // the bump's density gradient is set by the reach: β·ℓ ≈ 1 (Clark's law with β ≈ 1/ℓ)
+  assert.ok(above.gradient * 2 > 0.8 && above.gradient * 2 < 1.2 && above.r2 > 0.9, `β·ℓ = ${(above.gradient * 2).toFixed(2)} (R² ${above.r2.toFixed(2)})`);
+});
+
+test('regime map: with competition the fastest-growing wave sets the number of towns, and a stable plain stays flat', () => {
+  const probe = torus();
+  const P = probe.layout.period;
+  const thr = threshold(probe);
+  const ks = Array.from({ length: Math.floor(P / 2) + 1 }, (_, m) => (2 * Math.PI * m) / P);
+  const B = ks.map(probe.kernelTransform(1.25));
+  const C = ks.map(probe.kernelTransform(3));
+  const fastest = (s, b) => { let best = 1; for (let m = 2; m < ks.length; m++) if (s * B[m] - b * C[m] > s * B[best] - b * C[best]) best = m; return { m: best, rate: s * B[best] - b * C[best] }; };
+  const towns = fastest(5, 10);
+  assert.ok(towns.m === 2 && towns.rate > thr, `s = 5, b = 10, ℓ = 1.25: the m = ${towns.m} wave grows fastest (rate ${towns.rate.toFixed(2)} > ${thr.toFixed(2)}), so 4 towns are predicted`);
+  const sim = torus({ interaction: { strength: 5, reach: 1.25, compete: { strength: 10, reach: 3 } } }).run(3000);
+  const seen = modulation(sim);
+  assert.ok(seen.peaks === 4 && seen.mod > 3, `4 towns formed (${seen.peaks} peaks, peak ÷ mean ${seen.mod.toFixed(2)})`);
+  const flat = fastest(3, 4);
+  assert.ok(flat.rate < thr, `s = 3, b = 4: no wave grows (best rate ${flat.rate.toFixed(2)} < ${thr.toFixed(2)})`);
+  const still = modulation(torus({ interaction: { strength: 3, reach: 1.25, compete: { strength: 4, reach: 3 } } }).run(3000));
+  assert.ok(still.mod < 1.05, `and the plain stays flat (peak ÷ mean ${still.mod.toFixed(3)})`);
+});
+
+test("regime map: on the disc the density gradient is the reach's inverse, β·ℓ ≈ 1, and the tail falls as the kernel does", () => {
+  for (const ell of [1.5, 2, 3, 4]) {
+    const seen = modulation(make('agglomeration', { interaction: { reach: ell } }).run(1500));
+    assert.ok(seen.gradient * ell > 0.8 && seen.gradient * ell < 1.1 && seen.r2 > 0.9, `reach ${ell}: β·ℓ = ${(seen.gradient * ell).toFixed(2)} (R² ${seen.r2.toFixed(2)})`);
+  }
+  // far from the centre the load falls as exp(−c·e^{−d/ℓ}): the log of the log falls with slope −1/ℓ
+  const sim = make('agglomeration', { interaction: { reach: 3 } }).run(1500);
+  const R = sim.rAvg;
+  const c = centroidOf(sim, R);
+  const prof = profileAbout(sim, R, c, 12);
+  const pk = Math.max(...prof);
+  const tail = prof.map((v, d) => [d, v]).filter(([d, v]) => d >= 5 && d <= 10 && v > 1e-9).map(([d, v]) => [d, Math.log(-Math.log(v / pk))]);
+  const n = tail.length;
+  const mx = tail.reduce((a, [d]) => a + d, 0) / n, my = tail.reduce((a, [, y]) => a + y, 0) / n;
+  let sxy = 0, sxx = 0;
+  for (const [d, y] of tail) { sxy += (d - mx) * (y - my); sxx += (d - mx) ** 2; }
+  const slope = sxy / sxx;
+  assert.ok(n >= 5 && Math.abs(slope - 1 / 3) < 0.06, `tail slope ${slope.toFixed(3)} against 1/ℓ = ${(1 / 3).toFixed(3)} over ${n} rings`);
+});

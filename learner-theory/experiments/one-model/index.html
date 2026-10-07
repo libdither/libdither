@@ -1255,7 +1255,8 @@
           const ys = [];
           if (spec.kind === 'sheet') {
             const R = spec.radius;
-            for (let y = -R; y <= R; y++) for (let x = -R; x <= R; x++) if (Math.hypot(x, y) <= R + 1e-9) { xs.push(x); ys.push(y); }
+            // a wrapping sheet (a torus) has no edge: a square of side 2R + 1 whose distances wrap around
+            for (let y = -R; y <= R; y++) for (let x = -R; x <= R; x++) if (spec.periodic || Math.hypot(x, y) <= R + 1e-9) { xs.push(x); ys.push(y); }
           } else if (spec.kind === 'ring') {
             for (let i = 0; i < spec.n; i++) {
               const ang = -Math.PI / 2 + (2 * Math.PI * i) / spec.n;
@@ -1265,7 +1266,17 @@
           } else if (spec.kind === 'line') {
             for (let i = 0; i < spec.n; i++) { xs.push(i); ys.push(0); }
           } else throw new Error(`unknown layout ${spec.kind}`);
-          return { ...spec, n: xs.length, x: Float64Array.from(xs), y: Float64Array.from(ys) };
+          return { ...spec, n: xs.length, x: Float64Array.from(xs), y: Float64Array.from(ys), period: spec.kind === 'sheet' && spec.periodic ? 2 * spec.radius + 1 : 0 };
+        }
+        // distance between two points of a layout, wrapping around on a torus
+        function layoutDist(L, x0, y0, x1, y1) {
+          let dx = x1 - x0;
+          let dy = y1 - y0;
+          if (L.period) {
+            dx -= L.period * Math.round(dx / L.period);
+            dy -= L.period * Math.round(dy / L.period);
+          }
+          return Math.hypot(dx, dy);
         }
 
         // Zones for single-use zoning and ownership: each type gets an even share of every ring.
@@ -1484,7 +1495,7 @@
               for (let i = 0; i < N; i++) {
                 if (i === j) { idx.push(i); wt.push(1); continue; }
                 if (sig <= 0) continue;
-                const d = Math.hypot(L.x[i] - L.x[j], L.y[i] - L.y[j]);
+                const d = layoutDist(L, L.x[j], L.y[j], L.x[i], L.y[i]);
                 if (d <= 2.5 * sig) { idx.push(i); wt.push(Math.exp(-(d * d) / (2 * sig * sig))); }
               }
               start.push(idx.length);
@@ -1511,7 +1522,7 @@
             for (let j = 0; j < N; j++) {
               let t = 0;
               for (let i = 0; i < N; i++) {
-                const v = i === j ? 0 : Math.exp(-Math.hypot(L.x[i] - L.x[j], L.y[i] - L.y[j]) / ell);
+                const v = i === j ? 0 : Math.exp(-layoutDist(L, L.x[j], L.y[j], L.x[i], L.y[i]) / ell);
                 B[j * N + i] = v;
                 t += v;
               }
@@ -1529,7 +1540,7 @@
             IB = IC = null;
             if (!(cfg.interaction.strength > 0)) return;
             ID = new Float32Array(N * N);
-            for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) ID[j * N + i] = Math.hypot(L.x[i] - L.x[j], L.y[i] - L.y[j]);
+            for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) ID[j * N + i] = layoutDist(L, L.x[j], L.y[j], L.x[i], L.y[i]);
             // the most central site: the one with the smallest total distance to the others
             let c = 0;
             let best = Infinity;
@@ -2414,7 +2425,12 @@
               tot += R[j];
               for (let k = 0; k < K; k++) typeTot[k] += rk[j * K + k];
             }
-            const centroid = tot > 0 ? [cx / tot, cy / tot] : [0, 0];
+            let centroid = tot > 0 ? [cx / tot, cy / tot] : [0, 0];
+            if (L.period) {
+              let pk = 0;
+              for (let j = 1; j < N; j++) if (R[j] > R[pk]) pk = j;
+              centroid = [L.x[pk], L.y[pk]];
+            }
             // each type's mean distance from the one given point (the centre, or the harbour ⇄ input)
             const srcX = cfg.sourceAt ? cfg.sourceAt[0] : 0;
             const srcY = cfg.sourceAt ? cfg.sourceAt[1] : 0;
@@ -2496,6 +2512,41 @@
                 onLayer[name] = tot > 0 ? on / tot : 0;
               }
             }
+            // the density gradient: the slope of log load against distance from the centroid, over the rings where
+            // the load is between a tenth and seven tenths of the peak (Clark's law fits there)
+            let gradient = NaN;
+            let gradientR2 = NaN;
+            {
+              const bands = new Map();
+              for (let j = 0; j < N; j++) {
+                const d = Math.round(layoutDist(L, centroid[0], centroid[1], L.x[j], L.y[j]) * 2) / 2;
+                const b = bands.get(d) || [0, 0];
+                b[0] += R[j];
+                b[1]++;
+                bands.set(d, b);
+              }
+              const prof = [...bands.entries()].map(([d, [v, n]]) => [d, v / n]).sort((p, q) => p[0] - q[0]);
+              const pk = Math.max(...prof.map(([, v]) => v));
+              const mid = prof.filter(([, v]) => v > 0.1 * pk && v < 0.7 * pk);
+              if (mid.length >= 3) {
+                const n = mid.length;
+                const mx = mid.reduce((a, [d]) => a + d, 0) / n;
+                const my = mid.reduce((a, [, v]) => a + Math.log(v), 0) / n;
+                let sxy = 0;
+                let sxx = 0;
+                let syy = 0;
+                for (const [d, v] of mid) {
+                  sxy += (d - mx) * (Math.log(v) - my);
+                  sxx += (d - mx) ** 2;
+                  syy += (Math.log(v) - my) ** 2;
+                }
+                const slope = sxx > 0 ? sxy / sxx : NaN;
+                let res = 0;
+                for (const [d, v] of mid) res += (Math.log(v) - (my + slope * (d - mx))) ** 2;
+                gradient = -slope;
+                gradientR2 = syy > 0 ? 1 - res / syy : NaN;
+              }
+            }
             // concentration: the share of type 0's load on its busiest tenth of sites; mixing: cosine of two types' loads
             const sorted0 = Array.from({ length: N }, (_, j) => rk[j * K]).sort((p, q) => q - p);
             let top = 0;
@@ -2528,6 +2579,8 @@
               techMax,
               reachMean,
               onLayer,
+              gradient,
+              gradientR2,
               concentration,
               mixing,
               imbalance: mean > 0 ? peak / mean : 0,
@@ -2606,6 +2659,23 @@
             attPart,
             geoPart,
             T,
+            // the kernel's transform along x for reach ell, normalized so that k = 0 gives 1: the linear stability of a
+            // flat plain is read off it (a wave of wavenumber k grows when s·B̂(k) − b·B̂_C(k) > 1 + τ/(κ·r̄))
+            kernelTransform: (ell) => {
+              let c = 0;
+              for (let j = 1; j < N; j++) if (centerDist[j] < centerDist[c]) c = j;
+              let Z = 0;
+              for (let i = 0; i < N; i++) Z += Math.exp(-layoutDist(L, L.x[c], L.y[c], L.x[i], L.y[i]) / ell);
+              return (k) => {
+                let t = 0;
+                for (let i = 0; i < N; i++) {
+                  let dx = L.x[i] - L.x[c];
+                  if (L.period) dx -= L.period * Math.round(dx / L.period);
+                  t += Math.exp(-layoutDist(L, L.x[c], L.y[c], L.x[i], L.y[i]) / ell) * Math.cos(k * dx);
+                }
+                return t / Z;
+              };
+            },
             geography: () => geoLayers,
             kernel: () => ({ B: IB, C: IC, D: ID }),
             price: (j) => a[j] + b[j],
@@ -3007,6 +3077,8 @@
           gibson2014: { a: 'Gibson et al.', A: 'E. M. Gibson, D. Purger, C. W. Mount and others', y: 2014, t: 'Neuronal activity promotes oligodendrogenesis and adaptive myelination in the mammalian brain', v: 'Science 344(6183): 1252304', u: 'https://doi.org/10.1126/science.1252304', why: 'Driving neurons to fire makes new myelin form on their axons.' },
           mckenzie2014: { a: 'McKenzie et al.', A: 'I. A. McKenzie, D. Ohayon, H. Li and others', y: 2014, t: 'Motor skill learning requires active central myelination', v: 'Science 346(6207): 318–322', u: 'https://doi.org/10.1126/science.1254960', why: 'Mice that cannot make new myelin cannot learn a new motor skill.' },
           fields2015: { a: 'Fields', A: 'R. D. Fields', y: 2015, t: 'A new mechanism of nervous system plasticity: activity-dependent myelination', v: 'Nature Reviews Neuroscience 16(12): 756–767', u: 'https://doi.org/10.1038/nrn4023', why: 'Review: myelin is laid down where activity is, and it tunes conduction delays.' },
+          clark1951: { a: 'Clark', A: 'C. Clark', y: 1951, t: 'Urban population densities', v: 'Journal of the Royal Statistical Society A 114(4): 490–496', u: 'https://doi.org/10.2307/2981088', why: 'Population density falls off exponentially with distance from the centre, in city after city.' },
+          mcdonald1989: { a: 'McDonald', A: 'J. F. McDonald', y: 1989, t: 'Econometric studies of urban population density: a survey', v: 'Journal of Urban Economics 26(3): 361–385', u: 'https://doi.org/10.1016/0094-1190(89)90009-0', why: 'Surveys the estimated gradients: they fell over time as commuting got cheaper.' },
           sandholm2001: { a: 'Sandholm', A: 'W. H. Sandholm', y: 2001, t: 'Potential games with continuous player sets', v: 'Journal of Economic Theory 97(1): 81–108', u: 'https://doi.org/10.1006/jeth.2000.2696', why: 'Potential games for large populations, congestion games like this one among them.' },
           erlang1917: { a: 'Erlang', A: 'A. K. Erlang', y: 1917, t: 'Solution of some problems in the theory of probabilities of significance in automatic telephone exchanges', v: 'Elektroteknikeren 13', u: wp('Erlang (unit)#Erlang B formula'), why: 'The share of calls lost when c lines serve randomly arriving calls: the Erlang B formula.' },
           little1961: { a: 'Little', A: 'J. D. C. Little', y: 1961, t: 'A proof for the queuing formula L = λW', v: 'Operations Research 9(3): 383–387', u: 'https://doi.org/10.1287/opre.9.3.383', why: 'The number present equals the arrival rate times the time each stays.' },
@@ -3138,6 +3210,8 @@
           technology: { t: 'Technology', d: 'Here, geography that people make: a level that grows where they are (learning by doing), spreads to neighbours through a kernel of distance (Hägerstrand’s mean information field [[@hagerstrand1965]]; knowledge spillovers fall off with distance [[@jaffe1993]]) and decays with disuse. It is worth living on (roads, a port, schools), it fades the need for the given geography, and it lengthens the reach of dealings, which spreads the city as highways did [[@baumsnow2007]] without emptying it [[@gaspar1998]]. Adoption itself falls off with distance from where a technology is used [[@comin2012]].', n: '[[myelination|Myelin]] and vessels laid down by use', f: '$dT_j/dt = α·r_j + D·((B_T ∗ T)_j − T_j) − δ·T_j$', l: [wp('Diffusion of innovations')] },
           myelination: { t: 'Activity-dependent myelination', d: 'Neuronal activity makes oligodendrocytes wrap the active axons in myelin, which speeds conduction; learning a motor skill needs it [[@gibson2014;mckenzie2014;fields2015]]. Faster conduction brings farther partners within the same latency, so the effective reach of connections grows along used tracts: infrastructure that follows use, laid down where the activity was and kept after.', e: '[[technology|Roads and rails]] built where the city already was', l: [wp('Myelin')] },
           pathdependence: { t: 'Path dependence', d: 'When where you ended up depends on where you started, not only on where it is now best to be. Small early advantages decide which of several stable arrangements forms, and the arrangement outlives the advantage [[@arthur1989;krugman1991]]. Cities founded at river portages stayed large long after portage stopped mattering [[@bleakley2012]]; here the made geography is what keeps a city where the given geography put it.', n: 'A map stays where it formed against the input, a critical period [[@hubel1970]]', l: [wp('Path dependence')] },
+          clark: { t: 'Density gradient', d: 'Population density falls off from a city’s centre roughly as an exponential, ρ(d) = ρ₀·e^{−βd}: Clark’s law, fitted to dozens of cities [[@clark1951]], with gradients β that fell through the twentieth century as transport improved [[@mcdonald1989]]. Here the gradient is set by the reach of dealings: β·ℓ ≈ 0.9–1.0 at a pull of 2, so a longer reach flattens the city in proportion. The core is closer to a Gaussian, and the far tail falls as log ρ ∝ −e^{−d/ℓ}, the kernel’s own tail.', n: 'How a bump of activity falls off with distance from its centre, set by the connection range', f: '$β ≈ 1/ℓ$', l: [wp('Alonso model')] },
+          linearstability: { t: 'Linear stability of a flat plain', d: 'Add a small wave of wavenumber $k$ to a uniform load and ask whether it grows. The attraction amplifies it by $s·B̂(k)$ and the competition damps it by $b·B̂_C(k)$, where $B̂$ is the kernel’s transform (1 at $k$ = 0, falling with $k$ faster for longer reaches); rent and the logit’s entropy resist with $1 + τ/(κ·r̄)$. So a flat plain gathers into one centre when $s − b$ exceeds that threshold, breaks into a pattern when only some $k > 0$ does, and otherwise stays flat. Turing’s argument [[@turing1952]], Krugman’s for the spacing of districts [[@krugman1996]], Amari’s and Ermentrout & Cowan’s for neural fields [[@amari1977;ermentrout1979]].', e: 'When a flat plain gathers into a city, and at what spacing towns form', f: '$s·B̂(k) − b·B̂_C(k) > 1 + τ/(κ·r̄)$', l: [wp('Turing pattern')] },
           interference: { t: 'Interference', d: 'When two features share a neuron and are active at the same time, each blurs the other’s signal. In Toy Models of Superposition, a feature’s error from sharing grows with the overlap squared times how often the other feature is active [[@elhage2022]].', e: '[[nuisance|Nuisance]]', f: '$ν·κ·r_{j,−k}$' },
           superposition: { t: 'Superposition', d: 'A network representing more features than it has neurons by letting features share neurons. It works when features are rarely active together [[@elhage2022]].', e: 'Uses taking turns in the same buildings', l: [['Toy Models of Superposition', 'https://transformer-circuits.pub/2022/toy_model/index.html']] },
           polysemantic: { t: 'Polysemantic neuron', d: 'A neuron that responds to several unrelated features [[@olah2020]].', e: 'A building that serves several uses', f: 'A site at least 20% of whose use, over its lifetime, is not its main type', l: [wp('Polysemanticity')] },
@@ -3470,6 +3544,17 @@
             { kind: 'range', econ: 'Reach of dealings', net: 'connection range', min: 1.25, max: 4, step: 0.25, get: (c) => c.interaction.reach, set: (v) => ({ interaction: { reach: v } }), f: (v) => v.toFixed(2) },
             { kind: 'range', econ: 'Harbour pull (a pinned feature on the coast)', net: 'external input strength', min: 0, max: 0.5, step: 0.025, get: (c) => (c.sources === 'center' ? c.distanceCost : 0), set: (v) => (v > 0 ? { sources: 'center', sourceAt: [7, 2], distanceCost: v } : { sources: 'anywhere', distanceCost: 0 }), f: (v) => (v ? v.toFixed(3) : 'none') },
             { kind: 'range', econ: 'Competition for customers (market reach 3)', net: '[[lateralinhibition|lateral inhibition]], reach 3', min: 0, max: 12, step: 0.5, get: (c) => c.interaction.compete.strength, set: (v) => ({ interaction: { compete: { strength: v, reach: 3 } } }), f: (v) => (v ? v.toFixed(1) : 'none') },
+            {
+              kind: 'seg',
+              econ: 'The plain',
+              net: 'the sheet',
+              options: [
+                { v: 'disc', econ: 'A disc with an edge', net: 'a disc with an edge' },
+                { v: 'torus', econ: 'Wraps around (no edge)', net: 'wraps around (no edge)' },
+              ],
+              get: (c) => (c.layout.periodic ? 'torus' : 'disc'),
+              set: (v) => (v === 'torus' ? { layout: { kind: 'sheet', radius: 10, periodic: true }, sources: 'anywhere', sourceAt: null, distanceCost: 0 } : { layout: { kind: 'sheet', radius: 12, periodic: false } }),
+            },
             { kind: 'button', econ: 'Restart', net: 'restart', act: (sim) => sim.reset() },
           ],
           firmshomes: [
@@ -3685,6 +3770,7 @@
           meanDistance: { econ: 'Average [[commute|commute]]', net: 'average [[wiring|wiring]] distance', v: (m) => fmt(m.meanDistance) },
           centerPrice: { econ: '[[rent|Rent]] downtown', net: '[[threshold|threshold]] by the input', v: (m) => fmt(m.centerPrice) },
           centreAt: { econ: 'Where the centre formed', net: 'where the bump sits', v: (m) => `(${fmt(m.centroid[0], 1)}, ${fmt(m.centroid[1], 1)})` },
+          gradient: { econ: '[[clark|Density gradient]] β, and β × reach', net: 'fall-off of activity with distance, × range', v: (m) => (Number.isFinite(m.gradient) && m.peaks === 1 && m.gradientR2 > 0.8 ? `${fmt(m.gradient, 2)} (${fmt(m.gradient * S.sim.cfg.interaction.reach, 2)})` : '—') },
           coastShare: { econ: 'Households on the coast', net: 'spikes at the sensory edge', v: (m) => pct(m.onLayer.coast || 0) },
           inland: { econ: 'Centre’s distance inland from the shore', net: 'bump’s distance from the edge', v: (m) => fmt(m.centroid[0] + 12, 1) },
           tech: { econ: '[[technology|Technology]] where people are (peak)', net: '[[myelination|myelin]] where activity is (peak)', v: (m) => `${fmt(m.techMean)} (${fmt(m.techMax)})` },
@@ -3717,7 +3803,7 @@
         };
         const READOUT = {
           land: ['used', 'meanDistance', 'centerPrice', 'peak', 'cost'],
-          agglomeration: ['centreAt', 'peaks', 'used', 'pairDistance', 'peak', 'cost'],
+          agglomeration: ['centreAt', 'peaks', 'used', 'pairDistance', 'gradient', 'peak', 'cost'],
           firmshomes: ['peaks', 'concentration', 'mixing', 'pairDistance', 'cost'],
           hierarchy: ['typeDist', 'hops', 'latency', 'latencyShuffled', 'cost'],
           geography: ['coastShare', 'inland', 'tech', 'reachMean', 'used', 'peak'],
@@ -3877,6 +3963,28 @@
         }
         let refTimer = 0;
         function applyPatch(patch) {
+          if ('layout' in patch) {
+            // a different plain is a different set of sites: start a new simulation with the same knobs
+            if (S.follow) endFollow();
+            S.sim = M.create(M.merge(S.sim.cfg, patch));
+            S.particles = [];
+            S.flash.clear();
+            S.ph = null;
+            S.hist = [];
+            S.ema = null;
+            S.acf = null;
+            S.hover = -1;
+            S.pairBins = null;
+            S.rBase = baselinePeak();
+            S.gridIndex = new Map();
+            for (let j = 0; j < S.sim.layout.n; j++) S.gridIndex.set(`${S.sim.layout.x[j]},${S.sim.layout.y[j]}`, j);
+            buildControls();
+            renderTerms();
+            buildLegends();
+            resize();
+            updateScales();
+            return;
+          }
           const wasMigration = S.sim.cfg.exit.mode === 'migration';
           S.sim.setConfig(patch);
           // People compare against the city with no limit; that reference only depends on the non-rule inputs.
@@ -4097,7 +4205,7 @@
             const slot = (v.W - left - right) / L.n;
             return { kind: 'line', left, slot, base: v.H * 0.52, top: 34, bottom: v.H - 10, sinkX: left - slot * 1.1 };
           }
-          const E = L.kind === 'sheet' ? L.radius : Math.ceil(L.radius) + 1.5;
+          const E = L.kind === 'sheet' ? (L.period ? Math.ceil(L.radius * Math.SQRT2) : L.radius) : Math.ceil(L.radius) + 1.5;
           const span = 2 * E + 2;
           const top = 30;
           const bottom = 12;
@@ -5271,6 +5379,78 @@
           return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p;
         }
         // Average of a site quantity by distance ring (distance from the source).
+        // The regime map of the one-type agglomeration setting: for each (pull s, competition b) at the current
+        // reaches, the growth rate of a wave of wavenumber k on a flat plain is s·B̂(k) − b·B̂_C(k) against the
+        // threshold 1 + τ/(κ·r̄). Unstable at k = 0: one centre. Unstable only at some k > 0: a pattern. Neither: flat.
+        function regimeMap(sim, w) {
+          const cfg = sim.cfg;
+          const ell = typeof cfg.interaction.reach === 'number' ? cfg.interaction.reach : 2;
+          const ellC = cfg.interaction.compete.reach;
+          const Bh = sim.kernelTransform(ell);
+          const Ch = sim.kernelTransform(ellC);
+          const period = sim.layout.period;
+          const ks = period ? Array.from({ length: Math.floor(period / 2) + 1 }, (_, m) => (2 * Math.PI * m) / period) : Array.from({ length: 48 }, (_, i) => (i * Math.PI) / 47);
+          const B = ks.map(Bh);
+          const C = ks.map(Ch);
+          const rbar = cfg.demand / sim.N;
+          const thr = 1 + cfg.temperature / (cfg.price.kappa * rbar);
+          const regimeAt = (s, b) => {
+            // on a wrapping plain the uniform wave (k = 0) is fixed by the total load, so the longest wave that
+            // counts is one bump across the whole plain (m = 1); m bumps per side make m² towns
+            const k0 = s * B[0] - b * C[0];
+            let best = -Infinity;
+            let iStar = 1;
+            for (let i = 1; i < ks.length; i++) {
+              const v = s * B[i] - b * C[i];
+              if (v > best) {
+                best = v;
+                iStar = i;
+              }
+            }
+            const kStar = ks[iStar];
+            if (period) {
+              if (best > thr) return iStar === 1 ? { regime: 'one centre', wavelength: period, towns: 1 } : { regime: 'a pattern of towns', wavelength: period / iStar, towns: iStar * iStar };
+              return { regime: 'flat', wavelength: null };
+            }
+            if (k0 > thr) return { regime: 'one centre', wavelength: null };
+            if (best > thr) return { regime: (2 * Math.PI) / kStar > (cfg.layout.radius || 12) ? 'one centre or a ring' : 'a pattern of towns', wavelength: (2 * Math.PI) / kStar };
+            return { regime: 'flat', wavelength: null };
+          };
+          const sMin = 1;
+          const sMax = 6;
+          const bMin = 0;
+          const bMax = 12;
+          const nx = 40;
+          const ny = 30;
+          const mL = 44;
+          const mR = 12;
+          const mT = 10;
+          const mB = 34;
+          const h = 220;
+          const iw = w - mL - mR;
+          const ih = h - mT - mB;
+          const colour = { flat: COL.surface2, 'one centre': alpha(COL.series[0], 0.3), 'one centre or a ring': alpha(COL.series[0], 0.18), 'a pattern of towns': alpha(COL.series[1], 0.32) };
+          let cells = '';
+          for (let i = 0; i < nx; i++) {
+            for (let j = 0; j < ny; j++) {
+              const s = sMin + ((i + 0.5) / nx) * (sMax - sMin);
+              const b = bMin + ((j + 0.5) / ny) * (bMax - bMin);
+              const r = regimeAt(s, b);
+              const x = mL + (i / nx) * iw;
+              const y = mT + ih - ((j + 1) / ny) * ih;
+              cells += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(iw / nx + 0.4).toFixed(1)}" height="${(ih / ny + 0.4).toFixed(1)}" fill="${colour[r.regime]}"/>`;
+            }
+          }
+          const sNow = cfg.interaction.strength;
+          const bNow = cfg.interaction.compete.strength;
+          const px = mL + ((Math.min(sMax, Math.max(sMin, sNow)) - sMin) / (sMax - sMin)) * iw;
+          const py = mT + ih - ((Math.min(bMax, Math.max(bMin, bNow)) - bMin) / (bMax - bMin)) * ih;
+          const here = regimeAt(sNow, bNow);
+          const ticksX = [1, 2, 3, 4, 5, 6].map((v) => `<text x="${(mL + ((v - sMin) / (sMax - sMin)) * iw).toFixed(1)}" y="${h - mB + 14}" font-size="10" text-anchor="middle" fill="${COL.muted}">${v}</text>`).join('');
+          const ticksY = [0, 4, 8, 12].map((v) => `<text x="${mL - 6}" y="${(mT + ih - ((v - bMin) / (bMax - bMin)) * ih + 3).toFixed(1)}" font-size="10" text-anchor="end" fill="${COL.muted}">${v}</text>`).join('');
+          const svg = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Predicted regimes over pull and competition, with the current knobs marked">${cells}<rect x="${mL}" y="${mT}" width="${iw}" height="${ih}" fill="none" stroke="${COL.axis}"/>${ticksX}${ticksY}<text x="${(mL + iw / 2).toFixed(1)}" y="${h - 4}" font-size="11" text-anchor="middle" fill="${COL.muted}">pull of being near others ⇄ excitation (s)</text><text x="11" y="${(mT + ih / 2).toFixed(1)}" font-size="11" text-anchor="middle" fill="${COL.muted}" transform="rotate(-90 11 ${(mT + ih / 2).toFixed(1)})">competition ⇄ inhibition (b)</text><circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="5" fill="${COL.text}" stroke="${COL.surface}" stroke-width="2"/></svg>`;
+          return { svg, thr, predicted: here.regime, wavelength: here.wavelength, towns: here.towns, period };
+        }
         // ring averages about any point (the centre that formed, or the harbour ⇄ input)
         function byRingFrom(fn, maxD, cx, cy) {
           const sim = S.sim;
@@ -5396,15 +5576,21 @@
             const xs = [...Array(maxD + 1).keys()];
             const ring = (fn) => byRingFrom(fn, maxD, from[0], from[1]);
             if (id === 'agglomeration') {
-              const price = ring((j) => sim.pAvg[j]);
+              const map = regimeMap(sim, w);
               const load = ring((j) => sim.rAvg[j]);
-              const c1 = axisChart({ w, h: 150, xs, series: [{ ys: price, color: COL.accent }], xLabel: 'distance from the centre that formed', yLabel: 'rent ⇄ threshold', xMax: maxD, yMax: niceCeil(Math.max(1, ...price.filter(Number.isFinite)) * 1.1) });
-              const c2 = axisChart({ w, h: 140, xs, series: [{ ys: load, color: COL.series[1] }], xLabel: 'distance', yLabel: 'floor space ⇄ firing rate', xMax: maxD, yMax: niceCeil(Math.max(0.2, ...load.filter(Number.isFinite)) * 1.15) });
-              html = c1.svg + c2.svg;
-              title = 'Rent ⇄ threshold, and use, by distance from the centre that formed';
-              note = 'Distance is measured from the load’s centre of mass, which nothing fixed in advance. Rent and density fall away from it, as from a given downtown; with competition on, the rings average over several towns.';
-              chartRows = xs.map((x, i) => [x, fmt(price[i]), fmt(load[i], 3)]);
-              chartRows.head = ['Distance', 'Rent ⇄ threshold', 'Floor space ⇄ rate'];
+              const c2 = axisChart({ w, h: 140, xs, series: [{ ys: load, color: COL.series[1] }], xLabel: 'distance from the centre that formed', yLabel: 'floor space ⇄ firing rate', xMax: maxD, yMax: niceCeil(Math.max(0.2, ...load.filter(Number.isFinite)) * 1.15) });
+              html = map.svg + c2.svg;
+              title = 'Where the knobs sit on the predicted map, and the profile that formed';
+              const m = sim.metrics();
+              const mean = sim.rAvg.reduce((a, v) => a + v, 0) / sim.N;
+              const modulation = mean > 0 ? m.peak / mean : 0;
+              const seen = modulation > sim.N / 2 ? 'everything on one parcel (a [[blackhole|black hole]])' : modulation < 1.3 ? 'flat' : m.peaks >= 2 ? `${m.peaks} towns` : 'one centre';
+              const where = map.period
+                ? `On this wrapping plain the test is exact: the uniform state is an equilibrium, and it is unstable to one bump (blue) when s·B̂(k₁) − b·B̂_C(k₁) > ${fmt(map.thr, 2)} for the longest wave k₁ = 2π/${map.period}, or to m bumps per side (orange, m² towns) when a shorter wave grows fastest${map.towns > 1 ? `; here m² = ${map.towns}` : ''}.`
+                : `A flat plain stays flat (grey), gathers into one centre (blue: s − b > 1 + τ/(κ r̄) = ${fmt(map.thr, 2)} at the longest waves), or breaks into a pattern (orange) with a wavelength of ${map.wavelength ? fmt(map.wavelength, 0) : '—'}; a wavelength longer than the disc’s radius reads as one centre or a ring here, and the disc’s edge gives a mild mound even in the grey, so the border is soft. Switch the plain to one that wraps around for a sharp test.`;
+              note = `Map: from the two kernels alone, [[linearstability|linear stability]] predicts the fate of a flat plain. ${where} The dot is the current knobs: predicted ${map.predicted}, simulated ${seen} (peak ÷ mean ${fmt(modulation, 1)}). When the pull is strong the towns that form can go on merging into one parcel; linear stability says where the flat plain breaks and at what spacing, not where the gathering stops. Below: density by distance from the centre that formed; its [[clark|gradient]] is in the readout.`;
+              chartRows = xs.map((x, i) => [x, fmt(load[i], 3)]);
+              chartRows.head = ['Distance', 'Floor space ⇄ rate'];
             } else {
               const loads = Array.from({ length: K }, (_, k) => ring((j) => sim.rk[j * K + k]));
               const yMax = niceCeil(Math.max(0.1, ...loads.flat().filter(Number.isFinite)) * 1.15);
