@@ -816,3 +816,105 @@ test("regime map: on the disc the density gradient is the reach's inverse, β·�
   const slope = sxy / sxx;
   assert.ok(n >= 5 && Math.abs(slope - 1 / 3) < 0.06, `tail slope ${slope.toFixed(3)} against 1/ℓ = ${(1 / 3).toFixed(3)} over ${n} rings`);
 });
+
+// ---- past the regime map: the black hole's condition, a saturating gain, and the onset time (docs/6 §22)
+const torusA = (patch = {}) => makeA('agglomeration', M.merge({ layout: { kind: 'sheet', radius: 10, periodic: true }, sources: 'anywhere', sourceAt: null, distanceCost: 0 }, patch));
+const busiest = (sim) => { let j = 0; for (let i = 1; i < sim.N; i++) if (sim.r[i] > sim.r[j]) j = i; return j; };
+
+test('black hole: one parcel holds everything only past the pull its nearest neighbour sets; below it the end state is a dense cluster, which the agents find and the average flows hop around', () => {
+  const short = { interaction: { reach: 1.25, compete: { strength: 0, reach: 3 } } };
+  const probe = torus(short);
+  const { Z, border } = M.singleParcel(probe);
+  const sBH = border(0);
+  assert.ok(Math.abs(sBH - Z / (1 - Math.exp(-1 / 1.25))) < 1e-6 && sBH > 17.5 && sBH < 19, `the nearest neighbour sets the border: s* = Z/(1 − e^{−1/ℓ}) = ${sBH.toFixed(2)} (Z = ${Z.toFixed(2)})`);
+  assert.ok(5 / Z < 1 && 5 < sBH, 'the pull of 5 that "collapsed" the city sits far below it, and below the self-pull condition s/Z = 1 too');
+  // the fixed point: a cluster at 5, a few parcels at 10, two at 17, one past the border
+  const fp = (s) => M.endState(torus(M.merge(short, { interaction: { strength: s } })));
+  const at5 = fp(5), at10 = fp(10), at17 = fp(17), at20 = fp(20);
+  assert.ok(at5.peaks === 1 && at5.used >= 10 && at5.used <= 25 && at5.share > 0.1 && at5.share < 0.2, `pull 5: a cluster of ${at5.used} parcels, the busiest holding ${(100 * at5.share).toFixed(0)}%`);
+  assert.ok(at10.used >= 3 && at10.used <= 8 && at10.share < 0.4, `pull 10: ${at10.used} parcels, busiest ${(100 * at10.share).toFixed(0)}%`);
+  assert.ok(at17.used === 2 && at17.share > 0.45 && at17.share < 0.55, `pull 17: two parcels sharing it (${(100 * at17.share).toFixed(0)}% each)`);
+  assert.ok(at20.used === 1 && at20.share > 0.99, `pull 20: one parcel holds ${(100 * at20.share).toFixed(1)}%`);
+  // the agents agree on both sides of the border, with rent = κ·load at the busiest parcel
+  for (const [s, want] of [[5, 'cluster'], [20, 'parcel']]) {
+    const sim = torusA(M.merge(short, { interaction: { strength: s } })).run(1500);
+    const m = sim.metrics();
+    const j = busiest(sim);
+    const share = sim.r[j] / sim.cfg.demand;
+    if (want === 'cluster') assert.ok(m.used >= 8 && m.used <= 30 && share < 0.25, `agents at 5: a cluster of ${m.used} parcels, busiest ${(100 * share).toFixed(0)}%`);
+    else assert.ok(m.used <= 2 && share > 0.9, `agents at 20: one parcel, ${(100 * share).toFixed(0)}%`);
+    const kr = sim.cfg.price.kappa * sim.r[j];
+    assert.ok(Math.abs(sim.price(j) - kr) < 0.15 * kr, `agents at ${s}: rent is κ·load at the busiest parcel (${sim.price(j).toFixed(0)} against ${kr.toFixed(0)})`);
+  }
+  // the average flows below the border: the whole load on one parcel at a time, its rent far below κ·load, hopping
+  const flows = torus(M.merge(short, { interaction: { strength: 5 } }));
+  const where = [];
+  for (let t = 0; t < 2000; t += 100) { flows.run(100); where.push(busiest(flows)); }
+  const j = where[where.length - 1];
+  const moves = where.slice(1).filter((v, i) => v !== where[i]).length;
+  const kr = flows.cfg.price.kappa * flows.r[j];
+  assert.ok(flows.r[j] > 0.9 * flows.cfg.demand && flows.price(j) < 0.5 * kr && moves >= 2, `flows at 5: ${((100 * flows.r[j]) / flows.cfg.demand).toFixed(0)}% on one parcel whose rent is ${flows.price(j).toFixed(0)} against κ·load ${kr.toFixed(0)}, moving ${moves} times in 20 samples: the solver, not the model`);
+});
+
+test('saturation: a saturating gain holds the towns the map predicts at a finite size instead of letting them merge, and counts the pull as s/(1 + r̄/x₀) at onset', () => {
+  const knobs = (sat) => ({ interaction: { strength: 6, reach: 1.25, saturate: sat, compete: { strength: 12, reach: 3 } } });
+  const probe = torus(knobs(null));
+  const P = probe.layout.period, thr = threshold(probe);
+  const ks = Array.from({ length: Math.floor(P / 2) + 1 }, (_, m) => (2 * Math.PI * m) / P);
+  const B = ks.map(probe.kernelTransform(1.25)), C = ks.map(probe.kernelTransform(3));
+  const rbar = probe.cfg.demand / probe.N;
+  const fastest = (sE, b) => { let best = 1; for (let m = 2; m < ks.length; m++) if (sE * B[m] - b * C[m] > sE * B[best] - b * C[best]) best = m; return { m: best, rate: sE * B[best] - b * C[best] }; };
+  const plain = fastest(6, 12), sat2 = fastest(6 / (1 + rbar / 2), 12), sat025 = fastest(6 / (1 + rbar / 0.25), 12);
+  assert.ok(plain.m === 2 && plain.rate > thr && sat2.m === 2 && sat2.rate > thr, `four towns predicted at s = 6, b = 12 with no saturation (rate ${plain.rate.toFixed(2)}) and at x₀ = 2 (${sat2.rate.toFixed(2)} > ${thr.toFixed(2)})`);
+  assert.ok(sat025.rate < thr, `at x₀ = 0.25 the pull counts as ${(6 / (1 + rbar / 0.25)).toFixed(2)} and no wave grows (${sat025.rate.toFixed(2)})`);
+  // without saturation the towns merge: the fixed point ends in one or two dense centres (and the flows on one parcel)
+  const merged = M.endState(probe);
+  assert.ok(merged.peaks <= 2 && merged.share > 0.04, `no saturation: the four towns merge into ${merged.peaks} centre(s), the busiest parcel holding ${(100 * merged.share).toFixed(0)}%`);
+  // with it, four towns of finite size, in the fixed point, the flows and the agents alike
+  const fixed = M.endState(torus(knobs(2)));
+  assert.ok(fixed.peaks === 4 && fixed.share < 0.03 && fixed.used > 100, `x₀ = 2, fixed point: ${fixed.peaks} towns over ${fixed.used} parcels, busiest ${(100 * fixed.share).toFixed(1)}%`);
+  const flows = torus(knobs(2)).run(3000).metrics();
+  assert.ok(flows.peaks === 4 && Math.abs(flows.peak - fixed.peak) < 0.1 * fixed.peak, `flows: ${flows.peaks} towns with peak ${flows.peak.toFixed(2)} against the fixed point's ${fixed.peak.toFixed(2)}`);
+  const agents = torusA(knobs(2)).run(2000).metrics();
+  assert.ok(agents.peaks >= 3 && agents.peaks <= 5 && agents.peak < 2, `agents: ${agents.peaks} towns, peak ${agents.peak.toFixed(2)}`);
+  // the black hole recedes with the gain's flattening, and at x₀ = 0.25 the plain stays flat as predicted: the earlier
+  // "dissolved cluster" was the onset condition failing, not saturation failing
+  assert.ok(M.singleParcel(torus(knobs(2))).border(12) > 2 * M.singleParcel(probe).border(12), 'the single-parcel border moves out by more than 2×');
+  const flat = torus(knobs(0.25)).run(2000).metrics();
+  assert.ok(flat.peak / rbar < 1.3, `x₀ = 0.25: flat (peak ÷ mean ${(flat.peak / rbar).toFixed(2)})`);
+});
+
+test('onset: near the border the fastest wave grows at the rate one solver round predicts, and the time for the bump to show diverges as the border is approached (critical slowing down)', () => {
+  const probe = torus();
+  const P = probe.layout.period, thr = threshold(probe);
+  const Bh = probe.kernelTransform(2)((2 * Math.PI) / P);
+  const rbar = probe.cfg.demand / probe.N;
+  const runs = [];
+  for (const s of [1.9, 2.25, 3]) {
+    const lambda = s * Bh;
+    const predicted = M.growthRate(probe, lambda);
+    const simple = (lambda / thr - 1) / probe.cfg.interaction.memory;
+    const sim = torus({ interaction: { strength: s } });
+    const series = [];
+    let shown = null;
+    for (let t = 0; t < 4000 && shown == null; t += 10) {
+      sim.run(10);
+      const mod = sim.metrics().peak / rbar;
+      series.push([sim.time, mod]);
+      if (mod > 2) shown = sim.time;
+    }
+    // the growth rate: log(peak ÷ mean − 1) against time while the wave is still small
+    const pts = series.filter(([, v]) => v > 1.02 && v < 1.5).map(([t, v]) => [t, Math.log(v - 1)]);
+    const n = pts.length, mx = pts.reduce((a, [x]) => a + x, 0) / n, my = pts.reduce((a, [, y]) => a + y, 0) / n;
+    let sxy = 0, sxx = 0;
+    for (const [x, y] of pts) { sxy += (x - mx) * (y - my); sxx += (x - mx) ** 2; }
+    const measured = sxy / sxx;
+    assert.ok(n >= 5 && Math.abs(measured / predicted - 1) < 0.1, `s = ${s}: the wave grows at ${measured.toFixed(5)} per time unit, predicted ${predicted.toFixed(5)} (the one-lag formula gives ${simple.toFixed(5)})`);
+    const onset = M.onsetTime(probe, predicted);
+    assert.ok(shown != null && Math.abs(shown / onset - 1) < 0.25, `s = ${s}: the bump shows at ${shown} time units, predicted ${onset.toFixed(0)}`);
+    runs.push({ s, shown });
+  }
+  const sStar = thr / Bh;
+  const scaled = runs.map((r) => r.shown * (r.s - sStar));
+  assert.ok(runs[0].shown > 4 * runs[2].shown && Math.max(...scaled) / Math.min(...scaled) < 1.6, `time to show × (s − s*) stays roughly constant: ${scaled.map((v) => v.toFixed(0)).join(', ')} (s* = ${sStar.toFixed(2)})`);
+});

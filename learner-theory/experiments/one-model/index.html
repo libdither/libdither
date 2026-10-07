@@ -1235,6 +1235,7 @@
       const OneModel = (() => {
         'use strict';
         const EPS = 1e-9;
+        const RIPPLE = 0.02; // the random recent use every site starts with, as a share of the flat plain's load (symmetry breaking)
 
         function rng32(seed) {
           let s = seed >>> 0 || 1;
@@ -1624,8 +1625,8 @@
           // A little random recent use, so identical uses can tell sites apart (symmetry breaking).
           function initTraces() {
             h.fill(0);
-            if (cfg.nuisance.strength > 0 || cfg.scale.strength > 0 || cfg.interaction.strength > 0) for (let i = 0; i < N * K; i++) h[i] = 0.02 * (cfg.demand / N) * rand();
-            if (cfg.interaction.strength > 0) for (let i = 0; i < N * K; i++) hAtt[i] = 0.02 * (cfg.demand / N) * rand();
+            if (cfg.nuisance.strength > 0 || cfg.scale.strength > 0 || cfg.interaction.strength > 0) for (let i = 0; i < N * K; i++) h[i] = RIPPLE * (cfg.demand / N) * rand();
+            if (cfg.interaction.strength > 0) for (let i = 0; i < N * K; i++) hAtt[i] = RIPPLE * (cfg.demand / N) * rand();
             T.fill(0);
             lastRebuild = 0;
             if (cfg.technology.boost > 0) buildInteraction();
@@ -2678,6 +2679,8 @@
             },
             geography: () => geoLayers,
             kernel: () => ({ B: IB, C: IC, D: ID }),
+            priceStep: gamma, // the fraction of the way the price moves to its one-site solution each round
+            ripple: RIPPLE,
             price: (j) => a[j] + b[j],
             run,
             computeReference,
@@ -2724,7 +2727,7 @@
               distanceCost: 0,
               demand: LAND,
               temperature: 0.15,
-              interaction: { strength: 2, reach: 2, memory: 40 },
+              interaction: { strength: 2, reach: 2, memory: 40, compete: { strength: 0, reach: 3 } },
             },
             unitsPerFrame: 4,
           },
@@ -2935,7 +2938,161 @@
           },
         ];
 
-        return { create, makeLayout, rng32, DEFAULTS, PRESETS, landDemand, merge };
+        // ------------------------------------------------------------ what the agglomeration kernels predict (one type)
+        // Used by the page's regime map, the tests and the walkthrough figures.
+
+        // The end state of the flows at the current knobs, by a damped fixed-point solve: the load is re-chosen by the
+        // logit at prices κ·load with the fields read from the load itself, and moved a step `damp` toward the choice,
+        // until nothing moves. The dynamics above re-route the whole flow every round instead, which in a stiff regime
+        // (a parcel holding a large share of everything) hops the load between parcels without settling; this finds the
+        // state the hops circle. One type, with the interaction and competition kernels and the saturating gain.
+        function endState(sim, { iters = 6000, damp = 0.05, tol = 1e-7, start = 'ripple', seed = 1 } = {}) {
+          const cfg = sim.cfg;
+          const N = sim.N;
+          const D = cfg.demand;
+          const tau = Math.max(0.02, cfg.temperature);
+          const kappa = cfg.price.kappa;
+          const s = cfg.interaction.strength;
+          const b = cfg.interaction.compete ? cfg.interaction.compete.strength : 0;
+          const sat = typeof cfg.interaction.saturate === 'number' ? cfg.interaction.saturate : 0;
+          const { B: IB, C: IC, D: ID } = sim.kernel();
+          if (!IB) throw new Error('endState: the interaction term is off');
+          const { B, Z } = IB[0][0];
+          const C = b > 0 && IC ? IC[0][0] : null;
+          const r = new Float64Array(N);
+          const rnd = rng32(seed);
+          if (start === 'parcel') r[0] = D;
+          else for (let j = 0; j < N; j++) r[j] = (D / N) * (1 + RIPPLE * (rnd() - 0.5));
+          const cost = new Float64Array(N);
+          const next = new Float64Array(N);
+          let it = 0;
+          let change = Infinity;
+          for (; it < iters && change > tol; it++) {
+            for (let j = 0; j < N; j++) {
+              let f = 0;
+              for (let i = 0; i < N; i++) f += B[j * N + i] * r[i];
+              f /= Z;
+              if (sat > 0) f = sat * Math.log(1 + f / sat);
+              let g = 0;
+              if (C) {
+                for (let i = 0; i < N; i++) g += C.B[j * N + i] * r[i];
+                g /= C.M[j];
+              }
+              cost[j] = kappa * r[j] - s * kappa * f + b * kappa * g;
+            }
+            let mn = Infinity;
+            for (let j = 0; j < N; j++) if (cost[j] < mn) mn = cost[j];
+            let tot = 0;
+            for (let j = 0; j < N; j++) {
+              next[j] = Math.exp(-(cost[j] - mn) / tau);
+              tot += next[j];
+            }
+            change = 0;
+            for (let j = 0; j < N; j++) {
+              const t = (D * next[j]) / tot;
+              change = Math.max(change, Math.abs(t - r[j]));
+              r[j] += damp * (t - r[j]);
+            }
+          }
+          // the readings metrics() gives: parcels in use, and centres as local maxima of the kernel-smoothed load
+          let peak = 0;
+          for (const v of r) if (v > peak) peak = v;
+          let used = 0;
+          for (const v of r) if (v > 0.02 * peak) used++;
+          const sm = new Float64Array(N);
+          let mx = 0;
+          for (let j = 0; j < N; j++) {
+            let v = 0;
+            for (let i = 0; i < N; i++) v += B[j * N + i] * r[i];
+            sm[j] = v;
+            if (v > mx) mx = v;
+          }
+          let peaks = 0;
+          for (let j = 0; j < N; j++) {
+            if (sm[j] < 0.25 * mx) continue;
+            let top = true;
+            for (let i = 0; i < N && top; i++) if (i !== j && ID[j * N + i] <= 2.5 && sm[i] > sm[j]) top = false;
+            if (top) peaks++;
+          }
+          return { r, peak, share: peak / D, modulation: peak / (D / N), used, peaks, iterations: it, converged: change <= tol };
+        }
+
+        // The pull past which one parcel holding everything is itself an equilibrium (the black hole). With the whole
+        // load D on one site, that site pays rent κ·D and gains s·κ·S(D/Z) from its own load (S the saturating gain, or
+        // the identity), while an empty site at distance d gains s·κ·S(D·e^{−d/ℓ}/Z) and pays no rent; competition costs
+        // b·κ·D/Z_C at the parcel and b·κ·D·e^{−d/ℓ_C}/Z_C at distance d. The parcel holds when it is the cheapest site:
+        //   s·[S(D/Z) − S(D·e^{−d/ℓ}/Z)] > D·[1 + b·(1 − e^{−d/ℓ_C})/Z_C]  for every d ≥ 1,
+        // and the nearest neighbour decides unless competition reaches far, so the border is the largest ratio over the
+        // lattice's distances. Without saturation: s > Z·(1 + b·(1 − e^{−d/ℓ_C})/Z_C)/(1 − e^{−d/ℓ}), about
+        // Z/(1 − e^{−1/ℓ}): 18 at reach 1.25, 63 at reach 2. Below it the end state is a dense cluster, not a parcel.
+        function singleParcel(sim) {
+          const cfg = sim.cfg;
+          const L = sim.layout;
+          const D = cfg.demand;
+          const ell = typeof cfg.interaction.reach === 'number' ? cfg.interaction.reach : 2;
+          const ellC = cfg.interaction.compete ? cfg.interaction.compete.reach : 3;
+          const sat = typeof cfg.interaction.saturate === 'number' ? cfg.interaction.saturate : 0;
+          const S = (f) => (sat > 0 ? sat * Math.log(1 + f / sat) : f);
+          let c = 0;
+          for (let j = 1; j < L.n; j++) if (sim.centerDist[j] < sim.centerDist[c]) c = j;
+          const ds = new Set();
+          let Z = 0;
+          let ZC = 0;
+          for (let i = 0; i < L.n; i++) {
+            const d = layoutDist(L, L.x[c], L.y[c], L.x[i], L.y[i]);
+            Z += Math.exp(-d / ell);
+            ZC += Math.exp(-d / ellC);
+            if (d > 0.5) ds.add(Math.round(d * 1000) / 1000);
+          }
+          const gain0 = S(D / Z);
+          const border = (b) => {
+            let need = 0;
+            for (const d of ds) {
+              const own = gain0 - S((D * Math.exp(-d / ell)) / Z);
+              if (!(own > 0)) continue;
+              need = Math.max(need, (D * (1 + (b * (1 - Math.exp(-d / ellC))) / ZC)) / own);
+            }
+            return need;
+          };
+          return { Z, ZC, border };
+        }
+
+        // How fast a wave with growth factor λ = s·B̂(k) − b·B̂_C(k) grows on the flows, per unit of time, from one solver
+        // round linearized about the flat plain: the logit answers a cost wave δc with δr = −(r̄/τ)·δc; the price moves a
+        // fraction ρ = γ·τ/(τ + κ·r̄) of the way to κ·r each round (the step of updatePrices, linearized); the field moves
+        // a fraction ε = dt/m toward the load. On (δa/κ, δh) the round is [[1 − ρ(1 + α), ρ·α·λ], [−ε·α, 1 − ε + ε·α·λ]]
+        // with α = κ·r̄/τ, and its larger eigenvalue μ gives the rate log(μ) × rounds per unit time. It crosses zero exactly
+        // at λ = 1 + τ/(κ·r̄) = θ; near θ it is about (λ/θ − 1)/m, the price being fast next to the field's memory. With a
+        // saturating gain s counts as s/(1 + r̄/x₀), the gain's slope at the flat plain.
+        function growthRate(sim, lambda) {
+          const cfg = sim.cfg;
+          const rbar = cfg.demand / sim.N;
+          const tau = Math.max(0.02, cfg.temperature);
+          const kappa = cfg.price.kappa;
+          const alpha = (kappa * rbar) / tau;
+          const rho = (sim.priceStep * tau) / (tau + kappa * rbar);
+          const sub = Math.max(1, cfg.substeps | 0);
+          const eps = 1 / sub / Math.max(1e-6, cfg.interaction.memory);
+          const a11 = 1 - rho * (1 + alpha);
+          const a12 = rho * alpha * lambda;
+          const a21 = -eps * alpha;
+          const a22 = 1 - eps + eps * alpha * lambda;
+          const tr = a11 + a22;
+          const det = a11 * a22 - a12 * a21;
+          const disc = Math.sqrt(Math.max(0, (tr * tr) / 4 - det));
+          const mu = tr / 2 + disc;
+          return mu > 0 ? Math.log(mu) * sub : -Infinity;
+        }
+        // The time for a bump to show (peak ÷ mean reaching 2) from the initial ripple: uniform noise of amplitude
+        // RIPPLE·r̄ on every site, whose share in one standing wave across the plain is about 2·√π·(RIPPLE/√12)/√N of r̄
+        // (two such waves, along x and y, add at the bump), which must grow to r̄.
+        function onsetTime(sim, rate) {
+          if (!(rate > 0)) return Infinity;
+          const a0 = (2 * Math.sqrt(Math.PI) * (sim.ripple / Math.sqrt(12))) / Math.sqrt(sim.N);
+          return Math.log(1 / a0) / rate;
+        }
+
+        return { create, makeLayout, rng32, DEFAULTS, PRESETS, landDemand, merge, endState, singleParcel, growthRate, onsetTime };
       })();
       if (typeof module !== 'undefined') module.exports = OneModel;
       /* MODEL:END */
@@ -3055,6 +3212,9 @@
           fujita1982: { a: 'Fujita & Ogawa', A: 'M. Fujita and H. Ogawa', y: 1982, t: 'Multiple equilibria and structural transition of non-monocentric urban configurations', v: 'Regional Science and Urban Economics 12(2): 161–196', u: 'https://doi.org/10.1016/0166-0462(82)90031-X', why: 'Firms gain from nearby firms, workers commute: as commuting cost rises against the reach of spillovers, the city goes from monocentric to polycentric to fully mixed.' },
           ogawa1980: { a: 'Ogawa & Fujita', A: 'H. Ogawa and M. Fujita', y: 1980, t: 'Equilibrium land use patterns in a nonmonocentric city', v: 'Journal of Regional Science 20(4): 455–475', u: 'https://doi.org/10.1111/j.1467-9787.1980.tb00662.x', why: 'The first version of the model in which business districts are outcomes rather than assumptions.' },
           fujita2002: { a: 'Fujita & Thisse', A: 'M. Fujita and J.-F. Thisse', y: 2002, t: 'Economics of Agglomeration: Cities, Industrial Location, and Regional Growth', v: 'Cambridge University Press', u: 'https://doi.org/10.1017/CBO9780511805660', why: 'The textbook of why activity clusters: the pulls toward others against the pushes of rent and competition.' },
+          fujita1999: { a: 'Fujita, Krugman & Venables', A: 'M. Fujita, P. Krugman and A. J. Venables', y: 1999, t: 'The Spatial Economy: Cities, Regions, and International Trade', v: 'MIT Press', u: 'https://doi.org/10.7551/mitpress/6389.001.0001', why: 'The core–periphery model worked out; its chapter 4 is named for the no-black-hole condition, without which agglomeration always wins and everything ends in one place.' },
+          scheffer2009: { a: 'Scheffer et al.', A: 'M. Scheffer, J. Bascompte, W. A. Brock, V. Brovkin, S. R. Carpenter, V. Dakos, H. Held, E. H. van Nes, M. Rietkerk and G. Sugihara', y: 2009, t: 'Early-warning signals for critical transitions', v: 'Nature 461(7260): 53–59', u: 'https://doi.org/10.1038/nature08227', why: 'Near a tipping point a system recovers from perturbations ever more slowly: critical slowing down, the generic early-warning signal.' },
+          wilson1973: { a: 'Wilson & Cowan', A: 'H. R. Wilson and J. D. Cowan', y: 1973, t: 'A mathematical theory of the functional dynamics of cortical and thalamic nervous tissue', v: 'Kybernetik 13(2): 55–80', u: 'https://doi.org/10.1007/BF00288786', why: 'Excitatory and inhibitory populations on a sheet with a saturating (sigmoid) response: localized, bounded patterns of activity.' },
           krugman1991: { a: 'Krugman', A: 'P. Krugman', y: 1991, t: 'Increasing returns and economic geography', v: 'Journal of Political Economy 99(3): 483–499', u: 'https://doi.org/10.1086/261763', why: 'The core–periphery model: with increasing returns and transport costs, activity concentrates, and small initial advantages decide where.' },
           christaller1933: { a: 'Christaller', A: 'W. Christaller', y: 1933, t: 'Die zentralen Orte in Süddeutschland', v: 'Gustav Fischer, Jena', u: 'https://en.wikipedia.org/wiki/Central_place_theory', why: 'Towns that serve the customers within their reach space themselves evenly across a plain: central place theory.' },
           klyachko2003: { a: 'Klyachko & Stevens', A: 'V. A. Klyachko and C. F. Stevens', y: 2003, t: 'Connectivity optimization and the positioning of cortical areas', v: 'PNAS 100(13): 7937–7941', u: 'https://doi.org/10.1073/pnas.0932745100', why: 'The positions of macaque cortical areas minimize total wiring given which areas connect to which.' },
@@ -3211,6 +3371,9 @@
           myelination: { t: 'Activity-dependent myelination', d: 'Neuronal activity makes oligodendrocytes wrap the active axons in myelin, which speeds conduction; learning a motor skill needs it [[@gibson2014;mckenzie2014;fields2015]]. Faster conduction brings farther partners within the same latency, so the effective reach of connections grows along used tracts: infrastructure that follows use, laid down where the activity was and kept after.', e: '[[technology|Roads and rails]] built where the city already was', l: [wp('Myelin')] },
           pathdependence: { t: 'Path dependence', d: 'When where you ended up depends on where you started, not only on where it is now best to be. Small early advantages decide which of several stable arrangements forms, and the arrangement outlives the advantage [[@arthur1989;krugman1991]]. Cities founded at river portages stayed large long after portage stopped mattering [[@bleakley2012]]; here the made geography is what keeps a city where the given geography put it.', n: 'A map stays where it formed against the input, a critical period [[@hubel1970]]', l: [wp('Path dependence')] },
           clark: { t: 'Density gradient', d: 'Population density falls off from a city’s centre roughly as an exponential, ρ(d) = ρ₀·e^{−βd}: Clark’s law, fitted to dozens of cities [[@clark1951]], with gradients β that fell through the twentieth century as transport improved [[@mcdonald1989]]. Here the gradient is set by the reach of dealings: β·ℓ ≈ 0.9–1.0 at a pull of 2, so a longer reach flattens the city in proportion. The core is closer to a Gaussian, and the far tail falls as log ρ ∝ −e^{−d/ℓ}, the kernel’s own tail.', n: 'How a bump of activity falls off with distance from its centre, set by the connection range', f: '$β ≈ 1/ℓ$', l: [wp('Alonso model')] },
+          blackhole: { t: 'Black hole', d: 'The regime where a concentration pulls harder the bigger it gets and nothing stops it, so everything ends on one site. Here one parcel holding the whole load $D$ is an equilibrium when its own pull beats its rent and the nearest empty site: $s·[S(D/Z) − S(D·e^{−1/ℓ}/Z)] > D·[1 + b·(1 − e^{−1/ℓ_C})/Z_C]$, with $S$ the gain (the identity, or the [[saturatinggain|saturating]] one), about $s > Z/(1 − e^{−1/ℓ})$: 18 at reach 1.25, 63 at reach 2. Below that line the end state is a dense cluster of parcels, and the average flows hop the whole load between neighbouring parcels instead of settling there, a solver artifact; the agents settle. The core–periphery model has the same regime, ruled out by the no-black-hole condition [[@krugman1991;fujita1999]].', n: 'A winner-take-all sheet whose excitation has no ceiling: one neuron ends up firing for everything', f: '$s·(1 − e^{−1/ℓ})/Z > 1$' },
+          criticalslowing: { t: 'Critical slowing down', d: 'Just past the border where a flat plain becomes unstable, the unstable wave grows at a rate proportional to the distance from the border, so the time for a bump or towns to show diverges there: a knob set barely past the line looks flat for thousands of time units. Slow recovery near a tipping point is the general early-warning signal for such transitions [[@scheffer2009]]. Here the rate is the larger eigenvalue of one solver round linearized about the flat plain, about $(λ/θ − 1)/m$ for a field memory $m$, and the time to show is $log(r̄/A_0)$ over it, with $A_0$ the initial ripple’s share in the wave.', e: 'Why a city founded just past the threshold takes so long to form', f: '$T ≈ log(r̄/A_0)/γ$' },
+          saturatinggain: { t: 'Saturating gain', d: 'The gain from partners within reach grows as $x_0·log(1 + field/x_0)$: linear when few are near and flattening past about $x_0$, because one job, one shop, one input is what a unit needs. Its slope at a flat plain is $1/(1 + r̄/x_0)$, which is what the pull counts for at onset; and a town’s pull stops growing with its size, which keeps the towns the map predicts from merging and pushes the [[blackhole|black hole]] away. Neural fields with a sigmoid gain hold bumps of finite size for the same reason [[@wilson1973;amari1977]].', e: 'Why a second firm nearby adds less than the first', f: '$x_0·log(1 + f/x_0)$' },
           linearstability: { t: 'Linear stability of a flat plain', d: 'Add a small wave of wavenumber $k$ to a uniform load and ask whether it grows. The attraction amplifies it by $s·B̂(k)$ and the competition damps it by $b·B̂_C(k)$, where $B̂$ is the kernel’s transform (1 at $k$ = 0, falling with $k$ faster for longer reaches); rent and the logit’s entropy resist with $1 + τ/(κ·r̄)$. So a flat plain gathers into one centre when $s − b$ exceeds that threshold, breaks into a pattern when only some $k > 0$ does, and otherwise stays flat. Turing’s argument [[@turing1952]], Krugman’s for the spacing of districts [[@krugman1996]], Amari’s and Ermentrout & Cowan’s for neural fields [[@amari1977;ermentrout1979]].', e: 'When a flat plain gathers into a city, and at what spacing towns form', f: '$s·B̂(k) − b·B̂_C(k) > 1 + τ/(κ·r̄)$', l: [wp('Turing pattern')] },
           interference: { t: 'Interference', d: 'When two features share a neuron and are active at the same time, each blurs the other’s signal. In Toy Models of Superposition, a feature’s error from sharing grows with the overlap squared times how often the other feature is active [[@elhage2022]].', e: '[[nuisance|Nuisance]]', f: '$ν·κ·r_{j,−k}$' },
           superposition: { t: 'Superposition', d: 'A network representing more features than it has neurons by letting features share neurons. It works when features are rarely active together [[@elhage2022]].', e: 'Uses taking turns in the same buildings', l: [['Toy Models of Superposition', 'https://transformer-circuits.pub/2022/toy_model/index.html']] },
@@ -3330,7 +3493,7 @@
             econ: 'Nobody is told where downtown is. Each household wants to be near the others it deals with, within a reach, and pays [[rent|rent]] that rises with the floor space in use. From a flat plain a centre forms by itself, [[agglomeration|agglomeration]]: density and rent fall away from it, as in Beckmann’s city of social interactions [[@beckmann1976;mossay2011]]. On a bounded plain it forms at the most accessible point, the middle; a small pinned advantage, a harbour, moves it there.',
             net: 'No input neuron. Each spike goes to a neuron near the neurons its population reads from (its own population: a recurrent connection), and each spike raises the winner’s [[adaptation|adaptation]]. Local excitation plus local inhibition on a sheet forms a bump of activity wherever it happens to start, a [[neuralfield|neural field]] [[@amari1977]]; a weak external input captures it. The bump is the [[wiringeconomy|wiring economy]] of one population: the shortest wires for the connections it has.',
             same: 'This is the [[downtown|land market]] with its centre unpinned. The commute to a given point becomes the distance to wherever the others are, so the term that placed arrivals is now itself a sum over arrivals, and the free energy gets a pairwise term [[@beckmann1976]]. Where the centre forms is set by geography, not demand: on a plain, its middle; with a harbour, the harbour. In cortex the pinned feature is a sensory input, and the layout minimizes wiring given who connects to whom [[@chklovskii2004;chen2006]]. Add competition for customers over a wider market, and one centre becomes an even array of towns, [[centralplace|Christaller’s central places]] [[@christaller1933;krugman1996]] ⇄ the periodic bumps of a field with [[lateralinhibition|lateral inhibition]] [[@ermentrout1979]].',
-            try: 'raise the harbour pull from 0 and watch the whole city move to the coast. Then set it back, shorten the reach to 1.25 and raise the pull to 5: with no counterforce the whole city collapses into one tower, the “black hole” of agglomeration [[@krugman1991]]. Add competition for customers at 10 and the tower hollows out into a ring of towns around an empty middle ⇄ a ring of bumps; the firms-and-homes row shows towns proper.',
+            try: 'raise the harbour pull from 0 and watch the whole city move to the coast. Then set it back, shorten the reach to 1.25 and raise the pull to about 5: with no counterforce the city collapses into a dense cluster of a dozen parcels (the agents show it; the average flows hop the whole load between neighbouring parcels here, a solver artifact the map’s caption flags), and past a pull of 18 one parcel holds everything, the “[[blackhole|black hole]]” of agglomeration [[@krugman1991;fujita1999]]. Add competition for customers at 10 and the cluster breaks into a ring of towns around an empty middle ⇄ a ring of bumps; let the gain saturate at 2 and towns keep a finite size instead of merging; the firms-and-homes row shows towns proper.',
           },
           firmshomes: {
             econ: 'Firms gain from other firms nearby ([[spillover|spillovers]], a short reach) and need homes within commuting reach; homes need firms. Nothing is pinned. With strong spillovers the firms form one dense centre and the homes a ring around it: the monocentric city, now as an outcome. With weak spillovers and a strong need for each other, firms and homes mix across the whole plain. With firms competing for the same customers over a wider market, several towns form, each with its own firms and homes [[@fujita1982;ogawa1980]].',
@@ -3540,8 +3703,9 @@
             { kind: 'range', econ: '[[buildcost|Cost of building up]]', net: '[[adaptation|adaptation]] strength', min: 3, max: 30, step: 0.5, get: (c) => c.price.kappa, set: (v) => ({ price: { kappa: v } }), f: (v) => v.toFixed(1) },
           ],
           agglomeration: [
-            { kind: 'range', econ: 'Pull of being near others', net: 'recurrent [[wiring|wiring]] strength', min: 1, max: 6, step: 0.25, get: (c) => c.interaction.strength, set: (v) => ({ interaction: { strength: v } }), f: (v) => v.toFixed(2) },
+            { kind: 'range', econ: 'Pull of being near others (log scale, to 64)', net: 'recurrent [[wiring|wiring]] strength (log scale, to 64)', min: 0, max: 6, step: 0.125, get: (c) => Math.log2(c.interaction.strength), set: (v) => ({ interaction: { strength: Math.round(2 ** v * 1000) / 1000 } }), f: (v) => (2 ** v).toFixed(2) },
             { kind: 'range', econ: 'Reach of dealings', net: 'connection range', min: 1.25, max: 4, step: 0.25, get: (c) => c.interaction.reach, set: (v) => ({ interaction: { reach: v } }), f: (v) => v.toFixed(2) },
+            { kind: 'range', econ: 'The gain [[saturatinggain|saturates]] at x₀', net: 'ceiling of the recurrent gain, x₀', min: 0, max: 4, step: 0.25, get: (c) => (typeof c.interaction.saturate === 'number' ? c.interaction.saturate : 0), set: (v) => ({ interaction: { saturate: v > 0 ? v : null } }), f: (v) => (v ? v.toFixed(2) : 'never') },
             { kind: 'range', econ: 'Harbour pull (a pinned feature on the coast)', net: 'external input strength', min: 0, max: 0.5, step: 0.025, get: (c) => (c.sources === 'center' ? c.distanceCost : 0), set: (v) => (v > 0 ? { sources: 'center', sourceAt: [7, 2], distanceCost: v } : { sources: 'anywhere', distanceCost: 0 }), f: (v) => (v ? v.toFixed(3) : 'none') },
             { kind: 'range', econ: 'Competition for customers (market reach 3)', net: '[[lateralinhibition|lateral inhibition]], reach 3', min: 0, max: 12, step: 0.5, get: (c) => c.interaction.compete.strength, set: (v) => ({ interaction: { compete: { strength: v, reach: 3 } } }), f: (v) => (v ? v.toFixed(1) : 'none') },
             {
@@ -5380,8 +5544,12 @@
         }
         // Average of a site quantity by distance ring (distance from the source).
         // The regime map of the one-type agglomeration setting: for each (pull s, competition b) at the current
-        // reaches, the growth rate of a wave of wavenumber k on a flat plain is s·B̂(k) − b·B̂_C(k) against the
+        // reaches, the growth factor of a wave of wavenumber k on a flat plain is s·B̂(k) − b·B̂_C(k) against the
         // threshold 1 + τ/(κ·r̄). Unstable at k = 0: one centre. Unstable only at some k > 0: a pattern. Neither: flat.
+        // Paler where the fastest wave takes over 3000 time units to show from the initial ripple (critical slowing
+        // down). Dark where one parcel holding everything is itself an equilibrium (the black hole). The pull axis is
+        // logarithmic, 1 to 64. With a saturating gain the pull counts as s/(1 + r̄/x₀), the gain's slope at the flat plain.
+        const SLOW = 3000;
         function regimeMap(sim, w) {
           const cfg = sim.cfg;
           const ell = typeof cfg.interaction.reach === 'number' ? cfg.interaction.reach : 2;
@@ -5394,33 +5562,42 @@
           const C = ks.map(Ch);
           const rbar = cfg.demand / sim.N;
           const thr = 1 + cfg.temperature / (cfg.price.kappa * rbar);
+          const sat = typeof cfg.interaction.saturate === 'number' ? cfg.interaction.saturate : 0;
+          const slope = sat > 0 ? 1 / (1 + rbar / sat) : 1;
+          const parcel = OneModel.singleParcel(sim);
           const regimeAt = (s, b) => {
             // on a wrapping plain the uniform wave (k = 0) is fixed by the total load, so the longest wave that
             // counts is one bump across the whole plain (m = 1); m bumps per side make m² towns
-            const k0 = s * B[0] - b * C[0];
+            const sE = s * slope;
+            const k0 = sE * B[0] - b * C[0];
             let best = -Infinity;
             let iStar = 1;
             for (let i = 1; i < ks.length; i++) {
-              const v = s * B[i] - b * C[i];
+              const v = sE * B[i] - b * C[i];
               if (v > best) {
                 best = v;
                 iStar = i;
               }
             }
             const kStar = ks[iStar];
+            const lambda = period ? best : Math.max(k0, best);
+            const rate = OneModel.growthRate(sim, lambda);
+            const onset = OneModel.onsetTime(sim, rate);
+            const parcelHolds = s >= parcel.border(b);
+            let out;
             if (period) {
-              if (best > thr) return iStar === 1 ? { regime: 'one centre', wavelength: period, towns: 1 } : { regime: 'a pattern of towns', wavelength: period / iStar, towns: iStar * iStar };
-              return { regime: 'flat', wavelength: null };
-            }
-            if (k0 > thr) return { regime: 'one centre', wavelength: null };
-            if (best > thr) return { regime: (2 * Math.PI) / kStar > (cfg.layout.radius || 12) ? 'one centre or a ring' : 'a pattern of towns', wavelength: (2 * Math.PI) / kStar };
-            return { regime: 'flat', wavelength: null };
+              if (best > thr) out = iStar === 1 ? { regime: 'one centre', wavelength: period, towns: 1 } : { regime: 'a pattern of towns', wavelength: period / iStar, towns: iStar * iStar };
+              else out = { regime: 'flat', wavelength: null };
+            } else if (k0 > thr) out = { regime: 'one centre', wavelength: null };
+            else if (best > thr) out = { regime: (2 * Math.PI) / kStar > (cfg.layout.radius || 12) ? 'one centre or a ring' : 'a pattern of towns', wavelength: (2 * Math.PI) / kStar };
+            else out = { regime: 'flat', wavelength: null };
+            return { ...out, rate, onset, lambda, sEff: sE, parcelHolds };
           };
           const sMin = 1;
-          const sMax = 6;
+          const sMax = 64;
           const bMin = 0;
           const bMax = 12;
-          const nx = 40;
+          const nx = 48;
           const ny = 30;
           const mL = 44;
           const mR = 12;
@@ -5429,27 +5606,30 @@
           const h = 220;
           const iw = w - mL - mR;
           const ih = h - mT - mB;
-          const colour = { flat: COL.surface2, 'one centre': alpha(COL.series[0], 0.3), 'one centre or a ring': alpha(COL.series[0], 0.18), 'a pattern of towns': alpha(COL.series[1], 0.32) };
+          const X = (s) => mL + (Math.log2(Math.min(sMax, Math.max(sMin, s))) / Math.log2(sMax)) * iw;
+          const Y = (b) => mT + ih - ((Math.min(bMax, Math.max(bMin, b)) - bMin) / (bMax - bMin)) * ih;
+          const tint = { 'one centre': [COL.series[0], 0.3], 'one centre or a ring': [COL.series[0], 0.18], 'a pattern of towns': [COL.series[1], 0.32] };
           let cells = '';
           for (let i = 0; i < nx; i++) {
             for (let j = 0; j < ny; j++) {
-              const s = sMin + ((i + 0.5) / nx) * (sMax - sMin);
+              const s = 2 ** (((i + 0.5) / nx) * Math.log2(sMax));
               const b = bMin + ((j + 0.5) / ny) * (bMax - bMin);
               const r = regimeAt(s, b);
+              const fill = r.parcelHolds ? alpha(COL.text, 0.3) : r.regime === 'flat' ? COL.surface2 : alpha(tint[r.regime][0], tint[r.regime][1] * (r.onset > SLOW ? 0.45 : 1));
               const x = mL + (i / nx) * iw;
               const y = mT + ih - ((j + 1) / ny) * ih;
-              cells += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(iw / nx + 0.4).toFixed(1)}" height="${(ih / ny + 0.4).toFixed(1)}" fill="${colour[r.regime]}"/>`;
+              cells += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(iw / nx + 0.4).toFixed(1)}" height="${(ih / ny + 0.4).toFixed(1)}" fill="${fill}"/>`;
             }
           }
           const sNow = cfg.interaction.strength;
           const bNow = cfg.interaction.compete.strength;
-          const px = mL + ((Math.min(sMax, Math.max(sMin, sNow)) - sMin) / (sMax - sMin)) * iw;
-          const py = mT + ih - ((Math.min(bMax, Math.max(bMin, bNow)) - bMin) / (bMax - bMin)) * ih;
+          const px = X(sNow);
+          const py = Y(bNow);
           const here = regimeAt(sNow, bNow);
-          const ticksX = [1, 2, 3, 4, 5, 6].map((v) => `<text x="${(mL + ((v - sMin) / (sMax - sMin)) * iw).toFixed(1)}" y="${h - mB + 14}" font-size="10" text-anchor="middle" fill="${COL.muted}">${v}</text>`).join('');
-          const ticksY = [0, 4, 8, 12].map((v) => `<text x="${mL - 6}" y="${(mT + ih - ((v - bMin) / (bMax - bMin)) * ih + 3).toFixed(1)}" font-size="10" text-anchor="end" fill="${COL.muted}">${v}</text>`).join('');
-          const svg = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Predicted regimes over pull and competition, with the current knobs marked">${cells}<rect x="${mL}" y="${mT}" width="${iw}" height="${ih}" fill="none" stroke="${COL.axis}"/>${ticksX}${ticksY}<text x="${(mL + iw / 2).toFixed(1)}" y="${h - 4}" font-size="11" text-anchor="middle" fill="${COL.muted}">pull of being near others ⇄ excitation (s)</text><text x="11" y="${(mT + ih / 2).toFixed(1)}" font-size="11" text-anchor="middle" fill="${COL.muted}" transform="rotate(-90 11 ${(mT + ih / 2).toFixed(1)})">competition ⇄ inhibition (b)</text><circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="5" fill="${COL.text}" stroke="${COL.surface}" stroke-width="2"/></svg>`;
-          return { svg, thr, predicted: here.regime, wavelength: here.wavelength, towns: here.towns, period };
+          const ticksX = [1, 2, 4, 8, 16, 32, 64].map((v) => `<text x="${X(v).toFixed(1)}" y="${h - mB + 14}" font-size="10" text-anchor="middle" fill="${COL.muted}">${v}</text>`).join('');
+          const ticksY = [0, 4, 8, 12].map((v) => `<text x="${mL - 6}" y="${(Y(v) + 3).toFixed(1)}" font-size="10" text-anchor="end" fill="${COL.muted}">${v}</text>`).join('');
+          const svg = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Predicted regimes over pull and competition, with the current knobs marked">${cells}<rect x="${mL}" y="${mT}" width="${iw}" height="${ih}" fill="none" stroke="${COL.axis}"/>${ticksX}${ticksY}<text x="${(mL + iw / 2).toFixed(1)}" y="${h - 4}" font-size="11" text-anchor="middle" fill="${COL.muted}">pull of being near others ⇄ excitation (s, log scale)</text><text x="11" y="${(mT + ih / 2).toFixed(1)}" font-size="11" text-anchor="middle" fill="${COL.muted}" transform="rotate(-90 11 ${(mT + ih / 2).toFixed(1)})">competition ⇄ inhibition (b)</text><circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="5" fill="${COL.text}" stroke="${COL.surface}" stroke-width="2"/></svg>`;
+          return { svg, thr, predicted: here.regime, wavelength: here.wavelength, towns: here.towns, period, rate: here.rate, onset: here.onset, sEff: here.sEff, sat, sBH: parcel.border(bNow), parcelHolds: here.parcelHolds, sMax };
         }
         // ring averages about any point (the centre that formed, or the harbour ⇄ input)
         function byRingFrom(fn, maxD, cx, cy) {
@@ -5584,11 +5764,14 @@
               const m = sim.metrics();
               const mean = sim.rAvg.reduce((a, v) => a + v, 0) / sim.N;
               const modulation = mean > 0 ? m.peak / mean : 0;
-              const seen = modulation > sim.N / 2 ? 'everything on one parcel (a [[blackhole|black hole]])' : modulation < 1.3 ? 'flat' : m.peaks >= 2 ? `${m.peaks} towns` : 'one centre';
+              const seen = modulation > sim.N / 2 ? (map.parcelHolds ? 'everything on one parcel (the [[blackhole|black hole]])' : 'one parcel at a time: below the black-hole line the average flows hop the whole load between neighbouring parcels instead of settling, a solver artifact; the agents, and a fixed-point solve, give a dense cluster') : modulation < 1.3 ? 'flat' : m.peaks >= 2 ? `${m.peaks} towns` : 'one centre';
+              const timing = map.rate > 0 ? `The fastest wave grows at ${fmt(map.rate, 4)} per time unit, so from the initial ripple ${map.towns > 1 ? 'the towns' : 'a bump'} should show (peak ÷ mean 2) after about ${map.onset > 1e5 ? 'over 100 000' : fmt(map.onset, 0)} time units${map.onset > SLOW ? ', the paler band: ' : '; near the border the time diverges, '}[[criticalslowing|critical slowing down]].` : 'No wave grows here.';
+              const hole = `One parcel holding everything is itself stable past a pull of ${map.sBH > 1e4 ? 'over 10 000' : fmt(map.sBH, 1)} at this competition (the dark region, the [[blackhole|black hole]]${map.sBH > map.sMax ? ', off this map' : ''}); below it the end state is a dense cluster.`;
+              const satNote = map.sat ? ` With the gain saturating at x₀ = ${fmt(map.sat, 2)} the pull counts as s/(1 + r̄/x₀) = ${fmt(map.sEff, 2)} at the flat plain, and a town’s pull stops growing with its size, so the towns the map predicts keep a finite size instead of merging, and the black hole recedes.` : '';
               const where = map.period
                 ? `On this wrapping plain the test is exact: the uniform state is an equilibrium, and it is unstable to one bump (blue) when s·B̂(k₁) − b·B̂_C(k₁) > ${fmt(map.thr, 2)} for the longest wave k₁ = 2π/${map.period}, or to m bumps per side (orange, m² towns) when a shorter wave grows fastest${map.towns > 1 ? `; here m² = ${map.towns}` : ''}.`
                 : `A flat plain stays flat (grey), gathers into one centre (blue: s − b > 1 + τ/(κ r̄) = ${fmt(map.thr, 2)} at the longest waves), or breaks into a pattern (orange) with a wavelength of ${map.wavelength ? fmt(map.wavelength, 0) : '—'}; a wavelength longer than the disc’s radius reads as one centre or a ring here, and the disc’s edge gives a mild mound even in the grey, so the border is soft. Switch the plain to one that wraps around for a sharp test.`;
-              note = `Map: from the two kernels alone, [[linearstability|linear stability]] predicts the fate of a flat plain. ${where} The dot is the current knobs: predicted ${map.predicted}, simulated ${seen} (peak ÷ mean ${fmt(modulation, 1)}). When the pull is strong the towns that form can go on merging into one parcel; linear stability says where the flat plain breaks and at what spacing, not where the gathering stops. Below: density by distance from the centre that formed; its [[clark|gradient]] is in the readout.`;
+              note = `Map: from the two kernels alone, [[linearstability|linear stability]] predicts the fate of a flat plain. ${where} The dot is the current knobs: predicted ${map.predicted}, simulated ${seen} (peak ÷ mean ${fmt(modulation, 1)}). ${timing} ${hole}${satNote} Linear stability says where the flat plain breaks and at what spacing; when the pull is strong the towns that form go on merging, and the black-hole line says where the merging ends on one parcel. Below: density by distance from the centre that formed; its [[clark|gradient]] is in the readout.`;
               chartRows = xs.map((x, i) => [x, fmt(load[i], 3)]);
               chartRows.head = ['Distance', 'Floor space ⇄ rate'];
             } else {
