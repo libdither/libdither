@@ -483,6 +483,26 @@ to show is log(r̄/A₀) over it, within 5% near the border, and diverges as 1/(
 - Headless Chromium would not start inside the capture script's ten-second wait on this machine; the wait is
   thirty seconds now and extensions are off.
 
+## 19. An interactive explainer (7 Oct)
+
+> can you work on making a really interactive visualization website that I can look at that explains and
+> walks through the concepts and gives a lot of intuition behind what exactly you're working on?
+
+**Built:** [`explainer/`](explainer/): one scrolling page, no dependencies, that opens from the file. Seven
+sections, each with a small live model: a race of clocks settling on the softmax; a city on a line where
+the total cost comes out flat on every occupied parcel (the bid-rent line), with a height limit and an
+outside option; the water level, the commute valley filled to the multiplier; a wrapping plain with the
+regime map as a draggable dot, the plot of which wave grows, and arrivals landing; the same plain past the
+single-parcel line, with the saturating gain and the onset time against the pull; the bucket brigade
+passing payments backward onto TD(0)'s values; and the common core as cards. A toggle switches every word
+between the two readings. The models are the research's equations with nothing else around them (`engine.js`),
+and five tests check that they give the research's numbers.
+
+**Choices:** the plain's load relaxes toward the choice over a stay, with a shorter step where a site is
+stiff, instead of being re-chosen whole each round as the one-model page's flows do, so the black-hole
+section shows the cluster the agents find rather than the flows' hop (§18). The onset rate shown is the
+eigenvalue of this page's own round. Colours are the walkthrough's validated palette, in light and dark.
+
 ## Corrections
 
 Every claim that was made and later withdrawn or narrowed:

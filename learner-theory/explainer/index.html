@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en" data-reading="both">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One price system: cities, neurons and learners, interactively</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="bar">
+  <span class="title">One price system</span>
+  <nav>
+    <a href="#race">Race</a><a href="#rent">Rent</a><a href="#level">Level</a><a href="#centre">Centre</a><a href="#end">End state</a><a href="#credit">Credit</a><a href="#core">Core</a>
+  </nav>
+  <span class="small">Read as</span>
+  <div class="seg" id="reading" role="group" aria-label="Reading">
+    <button type="button" data-mode="both" aria-pressed="true">Both</button>
+    <button type="button" data-mode="city" aria-pressed="false">A city</button>
+    <button type="button" data-mode="net" aria-pressed="false">A network</button>
+  </div>
+</div>
+<main>
+<header class="hero">
+  <h1>One price system</h1>
+  <p class="lede">Cities, neurons and learning algorithms, read as the same market. A walk through the research in this folder, with each idea as a small live model you can drag and tune.</p>
+  <p>The research makes one claim in three parts. A land market and a layer of competing neurons are the same model: <span class="d" data-e="rent" data-n="adaptation"></span> is a price, and one bookkeeping rule sets every price in both. A <span class="d" data-e="downtown" data-n="bump of activity"></span> does not have to be given: it forms by itself when being near others pays, and the same arithmetic says when, where, how many and how fast. And learning algorithms, from markets of bidding agents to backprop, assign credit with the same kind of price. The toggle at the top switches the words between the two readings. The pictures and the numbers do not change, which is the point.</p>
+</header>
+
+<section id="race">
+  <h2><span class="num">1</span>A choice is a race</h2>
+  <p>Start with one <span class="d" data-e="household choosing a parcel" data-n="spike choosing a neuron"></span>. Every option has a cost. Nobody picks the cheapest every time: <span class="d" data-e="tastes vary" data-n="neurons are noisy"></span>. The research's model of this is a race. Each option has a clock that rings after a random time, and a cheaper option's clock tends to ring sooner; the first to ring wins.</p>
+  <p>The chance that option <i>j</i> wins comes out as a simple law, the same law economists use for commuting (the logit), a network uses for routing (the softmax), and a winner-take-all layer obeys when its neurons race to fire first:</p>
+  <div class="formula">P(<i>j</i>) ∝ e<sup>−cost<sub>j</sub> / τ</sup>, where τ is <span class="d" data-e="how varied tastes are" data-n="how noisy the neurons are"></span>.</div>
+  <p>Cold (small τ): the cheapest almost always wins. Hot: the choice spreads out. Run races and watch the histogram settle onto the law.</p>
+  <figure class="demo" data-demo="race">
+    <div class="controls">
+      <label class="ctl"><span class="name"><span>τ, <span class="d" data-e="variety of tastes" data-n="noise"></span></span><output data-out="tau"></output></span><input type="range" data-in="tau" min="0.1" max="2" step="0.05" value="0.5"></label>
+      <div class="btns"><button class="btn" data-act="one">Run one race</button><button class="btn" data-act="many">Run 1000</button><button class="btn" data-act="reset">Clear</button></div>
+    </div>
+    <div class="panels three">
+      <div class="panel"><h4>What each option costs</h4><canvas data-cv="costs" class="short"></canvas></div>
+      <div class="panel"><h4>The race: clocks ringing</h4><canvas data-cv="race" class="short"></canvas></div>
+      <div class="panel"><h4>Who won, against the law</h4><canvas data-cv="wins" class="short"></canvas></div>
+    </div>
+    <div class="legend"><span style="--c: var(--blue)">share of races won</span><span class="line" style="--c: var(--orange)">P(j) ∝ e<sup>−cost/τ</sup></span></div>
+    <div class="readouts"><div>races run<b data-ro="n">0</b></div><div>largest gap to the law<b data-ro="gap">—</b></div></div>
+    <figcaption>Five options. In one race each clock runs until it rings; the winner is marked. Over many races the shares settle onto the law (<a href="../docs/6-derivations.md">derivation 1</a>).</figcaption>
+  </figure>
+</section>
+
+<section id="rent">
+  <h2><span class="num">2</span><span class="d" data-e="Rent" data-n="Adaptation"></span> is a price</h2>
+  <p>Now a row of <span class="d" data-e="parcels with a downtown in the middle" data-n="neurons with the input arriving at the centre"></span>. Each arrival pays a <span class="d" data-e="commute that grows with distance" data-n="wiring cost that grows with distance"></span>, and the <span class="d" data-e="rent of the parcel it takes" data-n="adaptation of the neuron it takes"></span>. <span class="d" data-e="Rent rises with the floor space in use, κ per unit" data-n="Each spike a neuron absorbs raises its threshold, κ per unit of rate"></span>. So the centre is cheap to reach but dear to be in, and the <span class="d" data-e="city" data-n="active region"></span> spreads outward until the two balance.</p>
+  <p>Watch the costs in the lower chart. On every occupied <span class="d" data-e="parcel" data-n="neuron"></span> the total, <span class="d" data-e="commute plus rent" data-n="wiring plus adaptation"></span>, comes out the same. That flat line is the whole equilibrium, and it means <span class="d" data-e="rent" data-n="adaptation"></span> falls by exactly the <span class="d" data-e="commute cost" data-n="wiring cost"></span> per unit of distance: <span class="d" data-e="Alonso's bid-rent line" data-n="a threshold profile set by the wiring"></span>. Cool the <span class="d" data-e="tastes" data-n="noise"></span> and the line sharpens.</p>
+  <p>Then put a lid on it: no <span class="d" data-e="parcel may hold more than a cap" data-n="neuron may fire above a cap"></span>. A capped <span class="d" data-e="parcel" data-n="neuron"></span> gains a second price, the shadow price of the lid (<span class="d" data-e="a landlord with a waiting list raises the rent" data-n="a saturated neuron's threshold keeps rising"></span>), and the <span class="d" data-e="city spreads outward: sprawl" data-n="activity spreads outward"></span>. That only happens if nobody can leave. Give arrivals an outside option and they leave instead of spreading: <span class="d" data-e="an open city" data-n="the input fades before any neuron fires"></span>.</p>
+  <figure class="demo" data-demo="line">
+    <div class="controls">
+      <label class="ctl"><span class="name"><span><span class="d" data-e="Commute cost" data-n="Wiring cost"></span> per unit</span><output data-out="commute"></output></span><input type="range" data-in="commute" min="0.3" max="2" step="0.05" value="1"></label>
+      <label class="ctl"><span class="name"><span>κ, <span class="d" data-e="cost of building up" data-n="adaptation strength"></span></span><output data-out="kappa"></output></span><input type="range" data-in="kappa" min="3" max="30" step="0.5" value="10"></label>
+      <label class="ctl"><span class="name"><span>τ, <span class="d" data-e="variety of tastes" data-n="noise"></span></span><output data-out="tau"></output></span><input type="range" data-in="tau" min="0.05" max="1" step="0.05" value="0.3"></label>
+      <label class="ctl"><span class="name"><span><span class="d" data-e="Households" data-n="Input rate"></span></span><output data-out="demand"></output></span><input type="range" data-in="demand" min="4" max="30" step="1" value="12"></label>
+      <label class="ctl"><span class="name"><span><span class="d" data-e="Height limit" data-n="Rate cap"></span></span><output data-out="cap"></output></span><input type="range" data-in="cap" min="0.2" max="2" step="0.05" value="2"></label>
+      <div class="btns"><button class="btn" data-act="outside" aria-pressed="false">People can leave</button><button class="btn" data-act="reset">Restart</button></div>
+    </div>
+    <div class="panels">
+      <div class="panel"><h4><span class="d" data-e="Floor space in use on each parcel" data-n="Firing rate of each neuron"></span></h4><canvas data-cv="city" class="short"></canvas></div>
+      <div class="panel"><h4>What an arrival pays at each distance</h4><canvas data-cv="costs"></canvas></div>
+    </div>
+    <div class="legend"><span style="--c: var(--blue)"><span class="d" data-e="floor space" data-n="firing rate"></span></span><span class="line" style="--c: var(--orange)"><span class="d" data-e="rent (plus the lid's shadow price)" data-n="adaptation (plus the cap's)"></span></span><span class="line" style="--c: var(--muted)"><span class="d" data-e="commute" data-n="wiring"></span></span><span class="line" style="--c: var(--aqua)">total cost</span></div>
+    <div class="readouts"><div>slope of <span class="d" data-e="rent" data-n="adaptation"></span> with distance<b data-ro="slope">—</b></div><div>cost on occupied <span class="d" data-e="parcels" data-n="neurons"></span><b data-ro="level">—</b></div><div><span class="d" data-e="parcels in use" data-n="neurons active"></span><b data-ro="used">—</b></div><div>share leaving<b data-ro="leaving">—</b></div></div>
+    <figcaption>Drag the <span class="d" data-e="height limit" data-n="rate cap"></span> down: the capped <span class="d" data-e="parcels" data-n="neurons"></span> flatten and the <span class="d" data-e="city" data-n="active region"></span> widens, unless people can leave. Hover for the numbers at any distance (<a href="../docs/1-height-limits-and-sprawl.md">doc 1</a>, <a href="../docs/3-one-model-two-readings.md">doc 3</a>).</figcaption>
+  </figure>
+</section>
+
+<section id="level">
+  <h2><span class="num">3</span>The water level</h2>
+  <p>Why do the costs come out equal? Because the <span class="d" data-e="city" data-n="layer"></span> is the solution of one problem: place everyone so that the total cost, plus a term for the <span class="d" data-e="variety of tastes" data-n="noise"></span>, is as small as it can be. The price that makes the totals come out right is what a mathematician calls a Lagrange multiplier, and you can see it. Draw the <span class="d" data-e="commute" data-n="wiring cost"></span> as a valley and pour the <span class="d" data-e="households" data-n="input"></span> in like water.</p>
+  <p>The water finds a level, μ. The depth at each spot, divided by κ, is the <span class="d" data-e="floor space there" data-n="firing rate there"></span>; the depth itself is the <span class="d" data-e="rent" data-n="adaptation"></span>; and the level is what one more <span class="d" data-e="household" data-n="spike"></span> costs. Every price in this research is such a level: <span class="d" data-e="rent" data-n="adaptation"></span> for the rule that floor space in use equals floor space built; an expert's <span class="d" data-e="fee" data-n="balancing bias"></span> for a fixed capacity; an attention matrix's prices for its row and column sums; backprop's signals for the rule that one layer's output is the next one's input. Drag the number of <span class="d" data-e="households" data-n="spikes"></span> and watch the level and the edge move.</p>
+  <figure class="demo" data-demo="water">
+    <div class="controls">
+      <label class="ctl"><span class="name"><span><span class="d" data-e="Households" data-n="Input rate"></span></span><output data-out="demand"></output></span><input type="range" data-in="demand" min="2" max="40" step="0.5" value="12"></label>
+      <label class="ctl"><span class="name"><span><span class="d" data-e="Commute cost" data-n="Wiring cost"></span> per unit</span><output data-out="commute"></output></span><input type="range" data-in="commute" min="0.3" max="2" step="0.05" value="1"></label>
+      <label class="ctl"><span class="name"><span>κ</span><output data-out="kappa"></output></span><input type="range" data-in="kappa" min="3" max="30" step="0.5" value="10"></label>
+    </div>
+    <canvas data-cv="water" class="tall"></canvas>
+    <div class="readouts"><div>the level μ, what one more <span class="d" data-e="household" data-n="spike"></span> costs<b data-ro="mu">—</b></div><div>edge of the <span class="d" data-e="city" data-n="active region"></span><b data-ro="edge">—</b></div><div><span class="d" data-e="rent" data-n="adaptation"></span> at the centre<b data-ro="centre">—</b></div></div>
+    <figcaption>With no taste variety the solution is exact: depth = μ − <span class="d" data-e="commute" data-n="wiring"></span>, so the skyline is the water's depth. The research shows the same multiplier structure for every price it names (<a href="../docs/7-the-common-core.md">doc 7</a>, <a href="../docs/6-derivations.md">derivation 2</a>).</figcaption>
+  </figure>
+</section>
+
+<section id="centre">
+  <h2><span class="num">4</span>A centre that isn't given</h2>
+  <p>The <span class="d" data-e="downtown" data-n="input"></span> above was given. Real downtowns, and real bumps of cortical activity, make themselves. So take away the centre and give each arrival a reason to be near the others it deals with: a pull <i>s</i> from everyone within a reach ℓ, <span class="d" data-e="agglomeration" data-n="a recurrent connection to the neurons nearby"></span>. <span class="d" data-e="Rent" data-n="Adaptation"></span> still pushes back. On a plain that wraps around, so no spot is favoured, a flat spread is an equilibrium. Is it stable?</p>
+  <p>Add a small wave of extra people. The pull amplifies it by <i>s</i> times a number B̂(<i>k</i>) that falls with the wave's frequency: a wide wave gathers nearly all its partners within reach, a narrow one fewer. <span class="d" data-e="Rent and taste" data-n="Adaptation and noise"></span> damp it by θ = 1 + τ/(κ r̄). The wave grows when</p>
+  <div class="formula"><i>s</i>·B̂(<i>k</i>) − <i>b</i>·B̂<sub>C</sub>(<i>k</i>) &gt; θ = 1 + τ/(κ r̄)</div>
+  <p>With no push (<i>b</i> = 0) the widest wave wins first, so the plain gathers into one centre as soon as the pull passes θ/B̂(<i>k</i><sub>1</sub>), 1.72 with these knobs, and it forms wherever the first ripple happened to be largest: history, not geography, picks the spot. Now add the push: <span class="d" data-e="competition for customers from everyone within a longer reach" data-n="lateral inhibition over a longer reach"></span>, strength <i>b</i>. It damps wide waves more than narrow ones, so there is a band of pulls where the widest wave is held down and a narrower one grows: the plain breaks into evenly spaced towns, with the spacing set by the two reaches. That is Turing's mechanism for spots, Krugman's for the spacing of business districts and Amari's for patterns in a neural field, in one picture. The map is computed from the two kernels alone. Drag the dot and watch the plain do what the map says.</p>
+  <figure class="demo" data-demo="plain" data-preset="centre">
+    <div class="controls">
+      <label class="ctl"><span class="name"><span>pull <i>s</i></span></span><input type="number" data-in="s" min="1" max="64" step="0.05" value="2.5"></label>
+      <label class="ctl"><span class="name"><span>competition <i>b</i></span></span><input type="number" data-in="b" min="0" max="12" step="0.5" value="0"></label>
+      <label class="ctl"><span class="name"><span>reach ℓ</span><output data-out="reach"></output></span><input type="range" data-in="reach" min="1.25" max="4" step="0.25" value="2"></label>
+      <label class="ctl"><span class="name"><span>gain saturates at x₀</span><output data-out="saturate"></output></span><input type="range" data-in="saturate" min="0" max="4" step="0.25" value="0"></label>
+      <label class="ctl"><span class="name"><span>speed</span><output data-out="speed"></output></span><input type="range" data-in="speed" min="1" max="20" step="1" value="10"></label>
+      <div class="btns"><button class="btn" data-preset="flat">flat</button><button class="btn" data-preset="centre">one centre</button><button class="btn" data-preset="towns">four towns</button><button class="btn" data-act="reset">Restart the plain</button><button class="btn" data-act="pause" aria-pressed="false">Pause</button></div>
+    </div>
+    <div class="panels three">
+      <div class="panel"><h4>The plain (it wraps around)</h4><canvas data-cv="plain" class="square"></canvas></div>
+      <div class="panel"><h4>The map: drag the dot</h4><canvas data-cv="map" class="square"></canvas></div>
+      <div class="panel"><h4>Which wave grows</h4><canvas data-cv="waves" class="square"></canvas></div>
+    </div>
+    <div class="legend"><span style="--c: var(--surface-2); outline: 1px solid var(--axis)">stays flat</span><span style="--c: color-mix(in srgb, var(--blue) 35%, var(--surface))">one centre</span><span style="--c: color-mix(in srgb, var(--orange) 40%, var(--surface))">towns</span><span style="--c: color-mix(in srgb, var(--ink) 30%, var(--surface))">one parcel holds everything</span><span class="line" style="--c: var(--blue)">pull × B̂</span><span class="line" style="--c: var(--orange)">push × B̂<sub>C</sub></span><span class="line" style="--c: var(--ink)">their difference, against θ</span></div>
+    <div class="readouts"><div>the map says<b data-ro="predicted">—</b></div><div>the plain shows<b data-ro="seen">—</b></div><div>peak ÷ mean<b data-ro="mod">—</b></div><div>time<b data-ro="time">—</b></div><div>growth rate of the fastest wave<b data-ro="rate">—</b></div><div>should show after about<b data-ro="onset">—</b></div><div>showed at<b data-ro="shown">—</b></div><div>one parcel holds from <i>s</i> =<b data-ro="border">—</b></div></div>
+    <figcaption>Left: <span class="d" data-e="floor space" data-n="firing rate"></span> on a 21 × 21 plain, darker is more, with arrivals landing. Middle: the pull on a log axis against the competition; paler where the onset would take over 3000 time units. Right: the pull's and the push's amplification of each wave, 1 to 10 bumps across the plain, and the threshold θ; the highest point of the difference is the wave that grows fastest (<a href="../docs/6-derivations.md">derivations 19 and 21</a>).</figcaption>
+  </figure>
+</section>
+
+<section id="end">
+  <h2><span class="num">5</span>Where it ends, and how long it takes</h2>
+  <p>The map says where a flat plain breaks, not where the gathering stops. Push the pull up and the towns go on merging. They end on one <span class="d" data-e="parcel" data-n="neuron"></span> only past the dark line: there a <span class="d" data-e="parcel holding everyone" data-n="neuron firing for everything"></span> pulls harder than its <span class="d" data-e="rent" data-n="adaptation"></span> costs and beats its nearest neighbour, which needs <i>s</i>·(1 − e<sup>−1/ℓ</sup>) &gt; <i>Z</i>, about 18 at reach 1.25 and 63 at reach 2. That is the black hole of agglomeration, the case the core–periphery model rules out by assumption. Below the line the end state is a dense cluster of a dozen <span class="d" data-e="parcels" data-n="neurons"></span>.</p>
+  <p class="small">The research's average-flow solver showed a single parcel well below the line. That turned out to be the solver hopping the whole load between neighbours, not an equilibrium; the models on this page let the load move in over a stay, as the research's individual agents do, and settle where the agents settle.</p>
+  <p>Two more things the arithmetic says. Let the gain saturate, so that <span class="d" data-e="one job is what a home needs and more jobs nearby add less" data-n="a neuron's response flattens"></span>: a town's pull then stops growing with its size, the towns keep a finite size instead of merging, and the black hole recedes. And just past the border the growing wave grows slowly: its rate is proportional to the distance from the border, so the time for the <span class="d" data-e="centre" data-n="bump"></span> to show diverges there. That is critical slowing down, the same slow recovery that announces a tipping point in a lake or a climate. The readout predicts the time from one round of the model; the chart below shows the prediction across pulls, with this run's own result marked once the <span class="d" data-e="centre" data-n="bump"></span> has shown.</p>
+  <figure class="demo" data-demo="plain" data-preset="hole">
+    <div class="controls">
+      <label class="ctl"><span class="name"><span>pull <i>s</i></span></span><input type="number" data-in="s" min="1" max="64" step="0.05" value="20"></label>
+      <label class="ctl"><span class="name"><span>competition <i>b</i></span></span><input type="number" data-in="b" min="0" max="12" step="0.5" value="0"></label>
+      <label class="ctl"><span class="name"><span>reach ℓ</span><output data-out="reach"></output></span><input type="range" data-in="reach" min="1.25" max="4" step="0.25" value="1.25"></label>
+      <label class="ctl"><span class="name"><span>gain saturates at x₀</span><output data-out="saturate"></output></span><input type="range" data-in="saturate" min="0" max="4" step="0.25" value="0"></label>
+      <label class="ctl"><span class="name"><span>speed</span><output data-out="speed"></output></span><input type="range" data-in="speed" min="1" max="20" step="1" value="10"></label>
+      <div class="btns"><button class="btn" data-preset="cluster">a dense cluster</button><button class="btn" data-preset="hole">the black hole</button><button class="btn" data-preset="saturated">saturated towns</button><button class="btn" data-preset="slow">just past the border</button><button class="btn" data-act="reset">Restart the plain</button><button class="btn" data-act="pause" aria-pressed="false">Pause</button></div>
+    </div>
+    <div class="panels three">
+      <div class="panel"><h4>The plain</h4><canvas data-cv="plain" class="square"></canvas></div>
+      <div class="panel"><h4>The map: drag the dot</h4><canvas data-cv="map" class="square"></canvas></div>
+      <div class="panel"><h4>Time for it to show, against the pull</h4><canvas data-cv="onset" class="square"></canvas></div>
+    </div>
+    <div class="legend"><span style="--c: var(--surface-2); outline: 1px solid var(--axis)">stays flat</span><span style="--c: color-mix(in srgb, var(--blue) 35%, var(--surface))">one centre</span><span style="--c: color-mix(in srgb, var(--orange) 40%, var(--surface))">towns</span><span style="--c: color-mix(in srgb, var(--ink) 30%, var(--surface))">one parcel holds everything</span><span class="line" style="--c: var(--blue)">predicted time to show</span><span style="--c: var(--orange)">this run</span></div>
+    <div class="readouts"><div>the map says<b data-ro="predicted">—</b></div><div>the plain shows<b data-ro="seen">—</b></div><div>busiest <span class="d" data-e="parcel's" data-n="neuron's"></span> share<b data-ro="share">—</b></div><div>time<b data-ro="time">—</b></div><div>growth rate of the fastest wave<b data-ro="rate">—</b></div><div>should show after about<b data-ro="onset">—</b></div><div>showed at<b data-ro="shown">—</b></div><div>one parcel holds from <i>s</i> =<b data-ro="border">—</b></div></div>
+    <figcaption>The same model as above with the pull past the line, so everything piles onto one <span class="d" data-e="parcel" data-n="neuron"></span>. Press "a dense cluster" for the pull of 5 that the research first called a black hole, "saturated towns" for four towns that stop merging, and "just past the border" to wait for a slow onset (<a href="../docs/6-derivations.md">derivation 22</a>).</figcaption>
+  </figure>
+</section>
+
+<section id="credit">
+  <h2><span class="num">6</span>Credit is a price</h2>
+  <p>So far the prices shared out space. The research's second part is that learning assigns credit the same way. Take a chain of stages: the first reads the world, each later one reads the one before, and the last acts and is paid a reward. <span class="d" data-e="Holland's bucket brigade runs it as a market" data-n="This is a feedforward network's layers, with the loss at the end"></span>. When a stage fires it pays the stage it read from a bid, a fraction β of its own strength, and pays a tax <i>t</i> on its strength to nobody. The last stage is paid the reward. Nothing else.</p>
+  <p>Run it and the strengths settle: each stage ends up worth γ = β/(β + <i>t</i>) of the next, and the last <i>R</i>/(β + <i>t</i>). That geometric fall-off is a discounted value function, exactly what temporal-difference learning computes one step at a time, with the tax acting as the discount. In backprop the same payments are the error signals: each layer's gradient is the price the next layer pays for its output, passed back one stage at a time, and in a network without biases those prices balance exactly as money does, every unit's income equal to its spending.</p>
+  <figure class="demo" data-demo="brigade">
+    <div class="controls">
+      <label class="ctl"><span class="name"><span>bid fraction β</span><output data-out="bid"></output></span><input type="range" data-in="bid" min="0.1" max="0.9" step="0.05" value="0.5"></label>
+      <label class="ctl"><span class="name"><span>tax <i>t</i></span><output data-out="tax"></output></span><input type="range" data-in="tax" min="0" max="0.5" step="0.01" value="0.1"></label>
+      <label class="ctl"><span class="name"><span>reward <i>R</i></span><output data-out="reward"></output></span><input type="range" data-in="reward" min="1" max="20" step="1" value="10"></label>
+      <div class="btns"><button class="btn" data-act="run" aria-pressed="true">Run</button><button class="btn" data-act="step">One episode</button><button class="btn" data-act="reset">Reset</button></div>
+    </div>
+    <canvas data-cv="chain" class="tall"></canvas>
+    <div class="legend"><span style="--c: var(--blue)">strength of each stage</span><span class="line" style="--c: var(--orange)">TD(0)'s value, γ<sup>n−1−k</sup>·R/(β + t)</span><span style="--c: var(--aqua)">a payment on its way</span></div>
+    <div class="readouts"><div>episodes<b data-ro="episodes">0</b></div><div>γ = β/(β + t)<b data-ro="gamma">—</b></div><div>each stage ÷ the next, measured<b data-ro="ratio">—</b></div><div>largest gap to TD(0)<b data-ro="gap">—</b></div></div>
+    <figcaption>Six stages. Payments flow backward each episode; the bars settle on the orange marks whatever β and <i>t</i> you pick (<a href="../docs/5-learners-as-economies.md">doc 5</a>, <a href="../docs/6-derivations.md">derivation 9</a>).</figcaption>
+  </figure>
+</section>
+
+<section id="core">
+  <h2><span class="num">7</span>One idea, and where it stops</h2>
+  <p>Every price above is the level that makes a constraint come out right. The research names the constraint behind each one; that table is its common core.</p>
+  <div class="cards">
+    <div class="card"><h4><span class="d" data-e="Rent" data-n="Adaptation"></span></h4><p>The multiplier of "floor space in use equals floor space built" ⇄ a neuron's firing equals what its self-inhibition allows. The water level of section 3.</p></div>
+    <div class="card"><h4><span class="d" data-e="A firm's fee" data-n="A balancing bias"></span></h4><p>The multiplier of a fixed capacity: each expert takes its share, DeepSeek's bias rule and a Sinkhorn step are the same price moving.</p></div>
+    <div class="card"><h4><span class="d" data-e="A congestion charge" data-n="Attention's prices"></span></h4><p>Row and column multipliers of an origin–destination table: Sinkhorn normalization of an attention matrix is a toll on every pair.</p></div>
+    <div class="card"><h4><span class="d" data-e="The pull of being near others" data-n="A recurrent connection"></span></h4><p>The slope of a pairwise term of the same free energy, so a centre, towns and the black hole all come out of one bookkeeping, with the regime map as its stability diagram.</p></div>
+    <div class="card"><h4><span class="d" data-e="A bid in the brigade" data-n="Backprop's error signal"></span></h4><p>The multiplier of "this stage's output is the next one's input": a price for an activation, which in a bias-free network balances to the cent.</p></div>
+    <div class="card"><h4><span class="d" data-e="A tax" data-n="A discount"></span></h4><p>Taxes that have a network reading act on a price (a per-resident tax is global inhibition; the brigade's tax is TD's discount); taxes on income or wealth need agents with budgets, which the model doesn't have.</p></div>
+  </div>
+  <p>And where it stops. A market of units learns a dense feature only with prices that are per example, signed and honestly reported, which is to say backprop. One auction price per expert rations capacity well but assigns credit badly. Three uses that each mind the next never settle, because there is no shared potential. A field of partners is not a job: one-to-one matching, which gives Fujita and Ogawa their polycentric city, is not a kernel. The open questions, with the experiment that would settle each, are in <a href="../NEXT_STEPS.md">NEXT_STEPS.md</a>; the full models, with both solvers and every setting, are the <a href="../experiments/one-model/index.html">one-model page</a>; the proofs are <a href="../docs/6-derivations.md">derivations</a>.</p>
+</section>
+<footer>
+  <p>Made from the research in <code>learner-theory/</code>, 24 September to 7 October 2026. Every number this page states is checked by <code>explainer/explainer.test.mjs</code> against the research's own. The models here are small on purpose; each is the research's equation with nothing else around it.</p>
+</footer>
+</main>
+<div class="tip" id="tip"></div>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

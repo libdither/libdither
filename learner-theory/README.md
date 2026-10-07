@@ -26,8 +26,9 @@ It started from a video about height limits and urban sprawl, and grew one quest
 
 ## Reading order
 
-0. [A visual walkthrough](WALKTHROUGH.md): what each model looks like, with screenshots of the pages and
-   figures drawn from the engines. The quickest way in.
+0. [The explainer](explainer/index.html): an interactive page that walks through the ideas with small live
+   models you can drag, in either reading. Open it in a browser. Then [the visual walkthrough](WALKTHROUGH.md):
+   what each full model looks like, with screenshots of the pages and figures drawn from the engines.
 1. [Do height limits cause sprawl?](docs/1-height-limits-and-sprawl.md): the city model the rest builds on.
 2. [What plays the role of land in a learning system?](docs/2-what-plays-land-in-a-network.md): the search
    for land inside a network, plus sharing (superposition as mixed use) and individuation (hotels vs homes).
@@ -52,6 +53,7 @@ It started from a video about height limits and urban sprawl, and grew one quest
 | [`neural-city`](experiments/neural-city/) | Scripts showing a competitive network reproduces the city's equilibrium within 1–4% | Superseded by `one-model`; one result disputed (see NEXT_STEPS) | Scripts print their checks |
 | [`one-model`](experiments/one-model/) | One model drawn as an economy and as a neural network, thirteen settings, two solvers, a formal section, taxes, agglomeration, geography and technology, a predicted regime map with its black-hole line and onset time, 120 checked references | Mature prototype | 43 pass |
 | [`learners`](experiments/learners/) | Engine for learners as staged production economies, tested identities, a comparison of all settings, a market for a dense layer, one price for a mixture of experts | First pass: separate engines, no interactive page | 21 pass |
+| [`explainer`](explainer/) | An interactive walk through the ideas: seven sections, each a small live model (a race, a city on a line, the water level, a wrapping plain with its map, the brigade), in either reading | Complete | 5 pass |
 
 ## Running it
 
@@ -66,6 +68,10 @@ node --test experiments/playdough-city/model.test.mjs     # 24 tests, about 1 s
 # one model, two readings: open the file directly in a browser, no server needed
 xdg-open experiments/one-model/index.html                 # or open it from a file manager
 node --test experiments/one-model/model.test.mjs          # 43 tests, about 5 min
+
+# the explainer: open the file directly in a browser, no server needed
+xdg-open explainer/index.html
+node --test explainer/explainer.test.mjs                  # 5 tests, about 10 s
 
 # learners
 node --test experiments/learners/learners.test.mjs        # 21 tests, about 6 s
@@ -84,6 +90,7 @@ Each experiment's README has its full details and run options.
 | `TRANSCRIPT.md` | The research log: each phase's prompt, what was built, what came out, and every correction |
 | `transcript/conversation.md` | The prompts and the assistant's answers, word for word |
 | `NEXT_STEPS.md` | Open gaps and how to close them |
+| `explainer/` | The interactive explainer: a page, its small models, and their tests |
 | `WALKTHROUGH.md`, `walkthrough/` | The visual walkthrough, its images, and the scripts that make them |
 | `docs/` | Standalone explanations, readable without the code |
 | `experiments/` | The four experiments, each with its own README |
