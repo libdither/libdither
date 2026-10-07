@@ -1,5 +1,6 @@
 // Screenshots of the two interactive pages for WALKTHROUGH.md. Run from learner-theory/:
 //   node walkthrough/capture.mjs            # needs Chromium on PATH (or CHROME=/path/to/chrome)
+//   ONLY=agglomeration node walkthrough/capture.mjs   # only the one-model settings whose id matches
 // Serves experiments/ itself, drives headless Chromium over the DevTools protocol (Node's built-in
 // WebSocket, no packages), and writes WebP images to walkthrough/img/. The play-dough page loads three.js
 // from a CDN, so it needs a network connection.
@@ -14,6 +15,7 @@ const root = join(here, '..', 'experiments');
 const out = join(here, 'img');
 mkdirSync(out, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
 
 // ---------------------------------------------------------------- a static server for experiments/
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
@@ -33,10 +35,10 @@ const port = 9300 + Math.floor(Math.random() * 500);
 const profile = `/tmp/learner-theory-capture-${port}`;
 const chrome = spawn(process.env.CHROME || 'chromium', [
   '--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run',
-  '--no-default-browser-check', '--hide-scrollbars', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', 'about:blank',
+  '--no-default-browser-check', '--disable-extensions', '--hide-scrollbars', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', 'about:blank',
 ], { stdio: 'ignore' });
 let pageUrl = null;
-for (let i = 0; i < 100 && !pageUrl; i++) {
+for (let i = 0; i < 300 && !pageUrl; i++) {
   await sleep(100);
   try {
     const list = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
@@ -115,6 +117,7 @@ const SETTINGS = [
 await goto(`${base}/one-model/index.html#land`);
 await sleep(500);
 for (const [id, units] of SETTINGS) {
+  if (ONLY && !ONLY.test(id)) continue;
   await evaluate(`(() => {
     const h = window.__oneModel;
     h.S.paused = true;
@@ -138,14 +141,28 @@ const VARIANTS = [
   ['agglomeration', 'map', `h.S.sim.setConfig({})`, 900, 'chart'],
   ['agglomeration', 'torus', wrap, 2500],
   ['agglomeration', 'torus-towns', `${wrap}; h.S.sim.setConfig({ interaction: { strength: 5, reach: 1.25, compete: { strength: 10, reach: 3 } } })`, 3000, 'chart'],
+  ['agglomeration', 'torus-saturated', `${wrap}; h.S.sim.setConfig({ interaction: { strength: 6, reach: 1.25, saturate: 2, compete: { strength: 12, reach: 3 } } })`, 3000, 'chart'],
   ['firmshomes', 'towns', `h.S.sim.setConfig({ interaction: { matrix: [[3, 1], [1, 0]], compete: { strength: 20, reach: 3, matrix: [[1, 0], [0, 0]] } } })`, 1500],
 ];
 for (const [id, name, patch, units, chart] of VARIANTS) {
+  if (ONLY && !ONLY.test(id)) continue;
   await evaluate(`(() => { const h = window.__oneModel; h.S.paused = true; h.loadPreset(${JSON.stringify(id)}); h.S.paused = true; ${patch}; h.S.sim.reset(); h.step(${units}); h.render(); })()`);
   await sleep(400);
   await evaluate(`window.__oneModel.render()`);
   await sleep(200);
   await shoot(`one-model-${id}-${name}`, chart ? '#chart, #chart-note' : 'section[aria-label="The same state drawn two ways"] figure', 6);
+}
+{
+  const errors = await evaluate(`JSON.stringify(window.__errors || [])`);
+  if (errors !== '[]') console.log('page errors:', errors);
+}
+if (ONLY) {
+  ws.close();
+  chrome.kill();
+  server.close();
+  await sleep(300);
+  rmSync(profile, { recursive: true, force: true });
+  process.exit(0);
 }
 // Follow one arrival: the walkthrough panel for a single choice
 await evaluate(`(() => { const h = window.__oneModel; h.S.paused = true; h.loadPreset('land'); h.S.paused = true; h.step(600); h.render(); })()`);

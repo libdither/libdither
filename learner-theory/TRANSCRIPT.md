@@ -443,6 +443,46 @@ measured gradients.
 - The chart's gradient readout showed a meaningless number when several towns had formed; it now shows a
   dash unless there is one centre and the fit is good.
 
+## 18. Where the gathering ends (7 Oct)
+
+> Continue the next steps in NEXT_STEPS §10 in order: the stability condition for a single parcel (the black
+> hole) drawn on the same map, whether a saturating gain gives towns of finite size, and the predicted onset
+> time near threshold.
+
+**Built:** four functions on the model, used by the page's map, the tests and the figures: `singleParcel`
+(the pull past which one parcel holding everything is an equilibrium, for any competition and gain),
+`endState` (a damped fixed-point solve of the flows), `growthRate` and `onsetTime` (one solver round
+linearized about the flat plain, and the time for the initial ripple to grow to a bump). The map's pull axis
+is logarithmic to 64 and the knob matches; it shades dark past the single-parcel line and paler where the
+onset would take over 3000 time units; its caption gives the rate, the time to show and the line, and says
+when the flows' single parcel is the solver's doing. A knob for the saturating gain. Three tests (43), three
+glossary terms, three references, a three-panel regime map with the line, an onset-time figure, a capture
+of the saturated towns, derivation 22.
+
+**Found** ([docs/6 §22](docs/6-derivations.md#22-past-the-map-the-black-holes-condition-a-saturating-gain-and-the-onset-time)):
+one parcel holds everything only when its pull beats its rent and its nearest neighbour,
+$s > Z/(1 − e^{−1/ℓ})$ without saturation: 18 at reach 1.25, 63 at reach 2. The fixed point, the agents and
+the condition agree on both sides (a cluster of 15–16 parcels at pull 5, one parcel at 20). The one-parcel
+states of phases 15 and 17 were the flows solver hopping: the parcel's rent was a fifth of κ·load and the
+load moved between neighbours. A saturating gain with x₀ = 2 holds the four predicted towns at a finite size
+in all three instruments where the plain gain merged them, and recedes the black hole to 56. The growth rate
+of the fastest wave is the larger eigenvalue of one round, within 2% of the measured at every pull; the time
+to show is log(r̄/A₀) over it, within 5% near the border, and diverges as 1/(s − s*).
+
+**Wrong turns:**
+
+- The black hole's condition in §19, s/Z → 1, is where a site's cost starts falling as it fills, not where a
+  parcel holds; at that pull the fixed point is four parcels sharing the load.
+- The first fix tried for the hopping was a share-aware price step (the exact logit elasticity for a
+  dominant site). It passes all forty tests and changes nothing: the price was not the cause, the all-at-once
+  re-choice is. Giving the load the stock's inertia cures it in a replica, and is left as an engineering item
+  because it changes every transient of the flows.
+- The first onset formula, (λ/θ − 1)/m, was 15–25% low away from the border: the price lags too.
+- "Black hole" is not in Krugman 1991's text (checked against the paper); the name and the no-black-hole
+  condition are Fujita, Krugman & Venables 1999, chapter 4. The attribution in §19 was wrong.
+- Headless Chromium would not start inside the capture script's ten-second wait on this machine; the wait is
+  thirty seconds now and extensions are off.
+
 ## Corrections
 
 Every claim that was made and later withdrawn or narrowed:
@@ -470,7 +510,12 @@ Every claim that was made and later withdrawn or narrowed:
 | A longer reach of dealings spreads the city | Phase 16 draft | Only if the kernel is renormalized; counted as a sum, more partners make it denser | The simulation |
 | Fading the coast is enough for path dependence | Phase 16 plan | The freed city drifts inland; the made layer must be worth living on | The simulation |
 | A flat plain gathers when s − b > θ, sharply | Phase 17 draft | Exact on a wrapping plain for the longest wave that fits, θ/B̂(2π/P); soft on the disc, where the rim makes a mound below threshold | The torus runs |
-| The regime map predicts the end state | Phase 17 draft | It predicts onsets and spacing; at strong pull the towns merge into one parcel | Two of eight runs |
+| The regime map predicts the end state | Phase 17 draft | It predicts onsets and spacing; at strong pull the towns merge, into one or two compact centres | Two of eight runs |
+| A strong short-range pull alone collapses the city into one tower (pull 5, reach 1.25) | Phases 15–17 | A dense cluster of 15–16 parcels; one parcel needs s > Z/(1 − e^{−1/ℓ}) = 18; the flows' single parcel was the solver hopping the load | A fixed-point solve, and the agents |
+| The black hole's condition is s·W/Z → 1 | Phase 15 | That is where a site's cost falls as it fills; a parcel holds from s(1 − e^{−1/ℓ})/Z > 1, its nearest neighbour's condition | Working it out, and the fixed point |
+| Krugman 1991 names the black hole | Phase 15 | The name and the no-black-hole condition are Fujita, Krugman & Venables 1999 | Reading the 1991 text |
+| The saturating gain never gives towns; it dissolves a cluster | Phases 15, 17 | With x₀ well above the flat plain's load it holds the predicted towns at a finite size; too small an x₀ fails the onset condition | The fixed point and both solvers |
+| The wave near threshold grows at (λ/θ − 1)/m | Phase 17 | The price lags too: the exact rate is an eigenvalue of one round, 15–25% higher away from the border | Measuring it |
 
 **Still unresolved:** the neural-city script still shows zoning ahead under fast alternation; see
 [`NEXT_STEPS.md`](NEXT_STEPS.md#unresolved-results).

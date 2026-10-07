@@ -122,7 +122,7 @@ settles them. Derivation in [doc 6 §17](6-derivations.md#17-without-a-shared-po
 | Setting | Economy | Network | What it shows (each is a test) |
 |---|---|---|---|
 | `land` | Land market, downtown given | Competitive layer with adaptation, input neuron given | Rents approach Alonso's bid-rent line as taste variety ⇄ temperature goes to zero |
-| `agglomeration` | A downtown forms by itself | A bump forms by itself | With no centre given, one forms at the plain's most accessible point, with rent and density falling from it; a harbour pulling a twentieth as hard as the land market's commute moves the whole city; a strong short-range pull alone makes one tower; a longer-range push breaks it into a ring of towns |
+| `agglomeration` | A downtown forms by itself | A bump forms by itself | With no centre given, one forms at the plain's most accessible point, with rent and density falling from it; a harbour pulling a twentieth as hard as the land market's commute moves the whole city; a strong short-range pull alone makes a dense cluster, and one parcel holds everything only past the black-hole line; a longer-range push breaks it into a ring of towns; on a wrapping plain the map predicts the onset, its spacing and its timing |
 | `firmshomes` | Firms and homes place themselves | Connected populations settle side by side | Spillovers: one dense firm centre with homes around it. Need for each other: a mixed sheet. Spillovers plus competition for customers: several towns, each a firm cluster apart from its homes (Fujita & Ogawa's three regimes) |
 | `hierarchy` | A port city: docks, works, homes | A hierarchy fans out from the input | A chain of kinds settles in order of distance from a pinned harbour ⇄ sensory input, on separate ground, with hops under 60% of a random placement's; an input in the middle gives rings and longer hops |
 | `geography` | A coast, then roads and rails | A sensory edge, then myelin | A coast worth a little decides where the city starts; technology grows where people are and spreads inland. Technology that only fades the coast lets the city drift inland (14% left on the coast); technology worth living on keeps it near the shore (42%): path dependence. A longer reach spreads the city over 1.6× the land at lower density |
@@ -177,10 +177,13 @@ Running both caught three artifacts in my own solvers, each of which had produce
   matter here and in cities. (Argued, not simulated; see [`../NEXT_STEPS.md`](../NEXT_STEPS.md).)
 - **One layer only.** Backprop's error signals are like the prices of intermediate goods in a production
   chain, which this model doesn't cover. [Doc 5](5-learners-as-economies.md) does.
-- **A bounded plain.** With no centre given, the centre forms at the disc's middle because that is its most
-  accessible point; a harbour moves it. On a plain large next to the reach of dealings, or a torus, where the
-  centre forms would be set by history, and an array of towns would fill the interior instead of sitting in
-  a ring. Neither is simulated.
+- **A bounded plain, and a stiff regime.** With no centre given, the centre forms at the disc's middle because
+  that is its most accessible point; a harbour moves it. On the wrapping plain (a knob) the centre forms
+  wherever the first ripple put it and the towns fill the interior at the predicted spacing
+  ([doc 6 §21](6-derivations.md#21-what-the-kernels-predict-a-regime-map-and-the-density-gradient)). What the
+  average flows cannot do is settle a state in which one parcel holds a large share of everything: they hop
+  the load between parcels there, and the agents, or a fixed-point solve, must be used instead
+  ([doc 6 §22](6-derivations.md#22-past-the-map-the-black-holes-condition-a-saturating-gain-and-the-onset-time)).
 - **Dealings are a field.** A unit gains in proportion to how many partners are within reach. That is right
   for spillovers and wires, not for a job, which a household needs one of. The saturating option covers the
   gain; the one-to-one matching of workers to jobs, which gives Fujita and Ogawa their polycentric regime, is

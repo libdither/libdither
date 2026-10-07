@@ -9,14 +9,14 @@ row ids work as links. **Follow one arrival** pauses the simulation and walks th
 both vocabularies: what every option costs this arrival, its own taste noise, what it picks, and how that
 moves the rent ⇄ adaptation.
 
-Underlined terms (132, in `GLOSSARY`) and blue author–year citations (117 references, in `REFS`)
+Underlined terms (135, in `GLOSSARY`) and blue author–year citations (120 references, in `REFS`)
 open a popup on hover. Click, tap or press Enter to pin it: a pinned popup's own terms and citations open
 in place (Back returns), and its links go out to Wikipedia, DOIs and arXiv. Write `[[key|text]]` for a
 term, `[[@key]]` or `[[@a;b]]` for a citation, and `$r_j^2$` for inline math. Every DOI and arXiv id
 was checked against its metadata, and every Wikipedia title against the API.
 
 ```bash
-node --test experiments/one-model/model.test.mjs   # ≈7 min: each setting with both solvers, plus the formal claims
+node --test experiments/one-model/model.test.mjs   # ≈5 min: each setting with both solvers, plus the formal claims
 ```
 
 ## The model
@@ -95,8 +95,20 @@ Every claim is checked with the average flows, and again with individual agents.
     its new pairwise term.
   - A harbour pulling at 0.05 (a twentieth of the land market's commute cost) moves the whole city to the coast.
   - Individual agents form the same centre with the same profile (within 15%).
-  - A strong short-range pull alone collapses the city into one tower; a longer-range push (competition for customers
-    ⇄ lateral inhibition) breaks it into several towns inside the plain.
+  - A strong short-range pull alone collapses the city into a dense cluster (the agents; the average flows hop the
+    whole load between parcels there, a solver artifact); a longer-range push (competition for customers ⇄ lateral
+    inhibition) breaks it into several towns inside the plain.
+- **Regime map** (one type on a plain that wraps around, so the flat plain is an exact equilibrium):
+  - The pull at which the plain gathers is the one the kernel transform predicts (flat at 1.6, one bump at 2.0 against
+    a predicted 1.72); with competition the fastest-growing wave sets the number of towns (four), and a stable plain
+    stays flat; on the disc Clark's density gradient is the reach's inverse.
+  - One parcel holds everything only past the pull its nearest neighbour sets, s > Z/(1 − e^{−1/ℓ}) (18 at reach
+    1.25): the fixed point and the agents agree on both sides of the line, and the one-parcel state below it is the
+    flows hopping.
+  - A saturating gain holds the four predicted towns at a finite size, in the fixed point, the flows and the agents,
+    where the plain gain merged them; too small a ceiling fails the onset condition instead.
+  - Near the border the fastest wave grows at the rate one solver round predicts (within 10%), the bump shows when the
+    prediction says (within 25%), and the time diverges at the border as 1/(s − s*).
 - **Firms and homes:** with spillovers among firms, one dense firm centre with homes around it; with a strong need for
   each other, a mixed sheet; with spillovers and competition for customers, several towns, each a firm cluster apart
   from its homes. Both solvers agree in each regime.

@@ -198,7 +198,7 @@ In this framework weight decay is depreciation of capital.
 much capacity each solution uses. Test the guess that memorization comes first because each example can be
 developed alone while the compact circuit needs many parts to change together (a land-assembly problem).
 
-## 10. Where the centre forms, and how many (new, 7 Oct; geography, technology and the regime map added the same day)
+## 10. Where the centre forms, and how many (new, 7 Oct; geography, technology, the regime map and its end state added the same day)
 
 **Done since:** geography as a layer over the sites, and technology as a layer the arrivals make that grows
 with use, spreads, is worth living on, fades the given geography and lengthens reach
@@ -210,21 +210,32 @@ from the two kernels' transforms alone, whether a flat plain stays flat, gathers
 into towns, and at what spacing. On a plain that wraps around (a torus knob on the agglomeration setting)
 the predicted threshold and town count are exact: flat at a pull of 1.6, one bump at 2.0 against a
 predicted 1.72; four towns where the two-bumps-per-side wave grows fastest. Clark's density gradient comes
-out as β ≈ 1/ℓ. The first two items below are done by the torus; what the map does not do is new.
+out as β ≈ 1/ℓ. Then the end state
+([docs/6 §22](docs/6-derivations.md#22-past-the-map-the-black-holes-condition-a-saturating-gain-and-the-onset-time)):
+one parcel holds everything only past s > Z/(1 − e^{−1/ℓ}) (18 at reach 1.25, 63 at reach 2), drawn on the
+map; the one-parcel states seen before were the flows solver hopping, and the true end state below the line
+is a dense cluster (the agents, and a fixed-point solve, agree); a saturating gain holds the predicted towns
+at a finite size; and the onset time is predicted from one solver round within 5% near the border, diverging
+there as 1/(s − s*). The first four items below are done; what remains is new.
 
 - **Location by history (done).** On the torus the bump forms where the initial ripple was largest, a
   different place in each run. The agents' bump should drift slowly there (a continuous attractor); not yet
   measured.
 - **Towns in the interior (done).** On the torus the array fills the interior at the predicted spacing.
-- **The end state at strong pull.** The map predicts onsets. At a pull of 4 or more with reach 1.25 the
-  plain breaks into towns as predicted and the towns then merge until one parcel holds everything (Krugman's
-  black hole). **What to do:** the condition for a single parcel to be stable (one site's pull against the
-  rent and the competition it faces), drawn on the same map; and whether a saturating gain
-  (`interaction.saturate`) turns the black hole into towns of finite size without dissolving them (the
-  earlier attempt in §15 dissolved the cluster at the pull then used).
-- **Growth near threshold is slow.** Just above the threshold the bump takes thousands of time units to
-  appear (critical slowing down), so on the page a knob set barely past the border looks flat for a while.
-  The map could show the predicted onset time.
+- **The end state at strong pull (done).** One parcel holds everything only when its pull beats its rent and
+  its nearest neighbour; the line is on the map, and the fixed point and the agents agree on both sides. The
+  towns that merge below it end in one or two compact centres. A saturating gain with x₀ well above the flat
+  plain's load holds the predicted towns at a finite size (the §15 failure was too small an x₀, which fails
+  the onset condition). Not done: at (4, 4) with x₀ = 2 the fixed point still merges into one centre while
+  the flows show two towns at 3000 time units, and the agents at (6, 12) hold four towns without saturation
+  where the fixed point from a ripple gives two. The end state is multistable; which state a history reaches
+  is open. **What to do:** map the basins (start the fixed point from k towns and see which hold), and
+  measure the merging time of two towns against their distance.
+- **Growth near threshold (done).** The rate is the larger eigenvalue of one solver round linearized about
+  the flat plain, within 2% of the measured; the time to show is log(r̄/A₀) over it, within 5% near the
+  border; the map shades the slow band paler and the caption gives the time. Not done: on the disc the rim
+  seeds the centre, so the ripple-based time is an upper bound there; and the agents' onset, where the ripple
+  is the agents' own noise, is not predicted.
 - **A job is not a field.** Here a unit gains in proportion to how many partners are within reach. Fujita and
   Ogawa's polycentric regime comes from one-to-one matching of workers to firms with a linear commute cost,
   against a non-rival spillover. **What to do:** add a rival interaction, an optimal-transport cost between two
@@ -280,11 +291,24 @@ real US metros.
   Holland (1986) in print.
 - **Marginal patterns differ between solvers.** Near the threshold where a plain breaks into towns (one type,
   reach 1.5), the flows find 8 shallow bumps and the agents 3–4; the presets stay in regimes where both agree,
-  and the tests assert only what both give. The saturating gain never produced towns; it dissolves a cluster
-  instead of splitting it.
+  and the tests assert only what both give. (The saturating gain's earlier failure to give towns is resolved:
+  with x₀ well above the flat plain's load it holds them, [docs/6 §22](docs/6-derivations.md#22-past-the-map-the-black-holes-condition-a-saturating-gain-and-the-onset-time).)
+- **The average flows cannot hold a dominant parcel.** Where one parcel would hold a large share of the load
+  (a strong short-range pull), the flows hop the whole load between neighbouring parcels instead of settling:
+  the price step crawls, and the all-at-once re-choice leaves at once when it catches up. The agents, and a
+  damped fixed-point solve, settle. Every one-parcel result of the flows is this artifact; the fix is in the
+  engineering list.
 
 ## Engineering
 
+- **Give the flows' load the stock's inertia.** The flows set the load to the logit's choice every round; the
+  agents' occupancy relaxes toward it over a stay. In a replica of the flows' round, a step of dt/stay toward
+  the choice settles the strong-pull case into the same cluster the agents and the fixed point give (16
+  parcels, the busiest holding 14%), where the instant re-choice hops forever. A share-aware price step alone
+  (the exact logit elasticity for a dominant site) passes all the tests and does not cure it. The change
+  touches every transient of the flows (mixed use, the rush discount, technology's course, the onset rate,
+  which would gain a third time constant), so it needs a pass over every documented number; the fixed points
+  are unchanged.
 - **Merge the two learner engines** (`learners.mjs` Part A and Part B) into one code path where a stage's
   price formation, accounting and allocation are settings. That's what "one parametrized model" should mean
   in code, and it's a prerequisite for item 1.

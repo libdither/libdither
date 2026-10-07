@@ -398,87 +398,153 @@ const sample = (r, n) => Float64Array.from({ length: n }, () => r.normal());
 }
 
 // ================================================================= 7. what the kernels predict: a regime map
-// For the one-type agglomeration setting on a wrapping plain (no edge), the growth rate of a wave with m bumps
+// For the one-type agglomeration setting on a wrapping plain (no edge), the growth factor of a wave with m bumps
 // per side is s·B̂(k_m) − b·B̂_C(k_m), k_m = 2πm/P; it grows when that exceeds 1 + τ/(κ·r̄). Shaded: the
-// prediction over the knobs. Marks: runs of the model at those knobs, a disc where the outcome matched and a
-// cross where it did not (docs/6 §21).
+// prediction over the knobs, paler where the fastest wave would take over 3000 time units to show, dark past the
+// line where one parcel holding everything is itself an equilibrium (the black hole, docs/6 §22). Marks: runs of
+// the model at those knobs after 3000 time units, a disc where the outcome matched and a cross where it did not,
+// with the end state by a damped fixed-point solve where the two differ. The third panel has a saturating gain
+// (x₀ = 2), with which the pull counts as s/(1 + r̄/x₀) at onset and the towns keep a finite size (docs/6 §21–22).
+const html = readFileSync(join(here, '..', 'experiments', 'one-model', 'index.html'), 'utf8');
+const src = html.slice(html.indexOf('/* MODEL:BEGIN */'), html.indexOf('/* MODEL:END */'));
+const M = new Function(`${src}; return OneModel;`)();
+const base = M.PRESETS.find((p) => p.id === 'agglomeration').config;
+const torus = (patch) => M.create(M.merge(base, M.merge({ layout: { kind: 'sheet', radius: 10, periodic: true }, sources: 'anywhere', sourceAt: null, distanceCost: 0 }, patch)));
 {
-  const html = readFileSync(join(here, '..', 'experiments', 'one-model', 'index.html'), 'utf8');
-  const src = html.slice(html.indexOf('/* MODEL:BEGIN */'), html.indexOf('/* MODEL:END */'));
-  const M = new Function(`${src}; return OneModel;`)();
-  const base = M.PRESETS.find((p) => p.id === 'agglomeration').config;
-  const torus = (patch) => M.create(M.merge(base, M.merge({ layout: { kind: 'sheet', radius: 10, periodic: true }, sources: 'anywhere', sourceAt: null, distanceCost: 0 }, patch)));
   const probe = torus({});
   const P = probe.layout.period;
-  const thr = 1 + probe.cfg.temperature / (probe.cfg.price.kappa * (probe.cfg.demand / probe.N));
+  const rbar = probe.cfg.demand / probe.N;
+  const thr = 1 + probe.cfg.temperature / (probe.cfg.price.kappa * rbar);
   const ks = Array.from({ length: Math.floor(P / 2) + 1 }, (_, m) => (2 * Math.PI * m) / P);
   const Ch = ks.map(probe.kernelTransform(3));
-  const predict = (Bh, s, b) => {
+  const SLOW = 3000;
+  const predict = (Bh, sE, b) => {
     let best = 1;
-    for (let m = 2; m < ks.length; m++) if (s * Bh[m] - b * Ch[m] > s * Bh[best] - b * Ch[best]) best = m;
-    const rate = s * Bh[best] - b * Ch[best];
-    return rate > thr ? (best === 1 ? 'centre' : `${best * best} towns`) : 'flat';
+    for (let m = 2; m < ks.length; m++) if (sE * Bh[m] - b * Ch[m] > sE * Bh[best] - b * Ch[best]) best = m;
+    const rate = sE * Bh[best] - b * Ch[best];
+    return { label: rate > thr ? (best === 1 ? 'centre' : `${best * best} towns`) : 'flat', rate };
   };
+  const label = (peaks, mod, share) => (share > 0.9 ? 'one parcel' : mod < 1.3 ? 'flat' : peaks >= 2 ? `${peaks} towns` : 'centre');
   const observe = (sim) => {
     const m = sim.metrics();
-    const mean = sim.rAvg.reduce((a, v) => a + v, 0) / sim.N;
-    const mod = m.peak / mean;
-    return mod > sim.N / 2 ? 'one parcel' : mod < 1.3 ? 'flat' : m.peaks >= 2 ? `${m.peaks} towns` : 'centre';
+    return label(m.peaks, m.peak / rbar, m.peak / sim.cfg.demand);
   };
   // each run: pull, competition, and where its label goes
   const panels = [
-    { ell: 2, points: [[1.6, 0, 'left'], [2, 0, 'right'], [4, 6, 'above'], [6, 4, 'left']] },
-    { ell: 1.25, points: [[3, 4, 'left'], [5, 10, 'below'], [4, 4, 'below'], [6, 12, 'left']] },
+    { ell: 2, sat: null, points: [[1.6, 0, 'left'], [2, 0, 'right'], [4, 6, 'above'], [6, 4, 'left'], [20, 2, 'above']] },
+    { ell: 1.25, sat: null, points: [[3, 4, 'left'], [5, 10, 'below'], [4, 4, 'below-right'], [6, 12, 'below-right'], [20, 6, 'left']] },
+    { ell: 1.25, sat: 2, points: [[4, 4, 'below-right'], [6, 12, 'below-right'], [5, 10, 'below'], [20, 6, 'left']] },
   ];
-  const sMin = 1, sMax = 6, bMin = 0, bMax = 12, nx = 40, ny = 30;
+  const sMin = 1, sMax = 64, bMin = 0, bMax = 12, nx = 48, ny = 30;
   const pw = 330, ph = 240, mL = 46, mT = 36, mB = 40, mR = 14;
-  const W = 2 * pw + 60, H = ph + 112;
-  const fill = { flat: C.wash, centre: `${C.blue}55`, towns: `${C.orange}66` };
-  let b = text(W / 2, 22, 'Fate of a flat plain predicted from the two kernels alone (wrapping plain, period 21)', { anchor: 'middle', size: 14, fill: C.ink, weight: 600 });
-  panels.forEach(({ ell, points }, pi) => {
+  const W = 3 * pw + 90, H = ph + 132;
+  const fill = { flat: C.wash, centre: `${C.blue}55`, towns: `${C.orange}66`, centreSlow: `${C.blue}22`, townsSlow: `${C.orange}2a`, parcel: `${C.ink}44` };
+  let b = text(W / 2, 22, 'Fate of a flat plain predicted from the two kernels alone (wrapping plain, period 21), and where one parcel holds everything', { anchor: 'middle', size: 14, fill: C.ink, weight: 600 });
+  panels.forEach(({ ell, sat, points }, pi) => {
     const Bh = ks.map(probe.kernelTransform(ell));
+    const slope = sat ? 1 / (1 + rbar / sat) : 1;
+    const parcel = M.singleParcel(torus({ interaction: { reach: ell, saturate: sat, compete: { strength: 0, reach: 3 } } }));
     const x0 = 15 + pi * (pw + 30), y0 = 40;
     const iw = pw - mL - mR, ih = ph - mT - mB;
-    const X = (s) => x0 + mL + ((s - sMin) / (sMax - sMin)) * iw;
+    const X = (s) => x0 + mL + (Math.log2(Math.min(sMax, Math.max(sMin, s))) / Math.log2(sMax)) * iw;
     const Y = (bb) => y0 + mT + ih - ((bb - bMin) / (bMax - bMin)) * ih;
     for (let i = 0; i < nx; i++) {
       for (let j = 0; j < ny; j++) {
-        const s = sMin + ((i + 0.5) / nx) * (sMax - sMin), bb = bMin + ((j + 0.5) / ny) * (bMax - bMin);
-        const r = predict(Bh, s, bb);
-        b += `<rect x="${f(X(s) - iw / nx / 2)}" y="${f(Y(bb) - ih / ny / 2)}" width="${f(iw / nx + 0.4)}" height="${f(ih / ny + 0.4)}" fill="${fill[r.endsWith('towns') ? 'towns' : r]}"/>`;
+        const s = 2 ** (((i + 0.5) / nx) * Math.log2(sMax)), bb = bMin + ((j + 0.5) / ny) * (bMax - bMin);
+        const r = predict(Bh, s * slope, bb);
+        const onset = M.onsetTime(probe, M.growthRate(probe, r.rate));
+        const key = s >= parcel.border(bb) ? 'parcel' : r.label === 'flat' ? 'flat' : (r.label.endsWith('towns') ? 'towns' : 'centre') + (onset > SLOW ? 'Slow' : '');
+        b += `<rect x="${f(X(s) - iw / nx / 2)}" y="${f(Y(bb) - ih / ny / 2)}" width="${f(iw / nx + 0.4)}" height="${f(ih / ny + 0.4)}" fill="${fill[key]}"/>`;
       }
     }
     b += `<rect x="${f(x0 + mL)}" y="${f(y0 + mT)}" width="${f(iw)}" height="${f(ih)}" fill="none" stroke="${C.axis}"/>`;
-    b += text(x0 + mL + iw / 2, y0 + mT - 10, `reach of dealings ℓ = ${ell}, competition reach 3`, { anchor: 'middle', size: 12, fill: C.ink2 });
-    for (const v of [1, 2, 3, 4, 5, 6]) b += text(X(v), y0 + mT + ih + 14, String(v), { anchor: 'middle', size: 11, fill: C.muted });
+    b += text(x0 + mL + iw / 2, y0 + mT - 10, sat ? `reach ℓ = ${ell}, gain saturating at x₀ = ${sat}` : `reach ℓ = ${ell}, competition reach 3`, { anchor: 'middle', size: 12, fill: C.ink2 });
+    for (const v of [1, 2, 4, 8, 16, 32, 64]) b += text(X(v), y0 + mT + ih + 14, String(v), { anchor: 'middle', size: 11, fill: C.muted });
     for (const v of [0, 4, 8, 12]) b += text(x0 + mL - 6, Y(v) + 4, String(v), { anchor: 'end', size: 11, fill: C.muted });
-    b += text(x0 + mL + iw / 2, y0 + mT + ih + 30, 'pull of being near others ⇄ excitation (s)', { anchor: 'middle', size: 11, fill: C.muted });
+    b += text(x0 + mL + iw / 2, y0 + mT + ih + 30, 'pull of being near others ⇄ excitation (s, log scale)', { anchor: 'middle', size: 11, fill: C.muted });
     b += `<text x="${f(x0 + 12)}" y="${f(y0 + mT + ih / 2)}" font-size="11" fill="${C.muted}" text-anchor="middle" transform="rotate(-90 ${f(x0 + 12)} ${f(y0 + mT + ih / 2)})">competition ⇄ inhibition (b)</text>`;
     for (const [s, bb, pos] of points) {
-      const want = predict(Bh, s, bb);
-      const sim = torus({ interaction: { strength: s, reach: ell, compete: { strength: bb, reach: 3 } } });
+      const want = s >= parcel.border(bb) ? 'one parcel' : predict(Bh, s * slope, bb).label;
+      const sim = torus({ interaction: { strength: s, reach: ell, saturate: sat, compete: { strength: bb, reach: 3 } } });
       sim.run(3000);
       const got = observe(sim);
-      const ok = got === want || (want.endsWith('towns') && got === want);
+      const e = M.endState(sim);
+      const end = label(e.peaks, e.modulation, e.share);
+      const ok = got === want;
       const x = X(s), y = Y(bb);
       b += ok ? `<circle cx="${f(x)}" cy="${f(y)}" r="5.5" fill="${C.ink}" stroke="${C.surface}" stroke-width="2"/>` : `<path d="M${f(x - 5)},${f(y - 5)} L${f(x + 5)},${f(y + 5)} M${f(x - 5)},${f(y + 5)} L${f(x + 5)},${f(y - 5)}" stroke="${C.ink}" stroke-width="2.5"/>`;
-      const parts = ok ? [got] : [got, `(predicted ${want})`];
+      const parts = ok ? [got] : [`flows: ${got}`, `fixed point: ${end}`];
       const n = parts.length;
       const place = {
         left: (i) => [x - 10, y + 4 - ((n - 1) * 13) / 2 + i * 13, 'end'],
         right: (i) => [x + 10, y + 4 - ((n - 1) * 13) / 2 + i * 13, 'start'],
         above: (i) => [x, y - 10 - (n - 1 - i) * 13, 'middle'],
         below: (i) => [x, y + 18 + i * 13, 'middle'],
-        'below-left': (i) => [x - 10, y + 18 + i * 13, 'end'],
+        'below-right': (i) => [x + 8, y + 16 + i * 13, 'start'],
       }[pos];
       parts.forEach((t, i) => { const [tx, ty, anchor] = place(i); b += text(tx, ty, t, { anchor, size: 11, fill: C.ink }); });
-      console.log(`regime map ℓ=${ell} s=${s} b=${bb}: predicted ${want}, got ${got}`);
+      console.log(`regime map ℓ=${ell} x₀=${sat} s=${s} b=${bb}: predicted ${want}, flows ${got}, fixed point ${end} (${e.used} parcels, busiest ${(100 * e.share).toFixed(1)}%)`);
     }
   });
-  const ly = H - 40;
+  const ly = H - 56;
   const sw = (x, col) => `<rect x="${f(x)}" y="${f(ly - 9)}" width="14" height="12" fill="${col}" stroke="${C.axis}"/>`;
-  b += sw(20, fill.flat) + text(40, ly, 'stays flat', { size: 12 }) + sw(120, fill.centre) + text(140, ly, 'one centre (the longest wave grows)', { size: 12 }) + sw(370, fill.towns) + text(390, ly, 'towns (a shorter wave grows fastest)', { size: 12 });
+  b += sw(20, fill.flat) + text(40, ly, 'stays flat', { size: 12 }) + sw(120, fill.centre) + text(140, ly, 'one centre (the longest wave grows)', { size: 12 }) + sw(370, fill.towns) + text(390, ly, 'towns (a shorter wave grows fastest)', { size: 12 }) + sw(620, fill.centreSlow) + text(640, ly, 'paler: over 3000 time units to show', { size: 12 }) + sw(870, fill.parcel) + text(890, ly, 'one parcel holds everything', { size: 12 });
   const ly2 = ly + 20;
-  b += `<circle cx="${f(27)}" cy="${f(ly2 - 4)}" r="5" fill="${C.ink}"/>` + text(40, ly2, 'a run of the model that matched the prediction', { size: 12 }) + `<path d="M${f(335)},${f(ly2 - 9)} L${f(345)},${f(ly2 + 1)} M${f(335)},${f(ly2 + 1)} L${f(345)},${f(ly2 - 9)}" stroke="${C.ink}" stroke-width="2"/>` + text(352, ly2, 'a run that did not (the towns merged into one parcel)', { size: 12 });
-  svg('regime-map', W, H, 'Predicted fate of a flat plain over pull and competition for two reaches, with model runs marked', b);
+  b += `<circle cx="${f(27)}" cy="${f(ly2 - 4)}" r="5" fill="${C.ink}"/>` + text(40, ly2, 'a run of the model that matched the prediction', { size: 12 }) + `<path d="M${f(335)},${f(ly2 - 9)} L${f(345)},${f(ly2 + 1)} M${f(335)},${f(ly2 + 1)} L${f(345)},${f(ly2 - 9)}" stroke="${C.ink}" stroke-width="2"/>` + text(352, ly2, 'a run that did not: the flows after 3000 time units, and the fixed point they circle', { size: 12 });
+  svg('regime-map', W, H, 'Predicted fate of a flat plain over pull and competition for two reaches and a saturating gain, with model runs marked', b);
+}
+
+// ================================================================= 8. the onset time: critical slowing down
+// On the wrapping plain with reach 2 and no competition, the bump's growth rate is the larger eigenvalue of one
+// solver round linearized about the flat plain (docs/6 §22), and the time for it to show (peak ÷ mean reaching 2)
+// is log(r̄/A₀) over that rate, A₀ the initial ripple's share in the wave. Dots: the model; line: the prediction;
+// dashed: the one-lag formula (λ/θ − 1)/m, which leaves out the price's lag.
+{
+  const probe = torus({});
+  const P = probe.layout.period;
+  const rbar = probe.cfg.demand / probe.N;
+  const thr = 1 + probe.cfg.temperature / (probe.cfg.price.kappa * rbar);
+  const Bh = probe.kernelTransform(2)((2 * Math.PI) / P);
+  const sStar = thr / Bh;
+  const pulls = [1.8, 1.85, 1.9, 2, 2.25, 2.5, 3, 3.5, 4];
+  const measured = pulls.map((s) => {
+    const sim = torus({ interaction: { strength: s } });
+    for (let t = 0; t < 6000; t += 10) {
+      sim.run(10);
+      if (sim.metrics().peak / rbar > 2) return sim.time;
+    }
+    return null;
+  });
+  const W = 700, H = 300, mL = 60, mR = 20, mT = 40, mB = 48;
+  const iw = W - mL - mR, ih = H - mT - mB;
+  const sLo = 1.7, sHi = 4.1, tLo = 100, tHi = 10000;
+  const X = (s) => mL + ((s - sLo) / (sHi - sLo)) * iw;
+  const Y = (t) => mT + ih - ((Math.log10(t) - Math.log10(tLo)) / (Math.log10(tHi) - Math.log10(tLo))) * ih;
+  let b = text(W / 2, 22, 'Time for the bump to show, against the pull: the model and the prediction', { anchor: 'middle', size: 14, fill: C.ink, weight: 600 });
+  for (const t of [100, 300, 1000, 3000, 10000]) b += line(mL, Y(t), mL + iw, Y(t), { stroke: C.grid }) + text(mL - 8, Y(t) + 4, String(t), { anchor: 'end', size: 11, fill: C.muted });
+  for (const s of [2, 2.5, 3, 3.5, 4]) b += text(X(s), mT + ih + 16, String(s), { anchor: 'middle', size: 11, fill: C.muted });
+  b += `<rect x="${f(mL)}" y="${f(mT)}" width="${f(iw)}" height="${f(ih)}" fill="none" stroke="${C.axis}"/>`;
+  b += line(X(sStar), mT, X(sStar), mT + ih, { stroke: C.ink2, dash: '4 3' }) + text(X(sStar) + 5, mT + 14, `border s* = ${sStar.toFixed(2)}`, { size: 11, fill: C.ink2 });
+  const curve = (rateOf, stroke, dash) => {
+    const pts = [];
+    for (let s = sStar + 0.01; s <= sHi; s += 0.01) {
+      const rate = rateOf(s * Bh);
+      const t = M.onsetTime(probe, rate);
+      if (t > tHi || t < tLo) continue;
+      pts.push(`${f(X(s))},${f(Y(t))}`);
+    }
+    return `<polyline points="${pts.join(' ')}" fill="none" stroke="${stroke}" stroke-width="2" ${dash ? `stroke-dasharray="${dash}"` : ''}/>`;
+  };
+  b += curve((lam) => (lam / thr - 1) / probe.cfg.interaction.memory, C.muted, '5 4');
+  b += curve((lam) => M.growthRate(probe, lam), C.blue, '');
+  pulls.forEach((s, i) => {
+    if (measured[i] == null) return;
+    b += mark(0, X(s), Y(measured[i]), 5, C.orange);
+    console.log(`onset s=${s}: shown at ${measured[i]}, predicted ${M.onsetTime(probe, M.growthRate(probe, s * Bh)).toFixed(0)}`);
+  });
+  b += text(mL + iw / 2, H - 8, 'pull of being near others (s), reach 2, no competition', { anchor: 'middle', size: 11, fill: C.muted });
+  b += `<text x="14" y="${f(mT + ih / 2)}" font-size="11" fill="${C.muted}" text-anchor="middle" transform="rotate(-90 14 ${f(mT + ih / 2)})">time units until peak ÷ mean reaches 2 (log scale)</text>`;
+  const lx = mL + 200, ly = mT + 24;
+  b += mark(0, lx, ly - 4, 5, C.orange) + text(lx + 12, ly, 'the model', { size: 12 }) + line(lx + 95, ly - 4, lx + 125, ly - 4, { stroke: C.blue, width: 2 }) + text(lx + 132, ly, 'one solver round, linearized', { size: 12 }) + line(lx + 320, ly - 4, lx + 350, ly - 4, { stroke: C.muted, width: 2, dash: '5 4' }) + text(lx + 357, ly, '(λ/θ − 1)/m', { size: 12 });
+  svg('onset-time', W, H, 'Time for the bump to show against the pull, measured and predicted, diverging at the border', b);
 }

@@ -412,13 +412,17 @@ k = 0 mode can be stable while a finite k is not: a pattern with a wavelength of
 Turing's mechanism in the form Krugman used for the spacing of business districts and Amari and Ermentrout &
 Cowan for periodic activity in neural fields.
 
-**The black hole.** At a single site the kernel's own weight is B(0)/Z = 1/Z. If s·W_kk/Z approaches 1 the
-attraction a unit of load exerts on its own site matches the rent it adds, and everything piles onto one site:
-the whole city in one tower. Z grows with the reach (≈ 2πℓ² on the plane: 6 at ℓ = 1, 25 at ℓ = 2), so short
-reaches collapse first. Krugman's core–periphery model has the same condition and name
-([Krugman 1991](https://doi.org/10.1086/261763)).
-Test: `agglomeration: a strong short-range pull alone collapses…` (s = 5, ℓ = 1.25: 1 parcel in the flows,
-16 with agents).
+**The black hole.** At a single site the kernel's own weight is B(0)/Z = 1/Z. When s·W_kk/Z passes 1 the
+attraction a unit of load exerts on its own site exceeds the rent it adds, so a site's cost falls as it fills.
+Z grows with the reach (≈ 2πℓ² on the plane: 6 at ℓ = 1, 25 at ℓ = 2), so short reaches gather hardest. That
+is not yet the condition for one parcel to hold everything, which its nearest neighbour sets,
+s > Z/(1 − e^{−1/ℓ}) (section 22): below it a strong pull gives a dense cluster, not a tower. Krugman's
+core–periphery model has the same regime; the name, and the condition that rules it out, are Fujita, Krugman
+& Venables's ([Krugman 1991](https://doi.org/10.1086/261763);
+[Fujita, Krugman & Venables 1999](https://doi.org/10.7551/mitpress/6389.001.0001), chapter 4).
+Test: `agglomeration: a strong short-range pull alone collapses…` (s = 5, ℓ = 1.25: with the agents a cluster
+of 16 parcels, the busiest holding 13%; the flows put the whole load on one parcel at a time, a solver
+artifact explained in section 22).
 
 **A bounded plain.** The sheet is a disc of radius 12, and that decides where things form. The attraction
 is a sum over partners within reach, so the disc's middle, with partners on every side, is the most
@@ -458,7 +462,7 @@ field), so the pairing is of resting states, not trajectories.
 |---|---|---|
 | One type, pull 2 at reach 2 | centre at (0.0, 0.0), 241 parcels, peak load 0.64, partners 5.8 apart | (0.2, 0.0), 214, 0.67, 5.7; profile about the centre within 15% |
 | … with a harbour at (7, 2) pulling 0.05 | centroid (5.3, 1.5) | (5.4, 1.5) |
-| … pull 5 at reach 1.25 | one tower: 1 parcel | 16 parcels |
+| … pull 5 at reach 1.25 | one parcel at a time (a solver artifact, §22); the fixed point is a cluster of 15 parcels, the busiest holding 14% | 16 parcels, busiest 13% |
 | … and competition 10 at reach 3 | 4 towns in a ring, 420 parcels, hollow middle | 3 towns, 353 parcels |
 | Firms and homes, spillovers 1.5 at reach 1 | firms on 1 parcel in 10 hold 100%; overlap with homes 0%; firms at distance 1.3, homes at 7.1 | the same (1.6, 6.9) |
 | … spillovers 0.5, need for each other 2 | overlap 62%, firms spread (66% on the busiest tenth) | overlap 50% |
@@ -560,7 +564,8 @@ answers a cost difference $δc$ with a load difference $δr = −(\bar r/τ)·δ
 $κ·δr·(1 − s·\hat B(k) + b·\hat B_C(k))$, where $\hat B(k) = \sum_i B(d_i)\cos(k x_i)$ is the kernel's
 transform, 1 at $k = 0$ and falling with $k$, faster for a longer reach (on the plane,
 $(1 + k²ℓ²)^{−3/2}$). The interaction term reads the load through a memory with rate $1/m$, so each step the
-wave is multiplied by $1 + \tfrac1m\big((s\hat B(k) − b\hat B_C(k))/θ − 1\big)$ with
+wave is multiplied by about $1 + \tfrac1m\big((s\hat B(k) − b\hat B_C(k))/θ − 1\big)$ (the exact rate, with
+the price's own lag, is in section 22) with
 $$θ = 1 + \frac{τ}{κ·\bar r}.$$
 A wave grows when $s·\hat B(k) − b·\hat B_C(k) > θ$. For the page's knobs (τ = 0.15, κ = 10, $\bar r$ =
 0.12) θ = 1.123. Three outcomes:
@@ -599,17 +604,19 @@ wave grows (best 1.09) and it stays flat. Eight runs against the map, from `walk
 | 2 | 6 | 4 | one centre | one centre |
 | 1.25 | 3 | 4 | flat | flat |
 | 1.25 | 5 | 10 | 4 towns | 4 towns |
-| 1.25 | 4 | 4 | 4 towns | everything on one parcel |
-| 1.25 | 6 | 12 | 4 towns | everything on one parcel |
+| 1.25 | 4 | 4 | 4 towns | one parcel at a time (the solver; the fixed point is one centre, §22) |
+| 1.25 | 6 | 12 | 4 towns | one parcel at a time (the solver; the fixed point is two towns, §22) |
 
 Where the bump forms on the torus is wherever the initial ripple was largest, a different place in each run:
 on a plain with no landmark, history picks the spot ([Krugman 1991](https://doi.org/10.1086/261763)).
 
 **What it does not predict.** The last two rows. The flat plain does break into towns there, as predicted,
-but with a pull that strong the towns go on merging until one parcel holds everything: Krugman's black hole,
-where a concentration pulls harder the bigger it gets and nothing stops it. Linear stability says where the
-flat plain breaks and at what spacing, not where the gathering stops; that is a question about the
-nonlinear end state, and the honest statement is that the map is a map of onsets. On the disc, the earlier
+but with a pull that strong the towns go on merging: by a fixed-point solve, into one compact centre of 36
+parcels at (4, 4) and two of 49 at (6, 12). The flows' single parcel was the solver hopping, not the black
+hole, which needs a pull of 18 at this reach; section 22 has the condition, drawn on the map, and what a
+saturating gain does to the merging. Linear stability says where the flat plain breaks and at what spacing,
+not where the gathering stops; that is a question about the nonlinear end state, and the map is a map of
+onsets, with the black-hole line added for where the gathering can end. On the disc, the earlier
 sweep of 42 knob settings agreed with the map's onset in 35–38 of them depending on the reaches, the
 misses being mild mounds in cells predicted flat (the rim's doing) and patterns whose wavelength is longer
 than the disc, which read as one centre.
@@ -639,3 +646,124 @@ excitation has no ceiling.
 
 Tests: `regime map: on a wrapping plain…`; `regime map: with competition…`; `regime map: on the disc the
 density gradient…`.
+
+## 22. Past the map: the black hole's condition, a saturating gain, and the onset time
+
+Section 21's map says where a flat plain breaks and at what spacing. Three things it leaves open are
+settled here: when the gathering ends on a single parcel, what a saturating gain does to the towns, and how
+long the onset takes. Each is a function on the model (`singleParcel`, `endState`, `growthRate` and
+`onsetTime`), drawn on the page's map and checked by a test.
+
+**One parcel holding everything.** Put the whole load $D$ on one site. It pays rent $κ·D$ and gains
+$s·κ·S(D/Z)$ from its own load, with $S$ the gain (the identity, or the saturating $x_0\log(1 + f/x_0)$); an
+empty site at distance $d$ pays no rent and gains $s·κ·S(D·e^{−d/ℓ}/Z)$; competition costs $b·κ·D/Z_C$ at
+the parcel and $b·κ·D·e^{−d/ℓ_C}/Z_C$ at distance $d$. The parcel is an equilibrium when it is the cheapest
+site, which for every $d ≥ 1$ means
+
+$$s·\big[S(D/Z) − S(D·e^{−d/ℓ}/Z)\big] > D·\big[1 + b·(1 − e^{−d/ℓ_C})/Z_C\big].$$
+
+The left side grows with $d$ faster than the right unless competition reaches far, so the nearest neighbour
+decides: without saturation, $s > Z/(1 − e^{−1/ℓ})$ at $b = 0$, which is 18.1 at reach 1.25 and 63 at
+reach 2 (`singleParcel` takes the largest ratio over the lattice's distances, for any $b$ and gain). Section
+19's condition $s/Z → 1$, the pull a unit adds to its own site matching the rent it adds, is weaker (10 at
+reach 1.25) and is not where a parcel holds: at $s = 10$ the fixed point is four parcels with the busiest
+holding 26%, at 15 to 17 two parcels sharing it, and one parcel from 18.5. With a saturating gain the left
+side is smaller, so the black hole recedes: 56 instead of 18 at reach 1.25 with $x_0 = 2$. The page's map
+now runs to a pull of 64 on a logarithmic axis, with the knob to match, and shades the region past the line.
+
+**The one-parcel states were the solver's.** The "black hole" rows of sections 19 and 21 (pull 5 at reach
+1.25; the two crosses of the eight-run table) were not equilibria. At pull 5 the parcel's rent was 80 to 150
+against $κ·D = 536$, and the whole load hopped between neighbouring parcels every hundred time units or so.
+The average flows re-choose the whole load every round and move the price a damped step toward $κ·r$ (the
+step of section 2, which takes the site's load to answer its price with the full logit elasticity); with a
+load four hundred times the flat plain's, the price crawls by about $τ\log(κr/a)$ a round, and once it does
+pass the neighbours' cost the whole load leaves at once, so nothing settles. A share-aware price step (the
+exact elasticity for a site holding a share $p$ of the flow) passes all forty tests and does not cure it; the
+all-at-once re-choice is the cause. The end state was found two other ways. A damped fixed-point solve
+(`endState`: the logit's choice at prices $κ·r$ with the fields read from the load itself, moved a twentieth
+of the way each iteration) gives, at pull 5 and reach 1.25, a cluster of 15 parcels with the busiest holding
+14%; the agents give 16 parcels and 13%, with rent equal to $κ·$load at the busiest parcel; and both give one
+parcel at pull 20, where the condition says they should. In a replica of the flows' round built to find this,
+giving the load the stock's inertia (a step of $dt/\text{stay}$ toward the choice each round, as the agents'
+occupancy has) settles into the same cluster (16 parcels, 14%). That is the fix; it is left for a session of
+its own because it changes every transient of the flows (NEXT_STEPS, Engineering).
+
+The eight runs of section 21 again, with two more past the line, each with its fixed point:
+
+| reach ℓ | pull s | competition b | map | the flows after 3000 time units | the fixed point |
+|---|---|---|---|---|---|
+| 2 | 1.6 | 0 | flat | flat | flat |
+| 2 | 2.0 | 0 | one centre | one centre | one centre, 256 parcels |
+| 2 | 4 | 6 | flat | flat | flat |
+| 2 | 6 | 4 | one centre | one centre | one centre, 51 parcels |
+| 2 | 20 | 2 | one centre (the line is at 63) | one parcel at a time | one centre, 9 parcels, busiest 23% |
+| 1.25 | 3 | 4 | flat | flat | flat |
+| 1.25 | 5 | 10 | 4 towns | 4 towns | 4 towns, 151 parcels |
+| 1.25 | 4 | 4 | 4 towns | one parcel at a time | one centre, 36 parcels, busiest 7% |
+| 1.25 | 6 | 12 | 4 towns | one parcel at a time | 2 towns, 49 parcels, busiest 9% |
+| 1.25 | 20 | 6 | one parcel (the line is at 18.6) | one parcel | one parcel |
+
+So the two crosses read differently now: the towns the map predicts do form, then merge into one or two
+compact centres, not into one parcel. The agents at (6, 12) hold four towns at 2000 time units (peak 1.4):
+merging is slow, and the fixed point from a ripple is one of several end states.
+
+**A saturating gain.** With $S = x_0\log(1 + f/x_0)$ the pull counts as $s/(1 + \bar r/x_0)$ at the flat
+plain, the gain's slope there, so the map is drawn with that in place of $s$; and a town's pull stops growing
+with its size, so the towns the map predicts have little to gain by merging. At $s = 6$, $b = 12$, reach
+1.25 and $x_0 = 2$ (sixteen times the flat plain's load) the map still predicts four towns (rate 1.54
+against θ = 1.12), and four towns of finite size form in all three instruments: the fixed point (149
+parcels, peak 0.86, the busiest parcel holding 1.6%), the flows after 3000 time units (peak 0.86) and the
+agents (peak 0.92); without the saturation the fixed point merges them into two (peak 3.6). The failure of
+section 15, where saturation dissolved the firm cluster into a carpet, was the onset condition failing, not
+saturation failing: at $x_0 = 0.25$ the pull counts as 4.0, no wave grows at $b = 12$, and the plain stays
+flat, as it does here. Merging is not stopped everywhere: at $s = 4$, $b = 4$ with $x_0 = 2$ the fixed point
+is still one centre (97 parcels, busiest 5%) and the flows show two towns at 3000 time units. A neural field
+with a sigmoid gain holds bumps of finite width for the same reason
+([Wilson & Cowan 1973](https://doi.org/10.1007/BF00288786); [Amari 1977](https://doi.org/10.1007/BF00337259)).
+
+**The onset time.** Linearize one round of the flows about the flat plain, for a wave with growth factor
+$λ = s\hat B(k) − b\hat B_C(k)$. The logit answers a cost wave $δc$ with $δr = −(\bar r/τ)·δc$; the price
+moves a fraction $ρ = γτ/(τ + κ\bar r)$ of the way to $κ·r$ each round ($γ = 1/2$, the price step of section
+2 linearized about $a = κ\bar r$); the field moves a fraction $ε = dt/m$ toward the load. On $(δa/κ, δh)$ the
+round is
+
+$$\begin{pmatrix} 1 − ρ(1 + α) & ρ·α·λ \\ −ε·α & 1 − ε + ε·α·λ \end{pmatrix}, \qquad α = κ\bar r/τ,$$
+
+and its larger eigenvalue $μ$ gives the growth rate $γ_k = \log(μ) ×$ rounds per unit time. The determinant
+of the matrix minus the identity is $ρε[(1 + α) − αλ]$, so $μ$ crosses 1 exactly at $λ = (1 + α)/α = θ$,
+section 21's threshold, whatever the lags; near it $γ_k ≈ (λ/θ − 1)/m$, the formula section 21 used,
+because the price is fast ($ρ(1 + α) = 0.5$ a round) next to the field's memory. Away from the border the
+price's lag counts, and the one-lag formula is 15 to 25% low. On the torus with reach 2 and no competition
+(θ = 1.123, $\hat B(k_1) = 0.652$, $s^* = 1.72$, $m = 40$, three rounds a unit):
+
+| pull s | λ/θ | rate, predicted | rate, measured | time to show, predicted | measured |
+|---|---|---|---|---|---|
+| 1.8 | 1.044 | 0.00127 | 0.00128 | 5440 | 5700 |
+| 1.85 | 1.073 | 0.00213 | — | 3260 | 3360 |
+| 1.9 | 1.102 | 0.00299 | 0.00302 | 2320 | 2370 |
+| 2.0 | 1.160 | 0.00473 | 0.00479 | 1470 | 1470 |
+| 2.25 | 1.305 | 0.00922 | 0.00938 | 750 | 730 |
+| 2.5 | 1.450 | 0.0139 | 0.0142 | 500 | 470 |
+| 3 | 1.740 | 0.0240 | 0.0243 | 290 | 260 |
+| 3.5 | 2.03 | 0.0350 | — | 200 | 170 |
+| 4 | 2.32 | 0.0469 | — | 150 | 120 |
+
+The measured rate is the slope of $\log(\text{peak} ÷ \text{mean} − 1)$ against time while the wave is
+small (peak ÷ mean between 1.02 and 1.5); it is within 2% of the prediction at every pull. The time to show
+is when peak ÷ mean first passes 2: predicted as $\log(\bar r/A_0)/γ_k$ with $A_0$ the initial ripple's
+share in the wave. The ripple is uniform noise of amplitude $0.02\bar r$ on every site, so one standing
+wave across the plain gets about $2\sqrt{π}·(0.02/\sqrt{12})/\sqrt{N} = 0.001$ of $\bar r$ (the two waves
+along x and y add at the bump), and $\log(1/A_0) = 6.9$; the runs give 6.3 to 7.2. Near the border the
+time goes as $1/(s − s^*)$: time × $(s − s^*)$ is 417, 384 and 332 at pulls 1.9, 2.25 and 3. That is
+critical slowing down, the slow recovery that announces a tipping point
+([Scheffer et al. 2009](https://doi.org/10.1038/nature08227)); the page's map shades paler where the time
+exceeds 3000, and its caption gives the rate and the time at the current knobs. The time scales with the
+field's memory $m$; on the disc the rim's mound seeds the centre, so it shows sooner than the ripple would.
+
+**The network reading.** The black hole is a winner-take-all sheet whose excitation has no ceiling, and its
+condition says when one neuron's own recurrent drive beats its adaptation and its neighbours' share; a
+saturating gain is the sigmoid of a neural field, under which bumps keep a finite width; and the onset time
+is the slow mode of a field just past a bifurcation, with the adaptation's and the field's time constants.
+
+Tests: `black hole: one parcel holds everything only past the pull its nearest neighbour sets…`;
+`saturation: a saturating gain holds the towns…`; `onset: near the border the fastest wave grows…`.

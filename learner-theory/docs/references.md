@@ -2,7 +2,7 @@
 
 Sources for the whole folder, in three lists. The docs link the ones they use inline.
 
-- **One-model page** (below): the 117 references of [`../experiments/one-model/index.html`](../experiments/one-model/index.html), generated from its `REFS` table. Each DOI and arXiv ID was checked against its metadata, and each Wikipedia link against Wikipedia's API. The line under each entry says what the page uses it for.
+- **One-model page** (below): the 120 references of [`../experiments/one-model/index.html`](../experiments/one-model/index.html), generated from its `REFS` table. Each DOI and arXiv ID was checked against its metadata, and each Wikipedia link against Wikipedia's API. The line under each entry says what the page uses it for.
 - **Learners:** the 38 references at the end of [`../experiments/learners/README.md`](../experiments/learners/README.md#references), each checked against the source, with notes where only partly verified.
 - **Play-dough city:** the sources at the end of [`../experiments/playdough-city/README.md`](../experiments/playdough-city/README.md#sources).
 
@@ -98,6 +98,8 @@ Sources cited only in these docs, `../TRANSCRIPT.md` and `../NEXT_STEPS.md` were
   Each unit’s threshold rises when it fires more often than a target probability and falls when it fires less: a set point.
 - M. Fujita and H. Ogawa (1982). *Multiple equilibria and structural transition of non-monocentric urban configurations*. Regional Science and Urban Economics 12(2): 161–196. [doi:10.1016/0166-0462(82)90031-X](https://doi.org/10.1016/0166-0462(82)90031-X)
   Firms gain from nearby firms, workers commute: as commuting cost rises against the reach of spillovers, the city goes from monocentric to polycentric to fully mixed.
+- M. Fujita, P. Krugman and A. J. Venables (1999). *The Spatial Economy: Cities, Regions, and International Trade*. MIT Press. [doi:10.7551/mitpress/6389.001.0001](https://doi.org/10.7551/mitpress/6389.001.0001)
+  The core–periphery model worked out; its chapter 4 is named for the no-black-hole condition, without which agglomeration always wins and everything ends in one place.
 - M. Fujita and J.-F. Thisse (2002). *Economics of Agglomeration: Cities, Industrial Location, and Regional Growth*. Cambridge University Press. [doi:10.1017/CBO9780511805660](https://doi.org/10.1017/CBO9780511805660)
   The textbook of why activity clusters: the pulls toward others against the pushes of rent and competition.
 - S. Fusi, P. J. Drew and L. F. Abbott (2005). *Cascade models of synaptically stored memories*. Neuron 45(4): 599–611. [doi:10.1016/j.neuron.2005.02.001](https://doi.org/10.1016/j.neuron.2005.02.001)
@@ -206,6 +208,8 @@ Sources cited only in these docs, `../TRANSCRIPT.md` and `../NEXT_STEPS.md` were
   Attention normalized by Sinkhorn’s method, so every key receives as much in total as every query gives.
 - W. H. Sandholm (2001). *Potential games with continuous player sets*. Journal of Economic Theory 97(1): 81–108. [doi:10.1006/jeth.2000.2696](https://doi.org/10.1006/jeth.2000.2696)
   Potential games for large populations, congestion games like this one among them.
+- M. Scheffer, J. Bascompte, W. A. Brock, V. Brovkin, S. R. Carpenter, V. Dakos, H. Held, E. H. van Nes, M. Rietkerk and G. Sugihara (2009). *Early-warning signals for critical transitions*. Nature 461(7260): 53–59. [doi:10.1038/nature08227](https://doi.org/10.1038/nature08227)
+  Near a tipping point a system recovers from perturbations ever more slowly: critical slowing down, the generic early-warning signal.
 - E. Schlager and E. Ostrom (1992). *Property-rights regimes and natural resources: a conceptual analysis*. Land Economics 68(3): 249–262. [doi:10.2307/3146375](https://doi.org/10.2307/3146375)
   Property as a bundle of separable rights: access, withdrawal, management, exclusion and sale.
 - T. Schwalger, K. Fisch, J. Benda and B. Lindner (2010). *How noisy adaptation of neurons shapes interspike interval histograms and correlations*. PLoS Computational Biology 6(12): e1001026. [doi:10.1371/journal.pcbi.1001026](https://doi.org/10.1371/journal.pcbi.1001026)
@@ -234,6 +238,8 @@ Sources cited only in these docs, `../TRANSCRIPT.md` and `../NEXT_STEPS.md` were
   Vacancy chains: each move opens a place that the next mover fills.
 - A. G. Wilson (1967). *A statistical theory of spatial distribution models*. Transportation Research 1(3): 253–269. [doi:10.1016/0041-1647(67)90035-4](https://doi.org/10.1016/0041-1647(67)90035-4)
   The gravity model as the most probable pattern of trips given the totals leaving and arriving (maximum entropy); its balancing factors act as prices.
+- H. R. Wilson and J. D. Cowan (1973). *A mathematical theory of the functional dynamics of cortical and thalamic nervous tissue*. Kybernetik 13(2): 55–80. [doi:10.1007/BF00288786](https://doi.org/10.1007/BF00288786)
+  Excitatory and inhibitory populations on a sheet with a saturating (sigmoid) response: localized, bounded patterns of activity.
 - L. Wolpert (1969). *Positional information and the spatial pattern of cellular differentiation*. Journal of Theoretical Biology 25(1): 1–47. [doi:10.1016/S0022-5193(69)80016-0](https://doi.org/10.1016/S0022-5193(69)80016-0)
   Cells read their distance from a source and become what that distance calls for: the French flag.
 - M. T. T. Wong-Riley (1989). *Cytochrome oxidase: an endogenous metabolic marker for neuronal activity*. Trends in Neurosciences 12(3): 94–101. [doi:10.1016/0166-2236(89)90165-3](https://doi.org/10.1016/0166-2236(89)90165-3)

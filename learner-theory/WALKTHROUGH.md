@@ -67,10 +67,12 @@ decides where a centre forms; the agglomeration does the rest.
 ![The same city gathered around a harbour on the coast](walkthrough/img/one-model-agglomeration-harbour.webp)
 
 **The map says what will form.** Under the agglomeration setting the chart is a map computed from the two
-kernels alone: pull on one axis, competition on the other, grey where a flat plain stays flat, blue where
-it gathers into one centre, orange where it breaks into towns, and the current knobs as a dot. Below it is
-the density by distance from the centre that formed; its gradient (Clark's β) is in the readout, and comes
-out as about one over the reach ([doc 6 §21](docs/6-derivations.md#21-what-the-kernels-predict-a-regime-map-and-the-density-gradient)).
+kernels alone: pull on one axis (logarithmic, to 64), competition on the other, grey where a flat plain stays
+flat, blue where it gathers into one centre, orange where it breaks into towns, paler where that would take
+over 3000 time units to show, dark where one parcel holding everything is itself an equilibrium (the black
+hole), and the current knobs as a dot. The caption gives the growth rate and the time to show at those knobs.
+Below it is the density by distance from the centre that formed; its gradient (Clark's β) is in the readout,
+and comes out as about one over the reach ([doc 6 §21](docs/6-derivations.md#21-what-the-kernels-predict-a-regime-map-and-the-density-gradient)).
 
 ![The regime map under the agglomeration setting, with the knobs as a dot](walkthrough/img/one-model-agglomeration-map.webp)
 
@@ -86,12 +88,27 @@ so four towns; four towns form, and the profile about one of them shows the othe
 
 ![Four towns on the wrapping plain, as the map predicted](walkthrough/img/one-model-agglomeration-torus-towns.webp)
 
-The figure below is the whole map for two reaches, with eight runs of the model marked: a dot where the
-outcome matched and a cross where it did not. The two crosses are settings where the plain did break into
-towns as predicted, and the towns then merged until one parcel held everything: the map predicts where a
-flat plain breaks and at what spacing, not where the gathering stops.
+**Where the gathering ends.** With the gain saturating (one job is what a home needs), the same knobs that
+merged the towns hold four of them at a finite size: the pull a town exerts stops growing with its size.
 
-![Predicted fate of a flat plain over pull and competition, with eight runs marked](walkthrough/img/regime-map.svg)
+![Four towns of finite size under a saturating gain](walkthrough/img/one-model-agglomeration-torus-saturated.webp)
+
+The figure below is the whole map for two reaches and a saturating gain, with runs of the model marked: a
+dot where the outcome matched and a cross where it did not, with the state the dynamics circle (a
+fixed-point solve) where the two differ. The crosses are settings where the plain did break into towns as
+predicted and the towns then merged into one or two centres; the map predicts where a flat plain breaks
+and at what spacing, not where the gathering stops, except at the dark region, where it ends on one parcel.
+The average flows show a single parcel below that region too, but that is the solver hopping the whole load
+between parcels, not an equilibrium: the agents and the fixed point give a dense cluster
+([doc 6 §22](docs/6-derivations.md#22-past-the-map-the-black-holes-condition-a-saturating-gain-and-the-onset-time)).
+
+![Predicted fate of a flat plain over pull and competition, with runs marked](walkthrough/img/regime-map.svg)
+
+**How long it takes.** Just past the border the bump takes thousands of time units to show, and the time
+diverges at the border: critical slowing down. The line is the prediction from one solver round linearized
+about the flat plain (within 5% of the runs near the border); the dashed line leaves out the price's lag.
+
+![Time for the bump to show against the pull, measured and predicted](walkthrough/img/onset-time.svg)
 
 **Firms and homes place themselves.** Two kinds: firms (blue) gain from firms nearby, firms and homes
 (orange) need each other. Nothing is pinned, yet the classic monocentric city appears as an outcome: a dense
@@ -238,6 +255,7 @@ Run from this folder:
 ```bash
 node walkthrough/figures.mjs    # the SVG figures, from the engines (about a minute)
 node walkthrough/capture.mjs    # the page screenshots; needs Chromium (CHROME=/path to override)
+ONLY=agglomeration node walkthrough/capture.mjs   # only the one-model settings whose id matches
 ```
 
 `capture.mjs` serves `experiments/`, drives headless Chromium over its DevTools protocol, steps each
