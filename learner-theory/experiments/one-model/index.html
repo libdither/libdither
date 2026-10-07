@@ -930,7 +930,7 @@
           <h3>The one model</h3>
           <div class="equation">
             <div class="eq-line">
-              U<sub>kj</sub> = <span class="t" data-term="distance">− t·d(s, j)</span> <span class="t" data-term="price">− p<sub>j</sub></span>
+              U<sub>kj</sub> = <span class="t" data-term="distance">− t·d(s, j)</span> <span class="t" data-term="interaction">+ s·κ·Σ<sub>q</sub> W<sub>kq</sub>·(B<sub>kq</sub> ∗ r<sub>q</sub>)<sub>j</sub></span> <span class="t" data-term="price">− p<sub>j</sub></span>
               <span class="t" data-term="tuning">− m·(1 − fit<sub>kj</sub>)</span> <span class="t" data-term="nuisance">− ν·κ·r<sub>j,−k</sub></span>
               <span class="t" data-term="scale">+ ρ·log(1 + r<sub>j</sub>/r<sub>0</sub>)</span> <span class="t" data-term="tax">− H</span>
             </div>
@@ -981,9 +981,10 @@
           </li>
           <li>
             <b>What an option costs.</b> For an arrival of type $k$ from $s$, site $j$ costs
-            <span class="m-blk">$c_j = t_k·d(s, j) + p_j + m·(1 − fit_{kj}) + ν·κ·r_{j,−k} − ρ·log(1 + r_j/r_0) + H$</span>
-            distance, price, [[mismatch|mismatch]], the other types’ load at $j$, a bonus for busy sites, and a [[headtax|tax per resident]]
-            $H$, the same everywhere. (The panel above writes the same thing
+            <span class="m-blk">$c_j = t_k·d(s, j) + p_j + m·(1 − fit_{kj}) + ν·κ·r_{j,−k} − ρ·log(1 + r_j/r_0) + H − s·κ·Σ_q W_{kq}·(B_{kq} ∗ r_q)_j$</span>
+            distance, price, [[mismatch|mismatch]], the other types’ load at $j$, a bonus for busy sites, a [[headtax|tax per resident]]
+            $H$, the same everywhere, and the gain from being near the types this one deals with (the [[agglomeration|interaction]]
+            term, item 7). (The panel above writes the same thing
             as a utility, $U = −c$.)
           </li>
           <li>
@@ -1022,6 +1023,15 @@
             mix of types that $j$ and its neighbours serve, weighting neighbours by a Gaussian of width $σ$.
           </li>
           <li>
+            <b>Interaction.</b> $(B_{kq} ∗ r_q)_j = Σ_i B_{kq}(d_{ij})·r_{iq}$ is how much of type $q$ is near $j$, through a kernel
+            $B_{kq}(d) = e^{−d/ℓ_{kq}} ÷ Z_{kq}$ scaled so that a uniform load $r$ gives $r$. $W_{kq}$ says how much type $k$ deals with type
+            $q$: how many trips ⇄ connections run between them. With a starting point $s$ given (a centre ⇄ an input neuron) and $s = 0$,
+            this is the [[downtown|land market]]; with no starting point (sources “anywhere”) the interaction term alone places arrivals, and
+            the centre is an outcome. A second kernel with the opposite sign and a longer reach (competition for the same customers ⇄
+            [[lateralinhibition|lateral inhibition]]) can be added. The field $B ∗ r$ follows the load with a memory, since arrivals learn
+            where the others are. Optionally a type’s gain saturates, $x_0·log(1 + field/x_0)$: one job, one input, is what a unit needs.
+          </li>
+          <li>
             <b>Taxes.</b> A tax on buildings at rate $θ$ turns $κ$ into $(1 + θ)·κ$ in the price. A tax per resident adds the same $H$ to
             every $c_j$. A Pigouvian charge adds, a second time, the nuisance an arrival causes the others, $ν·κ·r_{j,−k}$. A tax on land
             value takes a share $L$ of the landowner’s residual $p_j·r_j − (1 + θ)·κ·r_j^2/2$, which is in no $c_j$. The
@@ -1033,7 +1043,7 @@
         <p class="gl-scan">
           With more and smaller agents ($s → ∞$) the loads follow the average flows exactly: the [[fluidlimit|fluid limit]] [[@kurtz1970]].
           For steady demand, fixed tuning and prices without memory, those flows settle where the [[freeenergy|free energy]]
-          <span class="m-blk">$F = Σ_{c,j} x_{cj}·(t·d + m·(1 − fit)) + Σ_j κ·r_j^2/2 + ν·κ·Σ_j r_{jA}·r_{jB} − ρ·Σ_j G(r_j) + τ·Σ_{c,j} x_{cj}·log(x_{cj} ÷ λ_c)$</span>
+          <span class="m-blk">$F = Σ_{c,j} x_{cj}·(t·d + m·(1 − fit)) + Σ_j κ·r_j^2/2 + ν·κ·Σ_j r_{jA}·r_{jB} − (s·κ/2)·Σ_{k,q} W_{kq}·Σ_{i,j} r_{ik}·B_{kq}(d_{ij})·r_{jq} − ρ·Σ_j G(r_j) + τ·Σ_{c,j} x_{cj}·log(x_{cj} ÷ λ_c)$</span>
           is lowest. $x_{cj}$ is the flow of class $c$ to site $j$, and $G$ is the function whose slope is $log(1 + r/r_0)$. Under a fixed
           supply, the constraint $r_j = c$ takes the place of $κ·r_j^2/2$. Every price is the slope of $F$ at its site’s load, a
           [[lagrange|Lagrange multiplier]], which makes the model a [[potential|potential game]] [[@monderer1996;sandholm2001]].
@@ -1100,6 +1110,7 @@
             <tr><td class="sym">$w_j$, fit, $m$</td><td>The share of a building [[fit|fitted]] for each use; $m$, what a misfit costs</td><td>The share of a neuron’s synapses [[tuning|tuned]] to each input; its drive is $w·x$ [[@rumelhart1985]]</td><td class="how">The same term</td></tr>
             <tr><td class="sym">$w_j$ → the mix served</td><td>Refitting toward current use</td><td>[[competitive|Competitive learning]]: weights move toward the inputs won [[@grossberg1976;rumelhart1985]]</td><td class="how">The same rule</td></tr>
             <tr><td class="sym">$σ$</td><td>[[localization|Localization economies]]: firms learn from nearby firms [[@marshall1890;lucas2002]]</td><td>The neighbourhood of a [[som|self-organizing map]] [[@kohonen1982]]</td><td class="how">The same kernel</td></tr>
+            <tr><td class="sym">$s·κ·Σ_q W_{kq}·(B_{kq} ∗ r_q)_j$</td><td>[[agglomeration|Agglomeration]]: the gain from being near the types one deals with, falling off with distance [[@beckmann1976;fujita1982]]</td><td>[[wiringeconomy|Wiring economy]]: short wires to the populations a neuron reads from [[@chklovskii2004;chen2006]]</td><td class="how">The same term; with symmetric $W$ it is the slope of a pairwise term of $F$, so prices stay multipliers. A bump that forms with no input given is a [[neuralfield|neural field]]’s [[@amari1977]]</td></tr>
             <tr><td class="sym">$ν·κ·r_{j,−k}$</td><td>[[nuisance|Nuisance]] from another use there [[@coase1960]]</td><td>[[interference|Interference]] from another feature on the same neuron [[@elhage2022]]</td><td class="how">The same term; in the toy models, interference grows with the overlap squared times how often the other feature is active</td></tr>
             <tr><td class="sym">$ρ·log(1 + r_j/r_0)$</td><td>[[scale|Economies of scale]], learning by doing [[@arrow1962]]</td><td>Rich-get-richer routing; [[collapse|expert collapse]] [[@shazeer2017]]</td><td class="how">The same term: the pull grows as $(1 + r/r_0)^{ρ/τ}$, an [[urn|urn]] process [[@arthur1989]], and even loads break when $ρ/τ > 1 + r_0/r$</td></tr>
             <tr><td class="sym">$B_j$</td><td>[[built|Built stock]], durable [[@glaeser2005durable]]</td><td>Capacity kept for a neuron, like the metabolic machinery that follows its activity [[@wongriley1989]]</td><td class="how">The same bookkeeping; no choice depends on it</td></tr>
@@ -1254,7 +1265,8 @@
           layout: { kind: 'sheet', radius: 12 },
           types: [{ share: 1 }], // share of demand; optional distance cost per type
           demand: 53.6, // arrivals per unit time (population ⇄ input rate)
-          sources: 'center', // 'center' | 'everywhere' | 'sequence'
+          sources: 'center', // 'center' | 'everywhere' | 'sequence' | 'anywhere' (no starting point: only the interaction term places arrivals)
+          sourceAt: null, // 'center': where the one source sits, [x, y]; default the origin. A harbour ⇄ a sensory input
           content: null, // 'sequence': the type at each position
           reach: Infinity, // farthest site an arrival considers
           causal: false, // 'sequence': only positions at or before the source
@@ -1272,6 +1284,19 @@
           // matrix[k][q]: how much type k minds type q's load, in units of strength (default 1 off the
           // diagonal: symmetric). Negative entries attract. Unequal entries leave the model without a free energy.
           nuisance: { strength: 0, memory: 20, matrix: null },
+          // Agglomeration ⇄ wiring economy: a type-k arrival at j gains strength·κ·Σ_q W_kq·(B_kq ∗ r_q)_j, where
+          // B_kq(d) = e^{−d/reach_kq} ÷ Z_kq is the interaction kernel (Z: its sum over the sheet from the centre)
+          // and matrix[k][q] = W_kq says how much type k deals with type q (default: all ones). reach is one
+          // number or a K×K matrix. With symmetric W and reach the term is the slope of
+          // −strength·κ/2·Σ W_kq (r_k·B_kq·r_q), so the free energy still exists. memory: how long it takes
+          // arrivals to learn where the others are (the field follows the load with this time constant).
+          // saturate (null, a number x₀, or a K×K matrix): the gain from a type is x₀·log(1 + field/x₀), linear
+          // for small fields and flattening for large ones: one job, one shop, one input is what a unit needs,
+          // and more nearby add less. With saturation the free energy is lost for that pair.
+          // compete: a second, repelling kernel at a longer reach: a type-k arrival at j also pays
+          // compete.strength·κ·Σ_q C_kq·(B_long ∗ r_q)_j. Firms that gain from neighbours but share their customers
+          // with everyone in a wider market ⇄ a neural field with local excitation and longer-range inhibition.
+          interaction: { strength: 0, reach: 3, matrix: null, memory: 20, saturate: null, compete: { strength: 0, reach: 6, matrix: null } },
           zoning: 'none', // 'none' | 'single-use'
           similarity: null, // K×K: how well a site tuned to type q serves type k (default identity)
           scale: { strength: 0, ref: 0.2 }, // economies of scale ⇄ rich-get-richer
@@ -1342,6 +1367,14 @@
           const misPart = new Float64Array(N * K);
           const nuiPart = new Float64Array(N * K);
           const taxPart = new Float64Array(N * K); // taxes an arrival pays at a site: per resident, Pigouvian
+          const attPart = new Float64Array(N * K); // minus the agglomeration ⇄ wiring gain at a site
+          const field = new Float64Array(N * K * K); // (B_kq ∗ hAtt_q)_j: recent use of type q near j, as type k weighs it
+          const fieldC = new Float64Array(N * K * K); // the same through the competition kernel
+          const hAtt = new Float64Array(N * K); // recent use by type as the interaction term sees it, with its own memory
+          let IB = null; // interaction kernels: IB[k][q] = { B: N × N, Z }
+          let IC = null; // competition kernels, the same shape
+          let ID = null; // site-pair distances, N × N
+          let shuffle = null; // a fixed permutation of the sites
           const nextW = new Float64Array(N * K);
           const Tk = new Float64Array(K);
           const acc = { flow: 0, dist: 0, cost: 0, nuis: 0, mism: 0, tax: 0, arrived: 0, stayed: 0, load: 0, built: 0 };
@@ -1375,7 +1408,8 @@
           function buildClasses() {
             const out = [];
             const add = (type, x, y, t, weight, home) => out.push({ type, x, y, t, weight, home });
-            if (cfg.sources === 'center') cfg.types.forEach((tp, k) => add(k, 0, 0, tp.cost ?? cfg.distanceCost, 1, -1));
+            if (cfg.sources === 'center') cfg.types.forEach((tp, k) => add(k, cfg.sourceAt ? cfg.sourceAt[0] : 0, cfg.sourceAt ? cfg.sourceAt[1] : 0, tp.cost ?? cfg.distanceCost, 1, -1));
+            else if (cfg.sources === 'anywhere') cfg.types.forEach((_, k) => add(k, 0, 0, 0, 1, -1));
             else if (cfg.sources === 'everywhere') {
               for (let j = 0; j < N; j++) for (let k = 0; k < K; k++) add(k, L.x[j], L.y[j], cfg.types[k].cost ?? cfg.distanceCost, 1 / N, j);
             } else if (cfg.sources === 'sequence') {
@@ -1424,6 +1458,57 @@
             nbrW = Float64Array.from(wt);
             nbrStart = Int32Array.from(start);
           }
+          function buildInteraction() {
+            IB = IC = null;
+            if (!(cfg.interaction.strength > 0)) return;
+            ID = new Float32Array(N * N);
+            for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) ID[j * N + i] = Math.hypot(L.x[i] - L.x[j], L.y[i] - L.y[j]);
+            // the most central site: the one with the smallest total distance to the others
+            let c = 0;
+            let best = Infinity;
+            for (let j = 0; j < N; j++) {
+              let t = 0;
+              for (let i = 0; i < N; i++) t += ID[j * N + i];
+              if (t < best) {
+                best = t;
+                c = j;
+              }
+            }
+            const kernels = new Map();
+            const build = (reach) =>
+              Array.from({ length: K }, (_, k) =>
+                Array.from({ length: K }, (_, q) => {
+                  const ell = Math.max(1e-6, typeof reach === 'number' ? reach : reach[k][q]);
+                  if (!kernels.has(ell)) {
+                    const B = new Float32Array(N * N);
+                    for (let i = 0; i < N * N; i++) B[i] = Math.exp(-ID[i] / ell);
+                    // normalize by the kernel's sum from the most central site, so a uniform load r gives a field of r
+                    let Z = 0;
+                    for (let i = 0; i < N; i++) Z += B[c * N + i];
+                    // and each site's own kernel mass, for fields read as a local density (competition)
+                    const Mloc = new Float32Array(N);
+                    for (let j = 0; j < N; j++) {
+                      let t = 0;
+                      for (let i = 0; i < N; i++) t += B[j * N + i];
+                      Mloc[j] = t;
+                    }
+                    kernels.set(ell, { B, Z, M: Mloc });
+                  }
+                  return kernels.get(ell);
+                }),
+              );
+            IB = build(cfg.interaction.reach);
+            if (cfg.interaction.compete && cfg.interaction.compete.strength > 0) IC = build(cfg.interaction.compete.reach);
+            // a fixed shuffle of the sites, for the readout's "same loads, placed at random" comparison
+            const rr = rng32(7);
+            shuffle = Int32Array.from({ length: N }, (_, j) => j);
+            for (let j = N - 1; j > 0; j--) {
+              const i = Math.floor(rr() * (j + 1));
+              const t = shuffle[j];
+              shuffle[j] = shuffle[i];
+              shuffle[i] = t;
+            }
+          }
           function markCapped() {
             for (let j = 0; j < N; j++) capped[j] = Number.isFinite(cfg.cap.rate) && !(cfg.cap.exempt > 0 && centerDist[j] <= cfg.cap.exempt + 1e-9) ? 1 : 0;
             if (!Number.isFinite(cfg.cap.rate)) b.fill(0);
@@ -1453,7 +1538,8 @@
           // A little random recent use, so identical uses can tell sites apart (symmetry breaking).
           function initTraces() {
             h.fill(0);
-            if (cfg.nuisance.strength > 0 || cfg.scale.strength > 0) for (let i = 0; i < N * K; i++) h[i] = 0.02 * (cfg.demand / N) * rand();
+            if (cfg.nuisance.strength > 0 || cfg.scale.strength > 0 || cfg.interaction.strength > 0) for (let i = 0; i < N * K; i++) h[i] = 0.02 * (cfg.demand / N) * rand();
+            if (cfg.interaction.strength > 0) for (let i = 0; i < N * K; i++) hAtt[i] = 0.02 * (cfg.demand / N) * rand();
           }
           function initSchedule() {
             const s = cfg.schedule;
@@ -1651,6 +1737,30 @@
             const cap = agentsOn() && !dropOverflow() ? capCount() : Infinity;
             const head = cfg.tax.head || 0;
             const pigou = cfg.tax.pigou ? 1 : 0;
+            const att = cfg.interaction.strength;
+            const W = cfg.interaction.matrix;
+            const comp = cfg.interaction.compete && IC ? cfg.interaction.compete.strength : 0;
+            const C = cfg.interaction.compete ? cfg.interaction.compete.matrix : null;
+            // Attraction counts the partners within reach (a sum: the middle of a bounded plain has more of them).
+            // Competition is read as a local density (the sum over each site's own kernel mass), so an edge site
+            // isn't spared competition just for having fewer neighbours.
+            const convolve = (kern, Wm, out, saturate, local) => {
+              for (let k = 0; k < K; k++) {
+                for (let q = 0; q < K; q++) {
+                  if (Wm && !(Wm[k][q] !== 0)) continue;
+                  const { B, Z, M: Mloc } = kern[k][q];
+                  const sat = saturate == null ? 0 : typeof saturate === 'number' ? saturate : saturate[k][q];
+                  for (let j = 0; j < N; j++) {
+                    let f = 0;
+                    for (let i = 0; i < N; i++) f += B[j * N + i] * hAtt[i * K + q];
+                    f /= local ? Mloc[j] : Z;
+                    out[(j * K + k) * K + q] = sat > 0 ? sat * Math.log(1 + f / sat) : f;
+                  }
+                }
+              }
+            };
+            if (att > 0 && IB) convolve(IB, W, field, cfg.interaction.saturate, false);
+            if (comp > 0) convolve(IC, C, fieldC, null, true);
             for (let j = 0; j < N; j++) {
               let hsum = 0;
               for (let k = 0; k < K; k++) hsum += h[j * K + k];
@@ -1660,7 +1770,7 @@
                 const idx = j * K + k;
                 if (full || (zoned && zone[j] !== k)) {
                   sitePart[idx] = Infinity;
-                  misPart[idx] = nuiPart[idx] = taxPart[idx] = 0;
+                  misPart[idx] = nuiPart[idx] = taxPart[idx] = attPart[idx] = 0;
                   continue;
                 }
                 let fit = 0;
@@ -1682,7 +1792,13 @@
                 misPart[idx] = mis;
                 nuiPart[idx] = nui;
                 taxPart[idx] = head + pigou * caused;
-                sitePart[idx] = p + mis + nui + taxPart[idx];
+                // the gain from being near the types this one deals with ⇄ short wires to the neurons it reads from
+                let gain = 0;
+                if (att > 0 && IB) for (let q = 0; q < K; q++) gain += (W ? W[k][q] : 1) * field[(j * K + k) * K + q];
+                let crowd = 0;
+                if (comp > 0) for (let q = 0; q < K; q++) crowd += (C ? C[k][q] : 1) * fieldC[(j * K + k) * K + q];
+                attPart[idx] = -att * kappa * gain + comp * kappa * crowd;
+                sitePart[idx] = p + mis + nui + taxPart[idx] + attPart[idx];
               }
             }
           }
@@ -1881,6 +1997,10 @@
               const dm = dt / Math.max(1, cfg.nuisance.memory);
               for (let i = 0; i < N * K; i++) h[i] += (rk[i] - h[i]) * dm;
             }
+            if (cfg.interaction.strength > 0) {
+              const da = Math.min(1, dt / Math.max(1e-6, cfg.interaction.memory));
+              for (let i = 0; i < N * K; i++) hAtt[i] += (rk[i] - hAtt[i]) * da;
+            }
             if (agents) {
               const f = Math.min(1, dt / stayMean());
               const fade = Math.exp(-dt / stayMean());
@@ -2046,7 +2166,7 @@
               const j = cl.sites[q];
               const idx = j * K + k;
               const head = cfg.tax.head || 0;
-              return { commute: -cl.base[q], price: a[j] + b[j], scale: a[j] + b[j] + misPart[idx] + nuiPart[idx] + taxPart[idx] - sitePart[idx], mismatch: misPart[idx], nuisance: nuiPart[idx], head, pigou: taxPart[idx] - head };
+              return { commute: -cl.base[q], price: a[j] + b[j], scale: a[j] + b[j] + misPart[idx] + nuiPart[idx] + taxPart[idx] + attPart[idx] - sitePart[idx], mismatch: misPart[idx], nuisance: nuiPart[idx], head, pigou: taxPart[idx] - head, attraction: -attPart[idx] };
             };
             // With dropped overflow the choice can land on a full site, which then turns it away.
             const full = !leaves && agentsOn() && dropOverflow() && capped[cl.sites[best]] && occ[cl.sites[best]] >= capCount();
@@ -2079,9 +2199,10 @@
             const prevEngine = cfg.engine;
             Object.assign(cfg, merge(cfg, patch));
             const has = (k) => Object.prototype.hasOwnProperty.call(patch, k);
-            if (['distanceCost', 'types', 'sources', 'reach', 'causal', 'content'].some(has)) buildClasses();
+            if (['distanceCost', 'types', 'sources', 'sourceAt', 'reach', 'causal', 'content'].some(has)) buildClasses();
             if (has('similarity')) buildSimilarity();
             if (has('tuning') && 'spill' in patch.tuning) buildKernel();
+            if (has('interaction')) buildInteraction();
             if (has('cap')) markCapped();
             if (has('schedule') && cfg.schedule.kind !== prevSchedule) initSchedule();
             if (has('tuning') && cfg.tuning.mode !== prevMode && cfg.tuning.mode !== 'learned') initTuning();
@@ -2173,11 +2294,109 @@
                 cn++;
               }
             }
+            // Where the load sits, and how far apart interacting partners are
+            let cx = 0;
+            let cy = 0;
+            let tot = 0;
+            const typeTot = new Float64Array(K);
+            for (let j = 0; j < N; j++) {
+              cx += R[j] * L.x[j];
+              cy += R[j] * L.y[j];
+              tot += R[j];
+              for (let k = 0; k < K; k++) typeTot[k] += rk[j * K + k];
+            }
+            const centroid = tot > 0 ? [cx / tot, cy / tot] : [0, 0];
+            // each type's mean distance from the one given point (the centre, or the harbour ⇄ input)
+            const srcX = cfg.sourceAt ? cfg.sourceAt[0] : 0;
+            const srcY = cfg.sourceAt ? cfg.sourceAt[1] : 0;
+            const typeDist = Array.from(typeTot, (t, k) => {
+              if (!(t > 0)) return 0;
+              let s = 0;
+              for (let j = 0; j < N; j++) s += rk[j * K + k] * Math.hypot(L.x[j] - srcX, L.y[j] - srcY);
+              return s / t;
+            });
+            let pairDistance = 0;
+            let hops = null;
+            let hopsShuffled = null;
+            let peaks = 0;
+            if (cfg.interaction.strength > 0 && ID) {
+              const W = cfg.interaction.matrix;
+              let num = 0;
+              let den = 0;
+              const hopNum = new Float64Array(Math.max(0, K - 1));
+              const hopDen = new Float64Array(Math.max(0, K - 1));
+              const shNum = new Float64Array(Math.max(0, K - 1));
+              for (let j = 0; j < N; j++) {
+                for (let i = 0; i < N; i++) {
+                  const d = ID[j * N + i];
+                  const ds = ID[shuffle[j] * N + shuffle[i]];
+                  for (let k = 0; k < K; k++) {
+                    for (let q = 0; q < K; q++) {
+                      const wkq = W ? W[k][q] : 1;
+                      if (!(wkq > 0)) continue;
+                      const m = wkq * rk[j * K + k] * rk[i * K + q];
+                      num += m * d;
+                      den += m;
+                      if (q === k + 1) {
+                        hopNum[k] += m * d;
+                        hopDen[k] += m;
+                        shNum[k] += m * ds;
+                      }
+                    }
+                  }
+                }
+              }
+              pairDistance = den > 0 ? num / den : 0;
+              hops = Array.from(hopNum, (v, k) => (hopDen[k] > 0 ? v / hopDen[k] : 0));
+              hopsShuffled = Array.from(shNum, (v, k) => (hopDen[k] > 0 ? v / hopDen[k] : 0));
+              // centres: local maxima of the load smoothed by the interaction kernel, above a quarter of the
+              // highest. With several types, the first type's load (firms ⇄ population A) is what clusters.
+              const { B } = IB[0][0];
+              const sm = new Float64Array(N);
+              let mx = 0;
+              for (let j = 0; j < N; j++) {
+                let v = 0;
+                for (let i = 0; i < N; i++) v += B[j * N + i] * (K > 1 ? rk[i * K] : R[i]);
+                sm[j] = v;
+                if (v > mx) mx = v;
+              }
+              for (let j = 0; j < N; j++) {
+                if (sm[j] < 0.25 * mx) continue;
+                let top = true;
+                for (let i = 0; i < N && top; i++) if (i !== j && ID[j * N + i] <= 2.5 && sm[i] > sm[j]) top = false;
+                if (top) peaks++;
+              }
+            }
+            // concentration: the share of type 0's load on its busiest tenth of sites; mixing: cosine of two types' loads
+            const sorted0 = Array.from({ length: N }, (_, j) => rk[j * K]).sort((p, q) => q - p);
+            let top = 0;
+            for (let i = 0; i < Math.ceil(N / 10); i++) top += sorted0[i];
+            const concentration = typeTot[0] > 0 ? top / typeTot[0] : 0;
+            let mixing = 0;
+            if (K >= 2) {
+              let ab = 0;
+              let aa = 0;
+              let bb = 0;
+              for (let j = 0; j < N; j++) {
+                ab += rk[j * K] * rk[j * K + 1];
+                aa += rk[j * K] ** 2;
+                bb += rk[j * K + 1] ** 2;
+              }
+              mixing = aa > 0 && bb > 0 ? ab / Math.sqrt(aa * bb) : 0;
+            }
             return {
               used,
               dead,
               peak,
               mean,
+              centroid,
+              typeDist,
+              pairDistance,
+              hops,
+              hopsShuffled,
+              peaks,
+              concentration,
+              mixing,
               imbalance: mean > 0 ? peak / mean : 0,
               meanDistance: acc.flow > 0 ? acc.dist / acc.flow : 0,
               // what an arrival weighs, taxes apart: commute + rent + mismatch + nuisance − scale bonus
@@ -2199,6 +2418,7 @@
           buildClasses();
           buildSimilarity();
           buildKernel();
+          buildInteraction();
           markCapped();
           initTuning();
           initTraces();
@@ -2248,6 +2468,8 @@
             },
             agentLoad,
             kappaEff,
+            attPart,
+            kernel: () => ({ B: IB, C: IC, D: ID }),
             price: (j) => a[j] + b[j],
             run,
             computeReference,
@@ -2281,6 +2503,61 @@
             net: 'Competitive layer with adaptation',
             types: [{ econ: 'Households', net: 'Input events' }],
             config: { layout: SHEET, types: [{ share: 1 }], demand: LAND, temperature: 0.15 },
+            unitsPerFrame: 4,
+          },
+          {
+            id: 'agglomeration',
+            econ: 'A downtown forms by itself',
+            net: 'A bump forms by itself',
+            types: [{ econ: 'Households', net: 'Input events' }],
+            config: {
+              layout: SHEET,
+              sources: 'anywhere',
+              distanceCost: 0,
+              demand: LAND,
+              temperature: 0.15,
+              interaction: { strength: 2, reach: 2, memory: 40 },
+            },
+            unitsPerFrame: 4,
+          },
+          {
+            id: 'firmshomes',
+            econ: 'Firms and homes place themselves',
+            net: 'Connected populations settle side by side',
+            types: [
+              { econ: 'Firms', net: 'Population A, recurrent' },
+              { econ: 'Homes', net: 'Population B, feeds A' },
+            ],
+            config: {
+              layout: SHEET,
+              sources: 'anywhere',
+              distanceCost: 0,
+              demand: LAND,
+              temperature: 0.15,
+              types: [{ share: 0.25 }, { share: 0.75 }],
+              interaction: { strength: 2, reach: [[1, 3], [3, 3]], matrix: [[1.5, 1], [1, 0]], memory: 40, compete: { strength: 0, reach: 3, matrix: [[1, 0], [0, 0]] } },
+            },
+            unitsPerFrame: 4,
+          },
+          {
+            id: 'hierarchy',
+            econ: 'A port city: docks, works, homes',
+            net: 'A hierarchy fans out from the input',
+            types: [
+              { econ: 'Docks and warehouses', net: 'Area 1, reads the input' },
+              { econ: 'Works', net: 'Area 2, reads area 1' },
+              { econ: 'Homes', net: 'Area 3, reads area 2' },
+            ],
+            config: {
+              layout: SHEET,
+              sources: 'center',
+              sourceAt: [-11, 0],
+              distanceCost: 0,
+              demand: 30,
+              temperature: 0.15,
+              types: [{ share: 1 / 3, cost: 1 }, { share: 1 / 3, cost: 0 }, { share: 1 / 3, cost: 0 }],
+              interaction: { strength: 2.5, reach: 2, matrix: [[1, 1, 0], [1, 1, 1], [0, 1, 1]], memory: 40 },
+            },
             unitsPerFrame: 4,
           },
           {
@@ -2545,6 +2822,25 @@
           george1879: { a: 'George', A: 'H. George', y: 1879, t: 'Progress and Poverty', v: 'D. Appleton', u: wp('Progress and Poverty'), why: 'Land rent is created by the community, not the owner, and should be taxed.' },
           monderer1996: { a: 'Monderer & Shapley', A: 'D. Monderer and L. S. Shapley', y: 1996, t: 'Potential games', v: 'Games and Economic Behavior 14(1): 124–143', u: 'https://doi.org/10.1006/game.1996.0044', why: 'Games in which each player’s gain from switching equals the change in one shared function, the potential.' },
           hofbauer2009: { a: 'Hofbauer & Sandholm', A: 'J. Hofbauer and W. H. Sandholm', y: 2009, t: 'Stable games and their dynamics', v: 'Journal of Economic Theory 144(4): 1665–1693', u: 'https://doi.org/10.1016/j.jet.2009.01.007', why: 'Games where switching never pays off for everyone at once settle under many adjustment rules, with or without a potential.' },
+          amari1977: { a: 'Amari', A: 'S. Amari', y: 1977, t: 'Dynamics of pattern formation in lateral-inhibition type neural fields', v: 'Biological Cybernetics 27(2): 77–87', u: 'https://doi.org/10.1007/BF00337259', why: 'A sheet with local excitation and inhibition holds a bump of activity wherever it starts, captured by a weak input; with wider inhibition, periodic patterns.' },
+          beckmann1976: { a: 'Beckmann', A: 'M. J. Beckmann', y: 1976, t: 'Spatial equilibrium in the dispersed city', v: 'In G. J. Papageorgiou (ed.), Mathematical Land Use Theory, Lexington Books, 117–125', why: 'A city whose only force is the wish to be near everyone else, against rent: a centre forms with no centre given, with bell-shaped density and rent.' },
+          mossay2011: { a: 'Mossay & Picard', A: 'P. Mossay and P. M. Picard', y: 2011, t: 'On spatial equilibria in a social interaction model', v: 'Journal of Economic Theory 146(6): 2455–2477', u: 'https://doi.org/10.1016/j.jet.2011.06.009', why: 'Revisits Beckmann’s city of social interactions: the equilibrium is a single, bell-shaped city.' },
+          fujita1982: { a: 'Fujita & Ogawa', A: 'M. Fujita and H. Ogawa', y: 1982, t: 'Multiple equilibria and structural transition of non-monocentric urban configurations', v: 'Regional Science and Urban Economics 12(2): 161–196', u: 'https://doi.org/10.1016/0166-0462(82)90031-X', why: 'Firms gain from nearby firms, workers commute: as commuting cost rises against the reach of spillovers, the city goes from monocentric to polycentric to fully mixed.' },
+          ogawa1980: { a: 'Ogawa & Fujita', A: 'H. Ogawa and M. Fujita', y: 1980, t: 'Equilibrium land use patterns in a nonmonocentric city', v: 'Journal of Regional Science 20(4): 455–475', u: 'https://doi.org/10.1111/j.1467-9787.1980.tb00662.x', why: 'The first version of the model in which business districts are outcomes rather than assumptions.' },
+          fujita2002: { a: 'Fujita & Thisse', A: 'M. Fujita and J.-F. Thisse', y: 2002, t: 'Economics of Agglomeration: Cities, Industrial Location, and Regional Growth', v: 'Cambridge University Press', u: 'https://doi.org/10.1017/CBO9780511805660', why: 'The textbook of why activity clusters: the pulls toward others against the pushes of rent and competition.' },
+          krugman1991: { a: 'Krugman', A: 'P. Krugman', y: 1991, t: 'Increasing returns and economic geography', v: 'Journal of Political Economy 99(3): 483–499', u: 'https://doi.org/10.1086/261763', why: 'The core–periphery model: with increasing returns and transport costs, activity concentrates, and small initial advantages decide where.' },
+          christaller1933: { a: 'Christaller', A: 'W. Christaller', y: 1933, t: 'Die zentralen Orte in Süddeutschland', v: 'Gustav Fischer, Jena', u: 'https://en.wikipedia.org/wiki/Central_place_theory', why: 'Towns that serve the customers within their reach space themselves evenly across a plain: central place theory.' },
+          klyachko2003: { a: 'Klyachko & Stevens', A: 'V. A. Klyachko and C. F. Stevens', y: 2003, t: 'Connectivity optimization and the positioning of cortical areas', v: 'PNAS 100(13): 7937–7941', u: 'https://doi.org/10.1073/pnas.0932745100', why: 'The positions of macaque cortical areas minimize total wiring given which areas connect to which.' },
+          chen2006: { a: 'Chen, Hall & Chklovskii', A: 'B. L. Chen, D. H. Hall and D. B. Chklovskii', y: 2006, t: 'Wiring optimization can relate neuronal structure and function', v: 'PNAS 103(12): 4723–4728', u: 'https://doi.org/10.1073/pnas.0506806103', why: 'Neuron positions in the worm predicted by minimizing wiring given the connectome.' },
+          chklovskii2004: { a: 'Chklovskii & Koulakov', A: 'D. B. Chklovskii and A. A. Koulakov', y: 2004, t: 'Maps in the brain: what can we learn from them?', v: 'Annual Review of Neuroscience 27: 369–392', u: 'https://doi.org/10.1146/annurev.neuro.27.070203.144226', why: 'Cortical maps as solutions to a wiring-economy problem: connected neurons placed close.' },
+          cherniak1994: { a: 'Cherniak', A: 'C. Cherniak', y: 1994, t: 'Component placement optimization in the brain', v: 'Journal of Neuroscience 14(4): 2418–2427', u: 'https://doi.org/10.1523/JNEUROSCI.14-04-02418.1994', why: 'Ganglion and area positions as a component-placement problem: the actual layout minimizes wiring among the alternatives.' },
+          kaiser2006: { a: 'Kaiser & Hilgetag', A: 'M. Kaiser and C. C. Hilgetag', y: 2006, t: 'Nonoptimal component placement, but short processing paths, due to long-distance projections in neural systems', v: 'PLoS Computational Biology 2(7): e95', u: 'https://doi.org/10.1371/journal.pcbi.0020095', why: 'Brains keep some long wires that pure wiring minimization would cut, because they shorten the number of hops a signal needs.' },
+          bullmore2012: { a: 'Bullmore & Sporns', A: 'E. Bullmore and O. Sporns', y: 2012, t: 'The economy of brain network organization', v: 'Nature Reviews Neuroscience 13(5): 336–349', u: 'https://doi.org/10.1038/nrn3214', why: 'Brain networks trade wiring cost against how efficiently signals can travel.' },
+          bassett2010: { a: 'Bassett et al.', A: 'D. S. Bassett, D. L. Greenfield, A. Meyer-Lindenberg, D. R. Weinberger, S. W. Moore and E. T. Bullmore', y: 2010, t: 'Efficient physical embedding of topologically complex information processing networks in brains and computer circuits', v: 'PLoS Computational Biology 6(4): e1000748', u: 'https://doi.org/10.1371/journal.pcbi.1000748', why: 'Brains and chips both obey Rent’s rule: the connections leaving a region scale with its size by an exponent set by how it is embedded in space.' },
+          lamme2000: { a: 'Lamme & Roelfsema', A: 'V. A. F. Lamme and P. R. Roelfsema', y: 2000, t: 'The distinct modes of vision offered by feedforward and recurrent processing', v: 'Trends in Neurosciences 23(11): 571–579', u: 'https://doi.org/10.1016/S0166-2236(00)01657-X', why: 'A fast feedforward sweep gives a first answer; recurrent processing refines it over time.' },
+          ermentrout1979: { a: 'Ermentrout & Cowan', A: 'G. B. Ermentrout and J. D. Cowan', y: 1979, t: 'A mathematical theory of visual hallucination patterns', v: 'Biological Cybernetics 34(3): 137–150', u: 'https://doi.org/10.1007/BF00336965', why: 'A neural field with local excitation and wider inhibition breaks into periodic patterns.' },
+          achterberg2023: { a: 'Achterberg et al.', A: 'J. Achterberg, D. Akarca, D. J. Strouse, J. Duncan and D. E. Astle', y: 2023, t: 'Spatially embedded recurrent neural networks reveal widespread links between structural and functional neuroscience findings', v: 'Nature Machine Intelligence 5(12): 1369–1381', u: 'https://doi.org/10.1038/s42256-023-00748-9', why: 'Recurrent networks trained with a wiring cost in space grow modular, brain-like structure.' },
+          margalit2024: { a: 'Margalit et al.', A: 'E. Margalit, H. Lee, D. Finzi, J. J. DiCarlo, K. Grill-Spector and D. L. K. Yamins', y: 2024, t: 'A unifying framework for functional organization in early and higher ventral visual cortex', v: 'Neuron 112(14): 2435–2451', u: 'https://doi.org/10.1016/j.neuron.2024.04.018', why: 'A deep network with a spatial smoothness cost on a sheet grows orientation maps and category patches like cortex’s.' },
           sandholm2001: { a: 'Sandholm', A: 'W. H. Sandholm', y: 2001, t: 'Potential games with continuous player sets', v: 'Journal of Economic Theory 97(1): 81–108', u: 'https://doi.org/10.1006/jeth.2000.2696', why: 'Potential games for large populations, congestion games like this one among them.' },
           erlang1917: { a: 'Erlang', A: 'A. K. Erlang', y: 1917, t: 'Solution of some problems in the theory of probabilities of significance in automatic telephone exchanges', v: 'Elektroteknikeren 13', u: wp('Erlang (unit)#Erlang B formula'), why: 'The share of calls lost when c lines serve randomly arriving calls: the Erlang B formula.' },
           little1961: { a: 'Little', A: 'J. D. C. Little', y: 1961, t: 'A proof for the queuing formula L = λW', v: 'Operations Research 9(3): 383–387', u: 'https://doi.org/10.1287/opre.9.3.383', why: 'The number present equals the arrival rate times the time each stays.' },
@@ -2666,6 +2962,12 @@
           // interference
           nuisance: { t: 'Nuisance', d: 'The cost one use imposes on another in the same place: noise, traffic, smell. Coase used such disputes to show that who should give way isn’t obvious [[@coase1960]].', n: '[[interference|Interference]]', f: '$ν·κ·r_{j,−k}$, the other types’ load at $j$', l: [wp('Nuisance')] },
           stablegame: { t: 'Stable game', d: 'A game with self-defeating externalities: when people shift toward some choices, those choices get relatively worse. Only the symmetric part of how costs respond to choices matters for this. Such games settle under many adjustment rules even when no potential exists [[@hofbauer2009]]. Here a chase between two uses (B seeks A, A avoids B) is one; strong nuisance of any other shape is not.', n: 'Features whose interference is opposite in sign: one is helped by the other, which is hurt by it' },
+          agglomeration: { t: 'Agglomeration', d: 'The pull of being near those one deals with: customers, suppliers, workers, other firms. Beckmann made it the whole of a city: each household wants to be near all the others, pays rent for land, and a centre forms where none was given [[@beckmann1976;mossay2011]]. Here it is a kernel over distance, weighted by how much each type deals with each other type.', n: '[[wiringeconomy|Wiring economy]]: neurons sit near the neurons they connect to', f: '$s·κ·Σ_q W_{kq}·(B_{kq} ∗ r_q)_j$', l: [wp('Economies of agglomeration')] },
+          wiringeconomy: { t: 'Wiring economy', d: 'Wire is costly in volume, time and energy, so a brain lays out its neurons and areas to keep the wires it needs short: the positions of cortical areas and of neurons in a worm are predicted by minimizing wiring given who connects to whom [[@cherniak1994;klyachko2003;chen2006;chklovskii2004]]. Brains don’t minimize wiring alone; a few long projections buy short processing paths [[@kaiser2006;bullmore2012]]. Trained networks given a wiring cost on a sheet grow maps and modules like cortex’s [[@achterberg2023;margalit2024]].', e: '[[agglomeration|Agglomeration]]', l: [wp('Component placement')] },
+          neuralfield: { t: 'Neural field', d: 'A sheet of neurons with excitation that falls off with distance and inhibition that holds the total down. Amari showed such a field holds a localized bump of activity wherever it happens to start, and that a weak external input captures it [[@amari1977]]; with longer-range inhibition the bumps form a periodic array [[@ermentrout1979]]. The one-type agglomeration setting has this form: attraction within reach, self-inhibition at each site, and a fixed total.', e: 'A city with no centre given, which grows one [[@beckmann1976]]', l: [wp('Neural field')] },
+          centralplace: { t: 'Central places', d: 'Christaller’s account of why towns of a given size are spaced evenly across a plain: each serves the customers within its reach, and towns too close compete for the same ones [[@christaller1933]]. Krugman derived the spacing from a pull toward other firms against a push from competition for customers, a Turing-type instability [[@krugman1996]]. The same pull-and-push forms a periodic array of bumps in a [[neuralfield|neural field]] [[@ermentrout1979]].', n: 'A periodic array of activity bumps; modules', l: [wp('Central place theory')] },
+          lateralinhibition: { t: 'Lateral inhibition', d: 'Neurons suppress their neighbours over some range. With local excitation and wider inhibition (a “Mexican hat”), a sheet of neurons breaks into a regular pattern of active patches [[@amari1977;ermentrout1979]]; the same shape of interaction forms ocular-dominance columns [[@miller1989]]. Here: a second kernel of the opposite sign and a longer reach.', e: 'Competition for the same customers over a wider market [[@krugman1996]]', f: 'compete.strength · κ · Σ_q C_{kq}·(B_long ∗ r_q)_j', l: [wp('Lateral inhibition')] },
+          latency: { t: 'Latency', d: 'How long an answer takes. In a layout with wiring costs, a message’s latency is the length of wire ⇄ road it crosses, so the layout fixes the latency of every path. A feedforward pass crosses a chain of areas once, a fixed latency; recurrent and predictive-coding networks keep exchanging messages between neighbours until they agree, so they can answer early and roughly or late and exactly, as vision does with a fast feedforward sweep and slower recurrent refinement [[@lamme2000]]. In the port-city setting the readout sums the hops from the harbour ⇄ input to the last kind.', e: 'The corner shop answers now; the specialist downtown answers later and better', l: [wp('Latency (engineering)')] },
           interference: { t: 'Interference', d: 'When two features share a neuron and are active at the same time, each blurs the other’s signal. In Toy Models of Superposition, a feature’s error from sharing grows with the overlap squared times how often the other feature is active [[@elhage2022]].', e: '[[nuisance|Nuisance]]', f: '$ν·κ·r_{j,−k}$' },
           superposition: { t: 'Superposition', d: 'A network representing more features than it has neurons by letting features share neurons. It works when features are rarely active together [[@elhage2022]].', e: 'Uses taking turns in the same buildings', l: [['Toy Models of Superposition', 'https://transformer-circuits.pub/2022/toy_model/index.html']] },
           polysemantic: { t: 'Polysemantic neuron', d: 'A neuron that responds to several unrelated features [[@olah2020]].', e: 'A building that serves several uses', f: 'A site at least 20% of whose use, over its lifetime, is not its main type', l: [wp('Polysemanticity')] },
@@ -2780,6 +3082,24 @@
             same: 'Same equation, same numbers: the rent at each parcel is the adaptation of the matching neuron. As [[taste|tastes]] get less varied (the [[softmax|softmax]] gets colder), both approach the [[bidrent|bid-rent line]] in the chart: rent falls by exactly the commute cost per unit of distance, so every occupied parcel is equally good once rent is counted [[@alonso1964]]. The city ⇄ layer settles where its [[freeenergy|free energy]] is lowest, and rent ⇄ adaptation is the slope of the building cost ⇄ [[selfinhibition|self-inhibition]] there.',
             try: 'press Follow one arrival to watch a single household ⇄ spike choose. Then raise the commute cost ⇄ wiring cost: the city and the active region shrink and get taller, and the abandoned ring stands empty ⇄ idle until it is torn down ⇄ pruned.',
           },
+          agglomeration: {
+            econ: 'Nobody is told where downtown is. Each household wants to be near the others it deals with, within a reach, and pays [[rent|rent]] that rises with the floor space in use. From a flat plain a centre forms by itself, [[agglomeration|agglomeration]]: density and rent fall away from it, as in Beckmann’s city of social interactions [[@beckmann1976;mossay2011]]. On a bounded plain it forms at the most accessible point, the middle; a small pinned advantage, a harbour, moves it there.',
+            net: 'No input neuron. Each spike goes to a neuron near the neurons its population reads from (its own population: a recurrent connection), and each spike raises the winner’s [[adaptation|adaptation]]. Local excitation plus local inhibition on a sheet forms a bump of activity wherever it happens to start, a [[neuralfield|neural field]] [[@amari1977]]; a weak external input captures it. The bump is the [[wiringeconomy|wiring economy]] of one population: the shortest wires for the connections it has.',
+            same: 'This is the [[downtown|land market]] with its centre unpinned. The commute to a given point becomes the distance to wherever the others are, so the term that placed arrivals is now itself a sum over arrivals, and the free energy gets a pairwise term [[@beckmann1976]]. Where the centre forms is set by geography, not demand: on a plain, its middle; with a harbour, the harbour. In cortex the pinned feature is a sensory input, and the layout minimizes wiring given who connects to whom [[@chklovskii2004;chen2006]]. Add competition for customers over a wider market, and one centre becomes an even array of towns, [[centralplace|Christaller’s central places]] [[@christaller1933;krugman1996]] ⇄ the periodic bumps of a field with [[lateralinhibition|lateral inhibition]] [[@ermentrout1979]].',
+            try: 'raise the harbour pull from 0 and watch the whole city move to the coast. Then set it back, shorten the reach to 1.25 and raise the pull to 5: with no counterforce the whole city collapses into one tower, the “black hole” of agglomeration [[@krugman1991]]. Add competition for customers at 10 and the tower hollows out into a ring of towns around an empty middle ⇄ a ring of bumps; the firms-and-homes row shows towns proper.',
+          },
+          firmshomes: {
+            econ: 'Firms gain from other firms nearby ([[spillover|spillovers]], a short reach) and need homes within commuting reach; homes need firms. Nothing is pinned. With strong spillovers the firms form one dense centre and the homes a ring around it: the monocentric city, now as an outcome. With weak spillovers and a strong need for each other, firms and homes mix across the whole plain. With firms competing for the same customers over a wider market, several towns form, each with its own firms and homes [[@fujita1982;ogawa1980]].',
+            net: 'Two populations: A is recurrently connected (reads itself, short range) and reads from B; B reads from A. Wiring economy puts A in one compact hub with B around it when A’s recurrent connections dominate; it mixes them when the between-population connections dominate; and with longer-range [[lateralinhibition|lateral inhibition]] within A it breaks A into several modules, each with its own B [[@klyachko2003;chklovskii2004]].',
+            same: 'Fujita and Ogawa found these three regimes, monocentric, mixed and polycentric, by varying commuting cost against the reach of spillovers [[@fujita1982]]. Here the knobs are the three connection strengths, and the regimes read the same in both fields: a hub with a halo, a mixed sheet, or modules. The polycentric regime needs a push as well as a pull: local attraction alone always merges into one centre, and on a bounded plain a push with a long reach only drives the firms to the rim, so the market reach here is short [[@krugman1996]]. Readout: how concentrated the firms are, how mixed the two types are, and how many centres there are.',
+            try: 'lower spillovers ⇄ recurrent strength to 0.5 and raise the need for each other to 2: the ring dissolves into a mixed sheet. Then set spillovers to 3 and competition for customers ⇄ lateral inhibition to 20: several towns, each a firm cluster with homes around it.',
+          },
+          hierarchy: {
+            econ: 'A harbour on the coast is the one thing given. Docks and warehouses deal with the harbour and with each other; works deal with the docks; homes with the works. Each kind clusters, and the three settle inland in order: docks on the coast, works behind them, homes beyond, as port cities grew [[@fujita2002]]. Total travel between partners is far shorter than if the same buildings stood at random.',
+            net: 'A sensory input arrives at one edge of the sheet. Area 1 reads it, area 2 reads area 1, area 3 reads area 2, and each area is recurrently connected. Wiring economy lays the areas out in order of distance from the input, as cortical areas sit at distances from V1 that follow their connections [[@klyachko2003;cherniak1994]]. The hops between areas are the latency of a forward pass; a layout that ignored wiring would roughly double it [[@kaiser2006]].',
+            same: 'The “input” of the land market was a point; here it is a population whose place is itself chosen, and so on down the chain. This is the sense in which downtown is the output of other neurons. The cost each hop adds is the wire ⇄ road it crosses, so the layout fixes the [[latency|latency]] of every path. A feedforward pass crosses the chain once; a recurrent or predictive-coding network keeps passing messages between neighbours until they agree, and can answer early and roughly or late and exactly [[@lamme2000]]. Cities answer the same way: the corner shop now, the specialist downtown later.',
+            try: 'move the input to the centre: the areas become rings around it and the hops get longer. Lower the wiring strength and the areas spread and overlap.',
+          },
           lid: {
             econ: 'A [[heightlimit|height limit]] caps how many households a building can hold. Full buildings turn people away, so demand spills to the suburbs: more land, longer commutes, higher rents. Exempt downtown and it builds taller than with no limit at all. Let people [[leaving|move away]] and they leave instead of sprawling.',
             net: 'A [[ratecap|firing-rate cap]] limits how often a neuron can fire. Saturated neurons can’t take more spikes, so inputs spill to neurons farther from the input: more active neurons, longer wiring, higher thresholds. Leave the hub uncapped and it fires faster than with no cap at all. Allow inputs to be dropped and they are dropped instead of spreading.',
@@ -2847,6 +3167,14 @@
             return view === 'econ'
               ? 'Workers live everywhere and commute to nearby firms. Colour: which industry a block’s firms serve; height: how many work there.'
               : 'The dotted grid above is the input layer: both eyes project to every point. Each disc below is a neuron in cortex; colour: which eye it prefers ([[tuning|tuning]]).';
+          if (sim.cfg.sources === 'anywhere')
+            return view === 'econ'
+              ? `No centre is given. Each tile is a parcel; ${agents ? 'each floor is one [[agent|household]] living there now' : 'a building’s height is its [[floorspace|floor space in use]]'}${sim.K > 1 ? '; walls show who is inside' : ''}. Each arrival goes where the others it deals with are; the dashed ring marks where the centre formed.`
+              : `No input neuron is given. Each disc is a neuron; its size is how many of its [[spike|spikes]] are still in effect, which is also how [[adaptation|adapted]] it is${sim.K > 1 ? '; colour: which population it carries' : ''}. Each spike goes to a neuron near the neurons its population reads from; the dashed ring marks where the bump formed.`;
+          if (sim.cfg.sourceAt)
+            return view === 'econ'
+              ? 'The harbour (the pin, on the coast) is the one thing given. Walls: who is inside now. Each kind of arrival clusters, and settles at a distance from the harbour set by whom it deals with.'
+              : 'A sensory input arrives at one edge of the sheet (the pin). Colour: which area a neuron belongs to. Each area settles at a distance from the input set by what it reads from.';
           return view === 'econ'
             ? `Each tile is a parcel; ${agents ? 'each floor is one [[agent|household]] living there now' : 'a building’s height is its [[floorspace|floor space in use]]'}. Households set out from [[downtown|downtown]] (the pin); moving dots are a sample of them.`
             : `Each disc is a neuron in one layer. Its size is how many of its [[spike|spikes]] are still in effect, which is also how [[adaptation|adapted]] (hard to fire) it is. The input neuron above fires; moving dots are a sample of spikes, each won by one neuron.`;
@@ -2855,6 +3183,7 @@
         const TERMS = [
           { id: 'choice', sym: 'τ', econ: 'Variety of tastes in a [[logit|logit choice]]', net: '[[softmax|Softmax]] [[temperature|temperature]]; [[escapenoise|escape noise]]', short: 'taste variety ⇄ temperature' },
           { id: 'distance', sym: 't·d', econ: '[[commute|Commute cost]]', net: '[[wiring|Wiring cost]]; [[alibi|ALiBi]] distance penalty', short: 'commute ⇄ wiring cost' },
+          { id: 'interaction', sym: 's, W, ℓ', econ: '[[agglomeration|Agglomeration]]: nearness to the types one deals with', net: '[[wiringeconomy|Wiring economy]]: nearness to the populations one reads from', short: 'agglomeration ⇄ wiring economy' },
           { id: 'price', sym: 'p', econ: '[[rent|Rent]] or fee, adjusted to load', net: '[[adaptation|Adaptation]], [[homeostasis|set point]] or [[balancing|balancing bias]]', short: 'prices ⇄ adaptation' },
           { id: 'cap', sym: 'cap', econ: '[[heightlimit|Height]] or capacity limit', net: '[[ratecap|Maximum firing rate]], [[capfactor|capacity factor]]', short: 'a height limit ⇄ a rate cap' },
           { id: 'exit', sym: 'V₀', econ: 'Moving away, staying home: an [[outside|outside option]]', net: 'Dropping, [[sink|attention sink]]', short: 'an outside option: leaving ⇄ dropping' },
@@ -2884,11 +3213,14 @@
           return {
             layout:
               cfg.sources === 'center'
-                ? dual(`${{ sheet: 'map', ring: 'market', line: 'corridor' }[cfg.layout.kind]}, one centre`, `${{ sheet: 'sheet', ring: 'router', line: 'sequence' }[cfg.layout.kind]}, one input`)
-                : cfg.sources === 'everywhere'
-                  ? dual('map, homes everywhere', 'sheet, topographic input')
-                  : dual('corridor, every block', 'sequence, every token'),
-            distance: liveTerms.has('distance') ? `t = ${cfg.distanceCost}` : off,
+                ? dual(`${{ sheet: 'map', ring: 'market', line: 'corridor' }[cfg.layout.kind]}, ${cfg.sourceAt ? 'a harbour' : 'one centre'}`, `${{ sheet: 'sheet', ring: 'router', line: 'sequence' }[cfg.layout.kind]}, ${cfg.sourceAt ? 'input at the edge' : 'one input'}`)
+                : cfg.sources === 'anywhere'
+                  ? dual('map, no centre given', 'sheet, no input given')
+                  : cfg.sources === 'everywhere'
+                    ? dual('map, homes everywhere', 'sheet, topographic input')
+                    : dual('corridor, every block', 'sequence, every token'),
+            distance: liveTerms.has('distance') ? (cfg.sourceAt ? dual('docks only', 'area 1 only') : `t = ${cfg.distanceCost}`) : off,
+            interaction: liveTerms.has('interaction') ? (p.id === 'agglomeration' ? dual('pull, optional push', 'excitation, optional inhibition') : p.id === 'firmshomes' ? dual('pull, optional push', 'excitation, optional inhibition') : dual('pull, in a chain', 'excitation, in a chain')) : off,
             price: priceWords[cfg.price.rule],
             cap: capWords,
             exit: cfg.exit.mode === 'none' && p.id === 'taxes' ? dual('optional', 'optional') : exitWords[cfg.exit.mode] || off,
@@ -2903,6 +3235,7 @@
         function activeTerms(p, cfg) {
           const s = new Set(['choice']);
           if (cfg.distanceCost > 0 || cfg.types.some((t) => t.cost > 0)) s.add('distance');
+          if (cfg.interaction.strength > 0) s.add('interaction');
           if (cfg.price.rule !== 'none') s.add('price');
           if (Number.isFinite(cfg.cap.rate)) s.add('cap');
           if (cfg.exit.mode !== 'none') s.add('exit');
@@ -2926,7 +3259,8 @@
           const minus = [...a].filter((t) => !b.has(t)).map((t) => name[t]);
           const other = [];
           if (cfg.layout.kind !== base.layout.kind) other.push({ ring: 'a market of firms ⇄ a router and experts', line: 'a corridor ⇄ a token sequence' }[cfg.layout.kind]);
-          if (cfg.sources !== base.sources) other.push({ everywhere: 'arrivals from everywhere ⇄ topographic input', sequence: 'arrivals from every position ⇄ a query per token' }[cfg.sources]);
+          if (cfg.sources !== base.sources) other.push({ everywhere: 'arrivals from everywhere ⇄ topographic input', sequence: 'arrivals from every position ⇄ a query per token', anywhere: 'no starting point ⇄ no input neuron: arrivals go where the others are' }[cfg.sources]);
+          if (cfg.sourceAt) other.push('the one given point at the edge: a harbour ⇄ a sensory input');
           if (cfg.types.length > 1) other.push(`${cfg.types.length} kinds of arrival`);
           if (cfg.price.rule !== base.price.rule && cfg.price.rule !== 'none') other.push({ capacity: 'a fixed supply per site ⇄ a homeostatic set point', balance: 'relative fees ⇄ a balancing bias' }[cfg.price.rule]);
           if (cfg.price.rule === 'supply' && cfg.price.memory >= 500 && base.price.memory < 500) other.push('rents that remember through vacancies ⇄ thresholds that remember through pauses');
@@ -2946,6 +3280,34 @@
             { kind: 'range', econ: '[[commute|Commute cost]]', net: '[[wiring|wiring cost]]', min: 0.3, max: 2.5, step: 0.05, get: (c) => c.distanceCost, set: (v) => ({ distanceCost: v }), f: (v) => v.toFixed(2) },
             { kind: 'range', econ: 'Households', net: 'input rate', min: 15, max: 110, step: 1, get: (c) => c.demand, set: (v) => ({ demand: v }), f: (v) => v.toFixed(0) },
             { kind: 'range', econ: '[[buildcost|Cost of building up]]', net: '[[adaptation|adaptation]] strength', min: 3, max: 30, step: 0.5, get: (c) => c.price.kappa, set: (v) => ({ price: { kappa: v } }), f: (v) => v.toFixed(1) },
+          ],
+          agglomeration: [
+            { kind: 'range', econ: 'Pull of being near others', net: 'recurrent [[wiring|wiring]] strength', min: 1, max: 6, step: 0.25, get: (c) => c.interaction.strength, set: (v) => ({ interaction: { strength: v } }), f: (v) => v.toFixed(2) },
+            { kind: 'range', econ: 'Reach of dealings', net: 'connection range', min: 1.25, max: 4, step: 0.25, get: (c) => c.interaction.reach, set: (v) => ({ interaction: { reach: v } }), f: (v) => v.toFixed(2) },
+            { kind: 'range', econ: 'Harbour pull (a pinned feature on the coast)', net: 'external input strength', min: 0, max: 0.5, step: 0.025, get: (c) => (c.sources === 'center' ? c.distanceCost : 0), set: (v) => (v > 0 ? { sources: 'center', sourceAt: [7, 2], distanceCost: v } : { sources: 'anywhere', distanceCost: 0 }), f: (v) => (v ? v.toFixed(3) : 'none') },
+            { kind: 'range', econ: 'Competition for customers (market reach 3)', net: '[[lateralinhibition|lateral inhibition]], reach 3', min: 0, max: 12, step: 0.5, get: (c) => c.interaction.compete.strength, set: (v) => ({ interaction: { compete: { strength: v, reach: 3 } } }), f: (v) => (v ? v.toFixed(1) : 'none') },
+            { kind: 'button', econ: 'Restart', net: 'restart', act: (sim) => sim.reset() },
+          ],
+          firmshomes: [
+            { kind: 'range', econ: '[[spillover|Spillovers]] among firms', net: 'recurrent strength within A', min: 0, max: 3, step: 0.25, get: (c) => c.interaction.matrix[0][0], set: (v, c) => ({ interaction: { matrix: [[v, c.interaction.matrix[0][1]], [c.interaction.matrix[1][0], 0]] } }), f: (v) => v.toFixed(2) },
+            { kind: 'range', econ: 'Firms and homes need each other', net: 'strength between A and B', min: 0, max: 3, step: 0.25, get: (c) => c.interaction.matrix[0][1], set: (v, c) => ({ interaction: { matrix: [[c.interaction.matrix[0][0], v], [v, 0]] } }), f: (v) => v.toFixed(2) },
+            { kind: 'range', econ: 'Firms compete for customers (market reach 3)', net: '[[lateralinhibition|lateral inhibition]] within A, reach 3', min: 0, max: 30, step: 2.5, get: (c) => c.interaction.compete.strength, set: (v) => ({ interaction: { compete: { strength: v, reach: 3, matrix: [[1, 0], [0, 0]] } } }), f: (v) => (v ? v.toFixed(1) : 'none') },
+            { kind: 'button', econ: 'Restart', net: 'restart', act: (sim) => sim.reset() },
+          ],
+          hierarchy: [
+            { kind: 'range', econ: 'Pull of being near partners', net: '[[wiring|wiring]] strength', min: 1.5, max: 3.5, step: 0.25, get: (c) => c.interaction.strength, set: (v) => ({ interaction: { strength: v } }), f: (v) => v.toFixed(2) },
+            {
+              kind: 'seg',
+              econ: 'Where the harbour is',
+              net: 'where the input arrives',
+              options: [
+                { v: 'edge', econ: 'On the coast', net: 'at the edge' },
+                { v: 'centre', econ: 'In the middle', net: 'in the middle' },
+              ],
+              get: (c) => (c.sourceAt && c.sourceAt[0] !== 0 ? 'edge' : 'centre'),
+              set: (v) => ({ sourceAt: v === 'edge' ? [-11, 0] : [0, 0] }),
+            },
+            { kind: 'button', econ: 'Restart', net: 'restart', act: (sim) => sim.reset() },
           ],
           lid: [
             { kind: 'range', econ: '[[heightlimit|Height limit]]', net: '[[ratecap|rate cap]]', min: 0.1, max: 1, step: 0.02, get: (c) => (Number.isFinite(c.cap.rate) ? c.cap.rate : 1), set: (v) => ({ cap: { rate: v >= 0.999 ? Infinity : v } }), f: (v) => (v >= 0.999 ? 'none' : v.toFixed(2)), ref: true },
@@ -3130,6 +3492,15 @@
           used: { econ: 'Parcels in use', net: 'active neurons', v: (m) => `${m.used}` },
           meanDistance: { econ: 'Average [[commute|commute]]', net: 'average [[wiring|wiring]] distance', v: (m) => fmt(m.meanDistance) },
           centerPrice: { econ: '[[rent|Rent]] downtown', net: '[[threshold|threshold]] by the input', v: (m) => fmt(m.centerPrice) },
+          centreAt: { econ: 'Where the centre formed', net: 'where the bump sits', v: (m) => `(${fmt(m.centroid[0], 1)}, ${fmt(m.centroid[1], 1)})` },
+          peaks: { econ: 'Centres (of firms, where there are two kinds)', net: 'bumps of A', v: (m) => `${m.peaks}` },
+          pairDistance: { econ: 'Average distance to a partner', net: 'average [[wiring|wire]] length', v: (m) => fmt(m.pairDistance) },
+          concentration: { econ: 'Share of firms on the busiest tenth of parcels', net: 'share of A on its busiest tenth of neurons', v: (m) => pct(m.concentration) },
+          mixing: { econ: 'Firms and homes on the same parcels', net: 'overlap of A and B', v: (m) => pct(m.mixing) },
+          typeDist: { econ: 'Distance from the harbour: docks / works / homes', net: 'from the input: area 1 / 2 / 3', v: (m) => m.typeDist.map((d) => fmt(d, 1)).join(' / ') },
+          hops: { econ: 'Average trip: docks→works, works→homes', net: 'wire length per hop', v: (m) => (m.hops ? m.hops.map((d) => fmt(d, 1)).join(', ') : '—') },
+          latency: { econ: 'Harbour to homes, along the chain', net: '[[latency|latency]] of a forward pass', v: (m) => (m.hops ? fmt(m.typeDist[0] + m.hops.reduce((a, b) => a + b, 0), 1) : '—') },
+          latencyShuffled: { econ: 'The same buildings placed at random', net: 'the same areas placed at random', v: (m) => (m.hopsShuffled ? fmt(m.typeDist[0] + m.hopsShuffled.reduce((a, b) => a + b, 0), 1) : '—') },
           peak: { econ: 'Tallest building', net: 'peak [[firingrate|firing rate]]', v: (m) => fmt(m.peak, 3) },
           left: { econ: '[[leaving|Moved away]]', net: 'inputs dropped', v: (m) => pct(1 - m.stayShare) },
           cost: { econ: 'Cost per trip', net: 'cost per input', v: (m) => fmt(m.costPerTrip) },
@@ -3150,6 +3521,9 @@
         };
         const READOUT = {
           land: ['used', 'meanDistance', 'centerPrice', 'peak', 'cost'],
+          agglomeration: ['centreAt', 'peaks', 'used', 'pairDistance', 'peak', 'cost'],
+          firmshomes: ['peaks', 'concentration', 'mixing', 'pairDistance', 'cost'],
+          hierarchy: ['typeDist', 'hops', 'latency', 'latencyShuffled', 'cost'],
           lid: ['used', 'meanDistance', 'centerPrice', 'peak', 'left', 'cost'],
           sorting: ['used', 'meanDistance', 'mismatch', 'custom', 'cost'],
           districts: ['width', 'custom', 'meanDistance', 'mismatch', 'cost'],
@@ -3196,6 +3570,7 @@
           const cols = [
             ['layout', 'Space', 'layout'],
             ['distance', '[[commute|Commute]]', '[[wiring|wiring]]'],
+            ['interaction', '[[agglomeration|Agglomeration]]', '[[wiringeconomy|wiring economy]]'],
             ['price', '[[rent|Price]] rule', '[[adaptation|adaptation]] rule'],
             ['cap', '[[heightlimit|Height limit]]', '[[ratecap|rate cap]]'],
             ['exit', '[[outside|Leaving]]', 'dropping'],
@@ -3848,8 +4223,9 @@
             }
           } else if (sim.cfg.sources === 'center') {
             // Downtown: a pin above the centre, at the height of the input neuron in the other view
-            const c = iso(g, 0, 0);
-            const top = iso(g, 0, 0, g.room * 0.72);
+            const at = sim.cfg.sourceAt || [0, 0];
+            const c = iso(g, at[0], at[1]);
+            const top = iso(g, at[0], at[1], g.room * 0.72);
             ctx.strokeStyle = alpha(COL.input, 0.5);
             ctx.lineWidth = 1;
             ctx.setLineDash([2, 3]);
@@ -3864,8 +4240,9 @@
             ctx.fill();
             ctx.textAlign = 'left';
             ctx.fillStyle = COL.text2;
-            haloText(ctx, 'downtown', top[0] + 10, top[1] + 4);
+            haloText(ctx, sim.cfg.sourceAt ? 'harbour' : 'downtown', top[0] + 10, top[1] + 4);
           }
+          if (sim.cfg.sources === 'anywhere' && sim.cfg.interaction.strength > 0) drawFormedCentre(v, 'econ');
           if (S.hover >= 0 && Math.max(sim.r[S.hover], sim.built[S.hover]) <= floor) {
             diamond(ctx, g, L.x[S.hover], L.y[S.hover], 0.5);
             ctx.strokeStyle = COL.text;
@@ -3887,6 +4264,60 @@
         }
         const fmtSigned = (x) => `${x >= 0 ? '+' : '−'}${Math.abs(x).toFixed(1)}`;
         // Text on a canvas, with a halo in the surface colour so it stays legible over marks
+        // Where the load's centre of mass is, when no centre was given: drawn as a small ring on the ground.
+        function loadCentroid(sim) {
+          let cx = 0;
+          let cy = 0;
+          let t = 0;
+          for (let j = 0; j < sim.N; j++) {
+            cx += sim.rAvg[j] * sim.layout.x[j];
+            cy += sim.rAvg[j] * sim.layout.y[j];
+            t += sim.rAvg[j];
+          }
+          return t > 0 ? [cx / t, cy / t] : [0, 0];
+        }
+        function drawFormedCentre(v, view) {
+          const sim = S.sim;
+          const ctx = v.ctx;
+          const g = v.geo;
+          if (g.kind !== 'iso') return;
+          const [cx, cy] = loadCentroid(sim);
+          const p = iso(g, cx, cy);
+          ctx.strokeStyle = COL.text2;
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.ellipse(p[0], p[1], 14, 7, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.font = '11px system-ui, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillStyle = COL.text2;
+          haloText(ctx, view === 'econ' ? 'centre: formed here' : 'bump: formed here', p[0] + 18, p[1] + 4);
+        }
+        // With no starting point, a dot sets out from a site where the arrival's partners are: a site drawn
+        // in proportion to the load of the type it deals with most.
+        function partnerSite(sim, type) {
+          const K = sim.K;
+          const W = sim.cfg.interaction.matrix;
+          let q = type;
+          if (W) {
+            let best = -Infinity;
+            for (let i = 0; i < K; i++) if (W[type][i] > best) {
+              best = W[type][i];
+              q = i;
+            }
+          }
+          let total = 0;
+          for (let j = 0; j < sim.N; j++) total += sim.rk[j * K + q];
+          if (!(total > 0)) return [0, 0];
+          let u = S.rnd() * total;
+          for (let j = 0; j < sim.N; j++) {
+            u -= sim.rk[j * K + q];
+            if (u <= 0) return [sim.layout.x[j], sim.layout.y[j]];
+          }
+          return [0, 0];
+        }
         function haloText(ctx, text, x, y) {
           ctx.save();
           ctx.lineJoin = 'round';
@@ -3963,7 +4394,8 @@
           // Inputs: one input neuron above the source whose axon branches to the layer, or a whole input layer
           const inputPos = [];
           if (sim.cfg.sources === 'center') {
-            const p = iso(g, 0, 0, zIn);
+            const at = sim.cfg.sourceAt || [0, 0];
+            const p = iso(g, at[0], at[1], zIn);
             inputPos.push(p);
             for (let j = 0; j < L.n; j++) {
               if (sim.r[j] <= floor) continue;
@@ -4104,8 +4536,9 @@
             ctx.font = '11px system-ui, sans-serif';
             ctx.textAlign = 'left';
             ctx.fillStyle = COL.text2;
-            haloText(ctx, ring ? 'router' : 'input neuron', p[0] + 12, p[1] + 4);
+            haloText(ctx, ring ? 'router' : sim.cfg.sourceAt ? 'sensory input' : 'input neuron', p[0] + 12, p[1] + 4);
           }
+          if (sim.cfg.sources === 'anywhere' && sim.cfg.interaction.strength > 0) drawFormedCentre(v, 'net');
           if (sim.cfg.exit.mode !== 'none') drawSinkIcon(v);
           if (fo) drawFollowIso(v, 'net', 0);
           drawParticles(v, 'net');
@@ -4124,8 +4557,8 @@
           const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 180);
           // the source
           let s;
-          if (view === 'net') s = sim.cfg.sources === 'center' ? iso(g, 0, 0, zIn) : iso(g, ev.sx, ev.sy, sim.cfg.sources === 'everywhere' ? zIn : 0);
-          else s = sim.cfg.sources === 'center' && !ring ? iso(g, 0, 0, g.room * 0.72) : iso(g, ev.sx, ev.sy);
+          if (view === 'net') s = sim.cfg.sources === 'center' ? iso(g, ev.sx, ev.sy, zIn) : iso(g, ev.sx, ev.sy, sim.cfg.sources === 'everywhere' ? zIn : 0);
+          else s = sim.cfg.sources === 'center' && !ring ? iso(g, ev.sx, ev.sy, g.room * 0.72) : iso(g, ev.sx, ev.sy);
           ctx.strokeStyle = COL.accent;
           ctx.lineWidth = 2;
           ctx.beginPath();
@@ -4328,15 +4761,23 @@
           const sim = S.sim;
           if (S.paused) return;
           const want = sim.layout.kind === 'line' ? 1 : 2;
+          const anywhere = sim.cfg.sources === 'anywhere';
           if (sim.cfg.engine === 'agents') {
             const log = sim.log;
-            for (let i = 0; i < Math.min(want, log.length); i++) addParticle(log[Math.floor(S.rnd() * log.length)]);
+            for (let i = 0; i < Math.min(want, log.length); i++) {
+              const e = log[Math.floor(S.rnd() * log.length)];
+              if (anywhere) {
+                const [sx, sy] = partnerSite(sim, e.type);
+                addParticle({ ...e, sx, sy });
+              } else addParticle(e);
+            }
           } else {
             for (let i = 0; i < want; i++) {
               const e = sim.sample(S.rnd);
               if (!e) continue;
               const cl = sim.classes[e.c];
-              addParticle({ j: e.j, type: e.type, sx: cl.x, sy: cl.y, home: cl.home });
+              const [sx, sy] = anywhere ? partnerSite(sim, e.type) : [cl.x, cl.y];
+              addParticle({ j: e.j, type: e.type, sx, sy, home: cl.home });
             }
           }
           if (S.particles.length > 220) S.particles.splice(0, S.particles.length - 220);
@@ -4391,7 +4832,7 @@
                 y = a[1] + (b[1] - a[1]) * t;
               }
             } else {
-              const a = iso(g, p.sx, p.sy, zIn);
+              const a = iso(g, p.sx, p.sy, sim.cfg.sources === 'anywhere' ? 0 : zIn);
               const b = p.j >= 0 ? iso(g, L.x[p.j], L.y[p.j]) : sinkPos(v, 'net');
               x = a[0] + (b[0] - a[0]) * t;
               y = a[1] + (b[1] - a[1]) * t;
@@ -4611,6 +5052,21 @@
           return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p;
         }
         // Average of a site quantity by distance ring (distance from the source).
+        // ring averages about any point (the centre that formed, or the harbour ⇄ input)
+        function byRingFrom(fn, maxD, cx, cy) {
+          const sim = S.sim;
+          const sums = new Float64Array(maxD + 1);
+          const cnt = new Float64Array(maxD + 1);
+          for (let j = 0; j < sim.N; j++) {
+            const d = Math.round(Math.hypot(sim.layout.x[j] - cx, sim.layout.y[j] - cy));
+            if (d > maxD) continue;
+            const v = fn(j);
+            if (!Number.isFinite(v)) continue;
+            sums[d] += v;
+            cnt[d]++;
+          }
+          return Array.from(sums, (s, i) => (cnt[i] ? s / cnt[i] : NaN));
+        }
         function byRing(fn, maxD) {
           const sim = S.sim;
           const sums = new Float64Array(maxD + 1);
@@ -4698,6 +5154,47 @@
               note = id === 'mixed' ? 'Coloured strips: which use ⇄ feature is active. The spike after each switch is the [[nuisance|nuisance]] the previous use left behind, and the detours around it.' : 'Coloured strips: which occupants ⇄ features are around.';
               chartRows = hist.slice(-12).map((hh) => [fmt(hh.time, 0), fmt(hh.cost)]);
               chartRows.head = ['Time', 'Cost per trip ⇄ input'];
+            }
+          } else if (id === 'agglomeration' || id === 'firmshomes' || id === 'hierarchy') {
+            const K = sim.K;
+            let from;
+            if (id === 'hierarchy') from = sim.cfg.sourceAt || [0, 0];
+            else if (id === 'firmshomes') {
+              // the firms' ⇄ population A's centre of mass
+              let cx = 0;
+              let cy = 0;
+              let t = 0;
+              for (let j = 0; j < sim.N; j++) {
+                cx += sim.rk[j * K] * sim.layout.x[j];
+                cy += sim.rk[j * K] * sim.layout.y[j];
+                t += sim.rk[j * K];
+              }
+              from = t > 0 ? [cx / t, cy / t] : [0, 0];
+            } else from = loadCentroid(sim);
+            let maxD = 0;
+            for (let j = 0; j < sim.N; j++) maxD = Math.max(maxD, Math.hypot(sim.layout.x[j] - from[0], sim.layout.y[j] - from[1]));
+            maxD = Math.ceil(maxD);
+            const xs = [...Array(maxD + 1).keys()];
+            const ring = (fn) => byRingFrom(fn, maxD, from[0], from[1]);
+            if (id === 'agglomeration') {
+              const price = ring((j) => sim.pAvg[j]);
+              const load = ring((j) => sim.rAvg[j]);
+              const c1 = axisChart({ w, h: 150, xs, series: [{ ys: price, color: COL.accent }], xLabel: 'distance from the centre that formed', yLabel: 'rent ⇄ threshold', xMax: maxD, yMax: niceCeil(Math.max(1, ...price.filter(Number.isFinite)) * 1.1) });
+              const c2 = axisChart({ w, h: 140, xs, series: [{ ys: load, color: COL.series[1] }], xLabel: 'distance', yLabel: 'floor space ⇄ firing rate', xMax: maxD, yMax: niceCeil(Math.max(0.2, ...load.filter(Number.isFinite)) * 1.15) });
+              html = c1.svg + c2.svg;
+              title = 'Rent ⇄ threshold, and use, by distance from the centre that formed';
+              note = 'Distance is measured from the load’s centre of mass, which nothing fixed in advance. Rent and density fall away from it, as from a given downtown; with competition on, the rings average over several towns.';
+              chartRows = xs.map((x, i) => [x, fmt(price[i]), fmt(load[i], 3)]);
+              chartRows.head = ['Distance', 'Rent ⇄ threshold', 'Floor space ⇄ rate'];
+            } else {
+              const loads = Array.from({ length: K }, (_, k) => ring((j) => sim.rk[j * K + k]));
+              const yMax = niceCeil(Math.max(0.1, ...loads.flat().filter(Number.isFinite)) * 1.15);
+              const c = axisChart({ w, h: 170, xs, series: loads.map((ys, k) => ({ ys, color: COL.series[k] })), xLabel: id === 'hierarchy' ? 'distance from the harbour ⇄ the input' : 'distance from the firms’ centre ⇄ A’s hub', yLabel: 'load by type', xMax: maxD, yMax });
+              html = c.svg;
+              title = id === 'hierarchy' ? 'Each kind’s load by distance from the harbour ⇄ input' : 'Firms and homes by distance from the firms’ centre';
+              note = id === 'hierarchy' ? 'Colours as in the legend. The kinds peak in order of distance from the harbour ⇄ input: each sits next to what it deals with.' : 'Colours as in the legend. Firms peak at the centre and homes around them when spillovers dominate; the curves merge when the need for each other does.';
+              chartRows = xs.map((x, i) => [x, ...loads.map((ys) => fmt(ys[i], 3))]);
+              chartRows.head = ['Distance', ...S.preset.types.map((t) => t.econ)];
             }
           } else if (id === 'districts') {
             const acf = S.acf;
@@ -4909,6 +5406,11 @@
           for (const p of ev.prob) maxP = Math.max(maxP, p);
           ev.sites.forEach((j, q) => (weight[j] = maxP > 0 ? Math.pow(ev.prob[q] / maxP, 0.35) : 0));
           const top = [...ev.prob.keys()].sort((a, b) => ev.prob[b] - ev.prob[a]).slice(0, 3);
+          if (S.sim.cfg.sources === 'anywhere') {
+            const [sx, sy] = partnerSite(S.sim, ev.type);
+            ev.sx = sx;
+            ev.sy = sy;
+          }
           S.follow = { ev, stage: 1, weight, top, committed: false, rise: 0 };
           S.particles = [];
           S.flash.clear();
@@ -4982,14 +5484,16 @@
             land: 'a household', lid: 'a household', taxes: 'a household', sorting: k === 0 ? 'an office' : 'a household',
             districts: `a worker in industry ${letter(p.types[k].econ)}`, mixed: `a newcomer for use ${letter(p.types[k].econ)}`,
             tenure: `occupant ${letter(p.types[k].econ)}`, experts: `a customer of kind ${letter(p.types[k].econ)}`, attention: `a commuter from block ${home}`,
+            agglomeration: 'a household', firmshomes: k === 0 ? 'a firm' : 'a household', hierarchy: ['a warehouse', 'a workshop', 'a household'][k],
           }[p.id];
           const agentN = {
             land: 'an input spike', lid: 'an input spike', taxes: 'an input spike', sorting: k === 0 ? 'a fast input spike' : 'a slow input spike',
             districts: `an input from the ${p.types[k].net.toLowerCase()}`, mixed: `an input for feature ${letter(p.types[k].net)}`,
             tenure: `an input for feature ${letter(p.types[k].net)}`, experts: `a token of kind ${letter(p.types[k].net)}`, attention: `the query of token ${home}`,
+            agglomeration: 'a spike', firmshomes: `a spike of population ${k === 0 ? 'A' : 'B'}`, hierarchy: `a spike for area ${k + 1}`,
           }[p.id];
           const site = { sheet: ['parcel', 'neuron'], ring: ['firm', 'expert'], line: ['block', 'key'] }[lay];
-          const fromE = lay === 'ring' ? 'the market square' : lay === 'line' ? `its home at block ${home}` : sim.cfg.sources === 'everywhere' ? `its home at ${where}` : 'downtown';
+          const fromE = lay === 'ring' ? 'the market square' : lay === 'line' ? `its home at block ${home}` : sim.cfg.sources === 'everywhere' ? `its home at ${where}` : sim.cfg.sources === 'anywhere' ? 'where the others it deals with are' : sim.cfg.sourceAt ? 'the harbour' : 'downtown';
           const rule = sim.cfg.price.rule;
           // With global inhibition listed on its own, the neuron's own part of its threshold is its adaptation.
           const priceW = rule === 'none' ? null : lay === 'ring' ? ['fee', '(minus its bias)'] : lay === 'line' ? ['congestion charge', 'Sinkhorn offset'] : ['rent', sim.cfg.tax.head > 0 ? 'adaptation' : 'threshold'];
@@ -5006,20 +5510,21 @@
             if (x.scale >= 0.05) parts.push(`− ${fmt(x.scale, 1)} ${which ? 'rich-get-richer bonus' : 'scale bonus'}`);
             if (x.head >= 0.05) parts.push(`${fmt(x.head, 1)} ${which ? 'global inhibition' : 'tax'}`);
             if (x.pigou >= 0.05) parts.push(`${fmt(x.pigou, 1)} ${which ? 'interference caused' : 'charge for nuisance caused'}`);
+            if (Math.abs(x.attraction) >= 0.05) parts.push(`− ${fmt(x.attraction, 1)} ${which ? 'for short wires' : 'for being near partners'}`);
             const sum = parts.join(' + ').replace(/\+ −/g, '−');
             return `#${ev.sites[q]}: ${sum || '0'} = ${fmt(ev.cost[q], 1)}`;
           };
           const top3 = (which) => fo.top.map((q) => breakdown(q, which)).join('; ');
           const flat = rule === 'supply' && lay === 'sheet' && fo.top.length === 3 && Math.max(...fo.top.map((q) => ev.cost[q])) - Math.min(...fo.top.map((q) => ev.cost[q])) < 0.35 && new Set(fo.top.map((q) => Math.round(ev.parts(q).commute))).size > 1;
           const tuned = sim.cfg.tuning.mode !== 'none' && sim.cfg.tuning.mismatch > 0;
-          const partsE = [lay !== 'ring' ? 'the [[commute|commute]]' : null, priceW ? `its ${lay === 'sheet' ? '[[rent|rent]]' : lay === 'ring' ? '[[balancing|fee]]' : '[[sinkhorn|congestion charge]]'}` : null, tuned ? (lay === 'line' ? 'how much worse a small workplace is than a big employer' : lay === 'ring' ? 'any mismatch with what the firm specializes in' : 'any mismatch with what the building is [[fit|fitted for]]') : null, sim.cfg.nuisance.strength > 0 ? '[[nuisance|nuisance]] from other uses there' : null, sim.cfg.scale.strength > 0 ? 'minus a bonus for firms already busy ([[scale|economies of scale]])' : null, sim.cfg.tax.head > 0 ? 'the [[headtax|tax per resident]], the same everywhere' : null, sim.cfg.tax.pigou && sim.cfg.nuisance.strength > 0 ? 'a [[pigou|charge]] for the nuisance it would cause' : null].filter(Boolean);
-          const partsN = [lay !== 'ring' ? (lay === 'line' ? 'the [[alibi|distance penalty]]' : 'the [[wiring|wiring cost]]') : null, priceW ? (lay === 'sheet' ? (sim.cfg.tax.head > 0 ? 'the neuron’s [[adaptation|adaptation]]' : 'the neuron’s [[threshold|threshold]]') : lay === 'ring' ? 'minus its [[balancing|balancing bias]]' : `its [[sinkhorn|${priceW[1]}]]`) : null, tuned ? (lay === 'line' ? 'how much less relevant the key is than an anchor' : lay === 'ring' ? 'any mismatch with what the expert specializes in' : '[[tuning|tuning]] mismatch') : null, sim.cfg.nuisance.strength > 0 ? '[[interference|interference]] from other features' : null, sim.cfg.scale.strength > 0 ? 'minus a [[collapse|rich-get-richer]] bonus' : null, sim.cfg.tax.head > 0 ? '[[globalinhibition|global inhibition]], the same for every neuron' : null, sim.cfg.tax.pigou && sim.cfg.nuisance.strength > 0 ? 'the [[interference|interference]] it would cause the other feature' : null].filter(Boolean);
+          const partsE = [lay !== 'ring' ? 'the [[commute|commute]]' : null, priceW ? `its ${lay === 'sheet' ? '[[rent|rent]]' : lay === 'ring' ? '[[balancing|fee]]' : '[[sinkhorn|congestion charge]]'}` : null, tuned ? (lay === 'line' ? 'how much worse a small workplace is than a big employer' : lay === 'ring' ? 'any mismatch with what the firm specializes in' : 'any mismatch with what the building is [[fit|fitted for]]') : null, sim.cfg.nuisance.strength > 0 ? '[[nuisance|nuisance]] from other uses there' : null, sim.cfg.interaction.strength > 0 ? 'minus the gain from being [[agglomeration|near the others it deals with]]' : null, sim.cfg.scale.strength > 0 ? 'minus a bonus for firms already busy ([[scale|economies of scale]])' : null, sim.cfg.tax.head > 0 ? 'the [[headtax|tax per resident]], the same everywhere' : null, sim.cfg.tax.pigou && sim.cfg.nuisance.strength > 0 ? 'a [[pigou|charge]] for the nuisance it would cause' : null].filter(Boolean);
+          const partsN = [lay !== 'ring' ? (lay === 'line' ? 'the [[alibi|distance penalty]]' : 'the [[wiring|wiring cost]]') : null, priceW ? (lay === 'sheet' ? (sim.cfg.tax.head > 0 ? 'the neuron’s [[adaptation|adaptation]]' : 'the neuron’s [[threshold|threshold]]') : lay === 'ring' ? 'minus its [[balancing|balancing bias]]' : `its [[sinkhorn|${priceW[1]}]]`) : null, tuned ? (lay === 'line' ? 'how much less relevant the key is than an anchor' : lay === 'ring' ? 'any mismatch with what the expert specializes in' : '[[tuning|tuning]] mismatch') : null, sim.cfg.nuisance.strength > 0 ? '[[interference|interference]] from other features' : null, sim.cfg.interaction.strength > 0 ? 'minus the gain from [[wiringeconomy|short wires]] to the neurons it reads from' : null, sim.cfg.scale.strength > 0 ? 'minus a [[collapse|rich-get-richer]] bonus' : null, sim.cfg.tax.head > 0 ? '[[globalinhibition|global inhibition]], the same for every neuron' : null, sim.cfg.tax.pigou && sim.cfg.nuisance.strength > 0 ? 'the [[interference|interference]] it would cause the other feature' : null].filter(Boolean);
           const list = (a) => (a.length > 1 ? `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}` : a[0] || 'nothing');
           const j = ev.pick >= 0 ? ev.sites[ev.pick] : -1;
           const minCost = Math.min(...ev.cost);
           const chance = ev.pick >= 0 ? pct(ev.prob[ev.pick]) : '';
           const cheapest = ev.pick >= 0 && ev.cost[ev.pick] <= minCost + 1e-9;
-          const netSource = sim.cfg.sources === 'center' ? (lay === 'ring' ? `The [[router|router]] receives ${agentN} and scores all eight experts.` : 'The input neuron fires one [[spike|spike]]. Its axon branches reach every neuron in the layer, and they compete for it.') : sim.cfg.sources === 'everywhere' ? `${cap(agentN)} arrives at the input layer above ${where} and reaches the neurons within reach below.` : `${cap(agentN)} is about to spend one packet of [[attention|attention]] on a key.`;
+          const netSource = sim.cfg.sources === 'center' ? (lay === 'ring' ? `The [[router|router]] receives ${agentN} and scores all eight experts.` : 'The input neuron fires one [[spike|spike]]. Its axon branches reach every neuron in the layer, and they compete for it.') : sim.cfg.sources === 'everywhere' ? `${cap(agentN)} arrives at the input layer above ${where} and reaches the neurons within reach below.` : sim.cfg.sources === 'anywhere' ? `${cap(agentN)} arrives with no input neuron given: it will go to a neuron near the neurons its population reads from.` : `${cap(agentN)} is about to spend one packet of [[attention|attention]] on a key.`;
           if (fo.stage === 1)
             return { title: ['An arrival', 'A spike'], econ: `${cap(agentE)} sets out from ${fromE}, looking for a ${site[0]}. Each [[agent|agent]] chooses for itself.`, net: netSource };
           if (fo.stage === 2)

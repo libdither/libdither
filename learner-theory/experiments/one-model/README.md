@@ -9,14 +9,14 @@ row ids work as links. **Follow one arrival** pauses the simulation and walks th
 both vocabularies: what every option costs this arrival, its own taste noise, what it picks, and how that
 moves the rent ⇄ adaptation.
 
-Underlined terms (120, in `GLOSSARY`) and blue author–year citations (87 references, in `REFS`)
+Underlined terms (126, in `GLOSSARY`) and blue author–year citations (106 references, in `REFS`)
 open a popup on hover. Click, tap or press Enter to pin it: a pinned popup's own terms and citations open
 in place (Back returns), and its links go out to Wikipedia, DOIs and arXiv. Write `[[key|text]]` for a
 term, `[[@key]]` or `[[@a;b]]` for a citation, and `$r_j^2$` for inline math. Every DOI and arXiv id
 was checked against its metadata, and every Wikipedia title against the API.
 
 ```bash
-node --test experiments/one-model/model.test.mjs   # ≈70 s: each setting with both solvers, plus the formal claims
+node --test experiments/one-model/model.test.mjs   # ≈4 min: each setting with both solvers, plus the formal claims
 ```
 
 ## The model
@@ -27,7 +27,9 @@ Arrivals of type k from source s pick a site j, or take an outside option, by a 
     P(k from s picks j) ∝ exp(U / τ)
 
 Each site's price p_j rises with its load and can be capped. Each site's tuning (fit) follows what it
-serves, and with spillovers, what its neighbours serve.
+serves, and with spillovers, what its neighbours serve. An interaction term, s·κ·Σ_q W_kq·(B_kq ∗ r_q)_j, adds the
+gain from being near the types an arrival deals with (agglomeration ⇄ wiring economy), so a centre need not be given
+at all: `sources: 'anywhere'` places arrivals by that term alone.
 
 The page states the model once in symbols ("The model in symbols"), then pairs every symbol with its
 meaning in each field and says why the pairing is exact: which standard model in each field has that
@@ -66,7 +68,10 @@ that are built but empty are drawn faded.
 
 | Setting | Economy | Neural network |
 |---|---|---|
-| `land` | Land market | Competitive layer with adaptation |
+| `land` | Land market, with downtown given | Competitive layer with adaptation, with the input neuron given |
+| `agglomeration` | A downtown forms by itself | A bump forms by itself |
+| `firmshomes` | Firms and homes place themselves | Connected populations settle side by side |
+| `hierarchy` | A port city: docks, works, homes | A hierarchy fans out from the input |
 | `lid` | Height limit | Firing-rate cap |
 | `taxes` | Taxes on land, buildings and residents | Global inhibition and stronger adaptation |
 | `sorting` | Offices take the centre, homes the rings | Fast inputs claim the nearest neurons |
@@ -82,6 +87,21 @@ Every claim is checked with the average flows, and again with individual agents.
 
 - **Land:** rents approach the Alonso bid-rent line μ − t·d as taste variety ⇄ temperature goes to
   zero.
+- **Agglomeration** (nothing is given a centre; each arrival gains from being near the types it deals with, through a
+  kernel over distance):
+  - One type: a centre forms at the middle of the plain, with rent and density falling from it; 241 of 441 parcels
+    are used and the rest stay farmland. Prices are still κ × load, and random transfers raise the free energy with
+    its new pairwise term.
+  - A harbour pulling at 0.05 (a twentieth of the land market's commute cost) moves the whole city to the coast.
+  - Individual agents form the same centre with the same profile (within 15%).
+  - A strong short-range pull alone collapses the city into one tower; a longer-range push (competition for customers
+    ⇄ lateral inhibition) breaks it into several towns inside the plain.
+- **Firms and homes:** with spillovers among firms, one dense firm centre with homes around it; with a strong need for
+  each other, a mixed sheet; with spillovers and competition for customers, several towns, each a firm cluster apart
+  from its homes. Both solvers agree in each regime.
+- **Hierarchy:** three kinds in a chain from a harbour ⇄ sensory input at the edge settle in order of distance from it,
+  on separate ground, with hops less than 60% of a random placement's; an input in the middle gives rings and longer
+  hops.
 - **Height limit:**
   - A limit spreads the city when nobody can leave, and raises rents.
   - An exempt downtown builds taller than with no limit at all.

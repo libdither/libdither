@@ -565,3 +565,123 @@ test('formal: three uses that each mind the next never settle past ν = 2τ/(κ�
   assert.ok(ac > as + 0.1, `agents: cyclic ${ac} vs control ${as}`);
 });
 
+// ---------------------------------------------------------------- agglomeration ⇄ wiring economy
+// Nothing is given a centre: arrivals go where the types they deal with are, through a kernel over distance.
+const freeEnergyWithInteraction = (sim) => {
+  // the one-type free energy plus the pairwise interaction term, from the flows' own probabilities
+  const kappa = sim.cfg.price.kappa;
+  const tau = sim.cfg.temperature;
+  const s = sim.cfg.interaction.strength;
+  const { B } = sim.kernel();
+  const cl = sim.classes[0];
+  const lam = sim.rates[0] * cl.weight;
+  const F = (x) => {
+    let v = 0;
+    for (let j = 0; j < sim.N; j++) {
+      v += (kappa * x[j] * x[j]) / 2;
+      if (x[j] > 0) v += tau * x[j] * Math.log(x[j] / lam);
+    }
+    let inter = 0;
+    for (let j = 0; j < sim.N; j++) for (let i = 0; i < sim.N; i++) inter += B[0][0].B[j * sim.N + i] * x[j] * x[i];
+    return v - ((s * kappa) / 2) * (inter / B[0][0].Z);
+  };
+  return { F, x: Float64Array.from(cl.pi, (p) => p * lam) };
+};
+const centroidOf = (sim, R) => {
+  let cx = 0, cy = 0, t = 0;
+  for (let j = 0; j < sim.N; j++) { cx += R[j] * sim.layout.x[j]; cy += R[j] * sim.layout.y[j]; t += R[j]; }
+  return [cx / t, cy / t];
+};
+const profileAbout = (sim, R, [cx, cy], rings = 8) => {
+  const sums = new Float64Array(rings), cnt = new Float64Array(rings);
+  for (let j = 0; j < sim.N; j++) { const d = Math.round(Math.hypot(sim.layout.x[j] - cx, sim.layout.y[j] - cy)); if (d >= rings) continue; sums[d] += R[j]; cnt[d]++; }
+  return Array.from(sums, (v, i) => (cnt[i] ? v / cnt[i] : 0));
+};
+
+test('agglomeration: with no centre given, one forms at the most accessible point, with rent and density falling from it; a harbour moves it; the free energy gains a pairwise term', () => {
+  const sim = make('agglomeration').run(1500);
+  const m = sim.metrics();
+  assert.ok(Math.hypot(...m.centroid) < 0.6, `the centre forms in the middle of the plain: (${m.centroid})`);
+  assert.ok(m.used > 180 && m.used < 300, `a compact city with farmland around it: ${m.used} of ${sim.N} parcels`);
+  const prof = profileAbout(sim, sim.r, m.centroid);
+  const price = profileAbout(sim, sim.a, m.centroid);
+  for (let i = 1; i < prof.length; i++) {
+    assert.ok(prof[i] <= prof[i - 1] * 1.02 + 1e-6, `density falls from the centre (ring ${i})`);
+    assert.ok(price[i] <= price[i - 1] * 1.02 + 1e-6, `rent falls from the centre (ring ${i})`);
+  }
+  assert.equal(m.peaks, 1, 'one centre');
+  // prices are still multipliers: price = κ·load, and moving flow raises F with the interaction term included
+  let gap = 0;
+  for (let j = 0; j < sim.N; j++) gap = Math.max(gap, Math.abs(sim.a[j] - sim.cfg.price.kappa * sim.r[j]));
+  assert.ok(gap < 1e-4, `price = κ·load (${gap})`);
+  const { F, x } = freeEnergyWithInteraction(sim);
+  const F0 = F(x);
+  const rnd = M.rng32(3);
+  let raised = 0, tries = 0;
+  for (let t = 0; t < 40; t++) {
+    const a = Math.floor(rnd() * sim.N), b = Math.floor(rnd() * sim.N);
+    if (a === b || x[a] < 1e-6) continue;
+    const d = Math.min(x[a] * 0.5, 0.01);
+    const x2 = Float64Array.from(x); x2[a] -= d; x2[b] += d;
+    tries++;
+    if (F(x2) > F0) raised++;
+  }
+  assert.ok(raised >= tries - 1 && tries > 25, `random transfers raise F: ${raised}/${tries}`);
+  // a pinned feature off-centre, weak next to the land market's commute cost, moves the whole city
+  const harbour = make('agglomeration', { sources: 'center', sourceAt: [7, 2], distanceCost: 0.05 }).run(1500).metrics();
+  assert.ok(harbour.centroid[0] > 4 && harbour.centroid[1] > 0.8, `a harbour pull of 0.05 moves the centre to (${harbour.centroid.map((v) => v.toFixed(1))})`);
+  // individual agents: the same centre and the same profile about it
+  const ag = makeA('agglomeration').run(1200);
+  const ma = ag.metrics();
+  assert.ok(Math.hypot(...ma.centroid) < 1, `agents: centre in the middle (${ma.centroid})`);
+  const pa = profileAbout(ag, ag.rAvg, ma.centroid);
+  const rel = Math.sqrt(pa.reduce((s, v, i) => s + (v - prof[i]) ** 2, 0) / prof.reduce((s, v) => s + v * v, 0));
+  assert.ok(rel < 0.15, `agents' profile about their centre matches the flows' (${rel})`);
+});
+
+test('agglomeration: a strong short-range pull alone collapses the city into one tower (the black hole); a push with a longer reach (competition ⇄ lateral inhibition) breaks it into several towns ⇄ bumps', () => {
+  const hole = make('agglomeration', { interaction: { strength: 5, reach: 1.25 } }).run(1500).metrics();
+  assert.ok(hole.used <= 40 && hole.peak > 2, `pull alone: one tower (${hole.used} parcels, peak ${hole.peak})`);
+  const holeA = makeA('agglomeration', { interaction: { strength: 5, reach: 1.25 } }).run(1200).metrics();
+  assert.ok(holeA.used <= 60 && holeA.peak > 2, `agents: one tower too (${holeA.used} parcels, peak ${holeA.peak})`);
+  for (const [engine, mk] of [['flows', make], ['agents', makeA]]) {
+    const sim = mk('agglomeration', { interaction: { strength: 5, reach: 1.25, compete: { strength: 10, reach: 3 } } }).run(engine === 'agents' ? 1200 : 1500);
+    const towns = sim.metrics();
+    assert.ok(towns.peaks >= 3 && towns.used > 300, `${engine}, pull and push: several towns (${towns.peaks} centres, ${towns.used} parcels)`);
+    assert.ok(towns.typeDist[0] < 8.5, `${engine}: the towns sit inside the plain, not on its rim (mean distance ${towns.typeDist[0]})`);
+    const middle = sim.rAvg[sim.centerDist.indexOf(0)];
+    assert.ok(middle < 0.5 * towns.peak, `${engine}: the middle hollows out (${middle} against a peak of ${towns.peak})`);
+  }
+});
+
+test('firms and homes: spillovers give one segregated centre; the need for each other gives a mixed sheet; competition for customers gives towns (Fujita & Ogawa’s three regimes)', () => {
+  const mono = make('firmshomes').run(1500).metrics();
+  assert.ok(mono.concentration > 0.95 && mono.mixing < 0.1 && mono.peaks === 1, `monocentric: firms concentrated (${mono.concentration}), homes apart (${mono.mixing}), one centre`);
+  assert.ok(mono.typeDist[0] < 0.5 * mono.typeDist[1], `firms inside, homes around (${mono.typeDist})`);
+  const monoA = makeA('firmshomes').run(1200).metrics();
+  assert.ok(monoA.concentration > 0.95 && monoA.mixing < 0.1, `agents agree (${monoA.concentration}, ${monoA.mixing})`);
+  const mixed = make('firmshomes', { interaction: { matrix: [[0.5, 2], [2, 0]] } }).run(1500).metrics();
+  assert.ok(mixed.mixing > 0.45 && mixed.concentration < 0.75, `mixed: firms and homes on the same parcels (${mixed.mixing}, ${mixed.concentration})`);
+  const mixedA = makeA('firmshomes', { interaction: { matrix: [[0.5, 2], [2, 0]] } }).run(1200).metrics();
+  assert.ok(mixedA.mixing > 0.4, `agents agree (${mixedA.mixing})`);
+  for (const [engine, mk] of [['flows', make], ['agents', makeA]]) {
+    const poly = mk('firmshomes', { interaction: { matrix: [[3, 1], [1, 0]], compete: { strength: 20, reach: 3, matrix: [[1, 0], [0, 0]] } } }).run(engine === 'agents' ? 1200 : 1500).metrics();
+    assert.ok(poly.peaks >= 4 && poly.concentration > 0.8 && poly.mixing < 0.1, `${engine}, polycentric: several firm centres (${poly.peaks}), each dense (${poly.concentration}) and apart from homes (${poly.mixing})`);
+    assert.ok(poly.typeDist[0] < 8, `${engine}: the towns sit inside the plain (${poly.typeDist[0]})`);
+  }
+});
+
+test('hierarchy: a chain of populations lays itself out in order of distance from a pinned input, with hops far shorter than a random placement; an input in the middle makes rings and longer hops', () => {
+  const edge = make('hierarchy').run(1200);
+  const m = edge.metrics();
+  assert.ok(m.typeDist[0] + 1.5 < m.typeDist[1] && m.typeDist[1] + 1.5 < m.typeDist[2], `in order from the harbour ⇄ input: ${m.typeDist.map((v) => v.toFixed(1))}`);
+  const sum = (a) => a.reduce((s, v) => s + v, 0);
+  assert.ok(sum(m.hops) < 0.6 * sum(m.hopsShuffled), `hops ${sum(m.hops).toFixed(1)} against ${sum(m.hopsShuffled).toFixed(1)} shuffled`);
+  const overlap = (a, b) => { let ab = 0, aa = 0, bb = 0; for (let j = 0; j < edge.N; j++) { ab += edge.rk[j * 3 + a] * edge.rk[j * 3 + b]; aa += edge.rk[j * 3 + a] ** 2; bb += edge.rk[j * 3 + b] ** 2; } return ab / Math.sqrt(aa * bb); };
+  assert.ok(overlap(0, 1) < 0.3 && overlap(1, 2) < 0.3 && overlap(0, 2) < 0.05, 'the populations occupy separate ground');
+  const centre = make('hierarchy', { sourceAt: [0, 0] }).run(1200).metrics();
+  assert.ok(centre.typeDist[0] < centre.typeDist[1] && centre.typeDist[1] < centre.typeDist[2], 'still in order from the input');
+  assert.ok(sum(centre.hops) > sum(m.hops), `rings around a central input cost longer hops (${sum(centre.hops).toFixed(1)} vs ${sum(m.hops).toFixed(1)})`);
+  const ag = makeA('hierarchy').run(1200).metrics();
+  assert.ok(ag.typeDist[0] < ag.typeDist[1] && ag.typeDist[1] < ag.typeDist[2], `agents: in order (${ag.typeDist.map((v) => v.toFixed(1))})`);
+});
