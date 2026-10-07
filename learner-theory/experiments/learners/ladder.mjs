@@ -134,6 +134,85 @@ function unsupervised() {
   return rows;
 }
 
+// ---------------------------------------------------------------- a market for a dense layer
+// The same supervised task. A hidden unit sells its output to the four output units; the designs differ
+// in what it is told (its credit). "Best readout" is the lowest loss any linear readout could reach on
+// the hidden layer's features: how much the hidden layer itself learned.
+function denseMarket(act) {
+  const r0 = X.rng(10);
+  const T = Float64Array.from({ length: 32 }, () => r0.normal() / Math.sqrt(8));
+  const data = Array.from({ length: 200 }, () => {
+    const x = sample(r0, 8);
+    return [x, X.matvec(T, 4, 8, x)];
+  });
+  const meanLoss = (net) => data.reduce((s, [x, y]) => s + X.loss(X.forward(net, x).h[2], y), 0) / data.length;
+  const market = (design) => (net, x, y, st) => X.denseMarketStep(net, x, y, 0.01, st.m || (st.m = X.makeDenseMarket(net, { design })));
+  const settings = [
+    ['backprop (= honest market = VCG)', 'its exact price, each example', (net, x, y) => X.step(net, x, y, 'backprop', 0.01)],
+    ['access sold at its true value', 'what its buyers would lose without it, each example (a difference reward)', (net, x, y, st) => X.accessStep(net, x, y, 0.01, { sigma: 1e-3, rng: st.r })],
+    ['node perturbation', 'one broadcast change in loss', (net, x, y, st) => X.step(net, x, y, 'perturb', 0.002, { sigma: 1e-3, rng: st.r })],
+    ['honest price, averaged', 'its exact price, averaged over examples', market('average')],
+    ['posted asks, excludable', 'the asks its buyers accept', market('posted')],
+    ['voluntary payment (= readout only)', 'nothing: buyers get its output anyway', market('voluntary')],
+  ];
+  const start = median([12, 13, 14].map((seed) => X.bestReadoutLoss(X.makeNet({ sizes: [8, 16, 4], act, seed }), data)));
+  const rows = settings.map(([label, told, stepFn]) => {
+    const losses = [];
+    const feats = [];
+    for (const seed of [12, 13, 14]) {
+      const net = X.makeNet({ sizes: [8, 16, 4], act, seed });
+      const st = { r: X.rng(seed + 1) };
+      for (let ep = 0; ep < 30; ep++) for (const [x, y] of data) stepFn(net, x, y, st);
+      losses.push(meanLoss(net));
+      feats.push(X.bestReadoutLoss(net, data));
+    }
+    return [label, told, fmt(median(losses), 4), fmt(median(feats), 4)];
+  });
+  return { start, rows };
+}
+// Under VCG each buyer pays v²/2 and the supplier's push costs (Σ v)²/2. How much of the cost the
+// payments cover, as the four outputs are made more alike (rho), so their values for a feature agree.
+function vcgBudget() {
+  const rb = X.rng(99);
+  const base = Float64Array.from({ length: 8 }, () => rb.normal() / Math.sqrt(8));
+  return [0, 0.5, 0.9, 0.99].map((rho) => {
+    const r0 = X.rng(10);
+    const T0 = Float64Array.from({ length: 32 }, () => r0.normal() / Math.sqrt(8));
+    const T = Float64Array.from(T0, (v, k) => Math.sqrt(rho) * base[k % 8] + Math.sqrt(1 - rho) * v);
+    const data = Array.from({ length: 200 }, () => {
+      const x = sample(r0, 8);
+      return [x, X.matvec(T, 4, 8, x)];
+    });
+    const shares = [12, 13, 14].map((seed) => {
+      const net = X.makeNet({ sizes: [8, 16, 4], act: 'relu', seed });
+      const m = X.makeDenseMarket(net, { design: 'vcg' });
+      for (let ep = 0; ep < 30; ep++) for (const [x, y] of data) X.denseMarketStep(net, x, y, 0.01, m);
+      return m.paid / m.cost;
+    });
+    return [String(rho), fmt(median(shares), 2)];
+  });
+}
+
+// ---------------------------------------------------------------- one price for rationing and credit
+// A mixture of 4 linear experts on inputs from 4 clusters, each with its own linear map; batches of 64,
+// capacity cf × 16 per expert. "Gate" is a router trained through its gate plus DeepSeek's balancing bias;
+// "auction" is experts bidding their forecast loss reduction, cleared with one price per expert.
+function experts(cf) {
+  const settings = [
+    ['gate + bias, overflow dropped in arrival order', 'gate', {}],
+    ['gate + bias, overflow dropped by gate probability', 'gate', { priority: true }],
+    ['gate, no bias', 'gate', { bias: false }],
+    ['auction, quadratic bids', 'auction', {}],
+    ['auction, linear bids', 'auction', { features: 'linear', routerRate: 1 }],
+    ['bids, no capacity', 'auction', { capacity: false }],
+  ];
+  return settings.map(([label, design, opt]) => {
+    const rs = [1, 2, 3].map((seed) => X.trainMoE(design, { seed, cf, ...opt }));
+    const m = (f) => median(rs.map(f));
+    return [label, fmt(m((r) => r.loss), 3), `${fmt(100 * m((r) => r.drop), 1)}%`, fmt(m((r) => r.dropValue), 2), fmt(m((r) => r.load), 2), fmt(m((r) => Math.max(...r.fit)), 3)];
+  });
+}
+
 const table = (head, rows) => [`| ${head.join(' | ')} |`, `|${head.map(() => '---').join('|')}|`, ...rows.map((r) => `| ${r.join(' | ')} |`)].join('\n');
 console.log('Supervised task (tanh 8→16→4 net, linear teacher, 30 epochs of 200 samples; median of 3 seeds)\n');
 console.log(table(['Setting', 'Prices', 'Loss at start', 'Loss after'], supervised()));
@@ -141,3 +220,14 @@ console.log('\nControl task (6-state MDP; values vs Q* at the optimal action; me
 console.log(table(['Setting', 'Equivalent to', 'Error (values, or the policy’s value vs optimal)', 'Optimal actions'], control()));
 console.log('\nUnsupervised task (3 clusters; one unit starts in the middle, two far away)\n');
 console.log(table(['Setting', 'Clusters covered', 'Share of wins'], unsupervised()));
+for (const act of ['relu', 'tanh']) {
+  const { start, rows } = denseMarket(act);
+  console.log(`\nA market for a dense layer (${act} 8→16→4 net, no biases, same task; median of 3 seeds; best readout at start ${fmt(start, 4)})\n`);
+  console.log(table(['Setting', 'Each hidden unit is told', 'Loss after', 'Best readout on its features'], rows));
+}
+console.log('\nVCG: share of the supplier’s cost that buyers’ payments cover, as the outputs are made alike (ReLU, median of 3 seeds)\n');
+console.log(table(['rho', 'Payments ÷ cost'], vcgBudget()));
+for (const cf of [1, 1.25]) {
+  console.log(`\nOne price for rationing and credit: a mixture of experts at capacity ${cf}× the average load (median of 3 seeds)\n`);
+  console.log(table(['Setting', 'Loss', 'Dropped', 'Dropped tokens’ worth ÷ average', 'Busiest expert ÷ average', 'Worst cluster’s best fit'], experts(cf)));
+}

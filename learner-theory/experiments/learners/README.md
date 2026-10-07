@@ -6,8 +6,8 @@ bidding agents down to linear layers trained by backprop? Mostly, yes. In the mo
 differ in how prices are formed and paid, and in who gets to produce.
 
 ```bash
-node --test experiments/learners/learners.test.mjs   # 14 tests, about a second
-node experiments/learners/ladder.mjs                  # every setting on the same tasks, ≈30 s
+node --test experiments/learners/learners.test.mjs   # 21 tests, about 6 s
+node experiments/learners/ladder.mjs                  # every setting on the same tasks, ≈55 s
 ```
 
 `learners.mjs` is the engine. `learners.test.mjs` checks each specialization against the textbook
@@ -242,6 +242,13 @@ their society to a market economy.
 | Bucket brigade with wealth-proportional bids = TD(0), with tax as discount | exact | `bucket brigade…` |
 | A Hayek population keeps exact books | exact | `Hayek…` |
 | Competitive learning finds cluster centres; a conscience price revives dead units | measured | `competitive learning…`, `a conscience…` |
+| Dense-layer market: honest per-example prices are backprop; voluntary payment is last-layer-only training | exact (1e-12) | `a market for a dense layer…` |
+| VCG for a feature: truthful reports dominant, Clarke tax v²/2, learning = backprop; payments cover less of the cost as buyers agree | exact; measured (0.95 → 0.80) | `VCG for a feature…` |
+| A price fixed across examples drifts a unit along its own weights (ReLU) or not at all (tanh); averaged prices barely improve features | exact (Monte Carlo); measured | `a price that doesn’t vary…` |
+| Excludable posted asks: suppliers grow, half the connections are refused at a time, features don't improve | measured | `excludable posted prices…` |
+| Access sold at its true value per example is an unbiased difference reward with ≈ 9% of node perturbation's variance | in expectation; measured | `excludable access…` |
+| One price per expert: the ascending auction stays within capacity, is optimal for the bids, and splits the value into token surplus plus capacity rents | exact (within ε per token; brute force on small cases) | `one price per expert…` |
+| Mixture of experts: the auction drops the least valuable tokens and wins at tight capacity; gate-trained experts fit better and win at slack capacity; linear bids do worse | measured | `mixture of experts: one auction price…` |
 
 ## Measured: where each setting lands
 
@@ -285,6 +292,44 @@ away.
 | soft competition, τ = 0.5 | 0/3 | 1, 0, 0 |
 | hard competition + conscience (a price) | 3/3 | 0.34, 0.31, 0.35 |
 
+**A market for a dense layer** (Part D of the engine; derivations in
+[`../../docs/6-derivations.md`](../../docs/6-derivations.md) §13–16). The same task, with the units as firms
+that buy inputs at a price per unit and sell their output, the last layer paid y − h per unit by the
+customer. Bias-free nets, median of 3 seeds. "Best readout" is the lowest loss a linear readout could
+reach on the hidden layer's features (at the start: 0.254 ReLU, 0.071 tanh).
+
+| Setting | Each hidden unit is told | ReLU loss | ReLU best readout | tanh loss | tanh best readout |
+|---|---|---|---|---|---|
+| backprop (= honest market = VCG) | its exact price, each example | 0.0077 | 0.0072 | 0.0141 | 0.0114 |
+| access sold at its true value | what its buyers would lose without it, each example (a difference reward) | 0.0199 | 0.0147 | 0.0319 | 0.0224 |
+| node perturbation | one broadcast change in loss | 0.0608 | 0.0418 | 0.0462 | 0.0320 |
+| honest price, averaged | its exact price, averaged over examples | 0.2089 | 0.1989 | 0.0770 | 0.0668 |
+| posted asks, excludable | the asks its buyers accept | 0.7049 | 0.2572 | 0.6225 | 0.3564 |
+| voluntary payment (= readout only) | nothing: buyers get its output anyway | 0.2696 | 0.2538 | 0.0866 | 0.0712 |
+
+Under VCG the buyers' payments cover this share of the cost of each supplier's push (ReLU): 0.95 with
+independent outputs, then 0.91, 0.89 and 0.80 as the outputs are made alike (ρ = 0.5, 0.9, 0.99).
+
+**One price for rationing and credit** (Part E; derivation in
+[`../../docs/6-derivations.md`](../../docs/6-derivations.md) §18). Four linear experts, inputs from four
+clusters each with its own linear map, batches of 64, capacity cf × 16 per expert, 3000 batches, median of
+3 seeds. "Gate" is a router trained through its gate plus DeepSeek's balancing bias (Wang et al. 2024);
+"auction" is experts bidding their forecast loss reduction, cleared with one price per expert. "Worst
+cluster's best fit" is the loss on the hardest cluster with the expert that fits it best.
+
+| Setting | Loss, 1× | Loss, 1.25× | Dropped, 1× | Dropped tokens' worth ÷ average, 1× | Busiest expert ÷ average, 1× | Worst cluster's best fit, 1× |
+|---|---|---|---|---|---|---|
+| gate + bias, overflow dropped in arrival order | 0.489 | 0.158 | 9.5% | 1.02 | 1.29 | 0.003 |
+| gate + bias, overflow dropped by gate probability (Riquelme et al. 2021) | 0.349 | 0.123 | 9.5% | 0.74 | 1.29 | 0.001 |
+| gate, no bias | 0.486 | 0.161 | 9.6% | 1.00 | 1.29 | 0.002 |
+| auction, quadratic bids | 0.317 | 0.218 | 10.2% | 0.38 | 1.00 | 0.014 |
+| auction, linear bids | 0.568 | 0.427 | 9.1% | 0.57 | 1.00 | 0.091 |
+| bids, no capacity | 0.196 | 0.196 | 3.1% | 0.27 | 1.25 | 0.013 |
+
+The busiest-expert column counts tokens offered for the gate and tokens served for the auction. On this
+task the clusters are equal and well separated, so the gate needs its bias little: without it the load
+stays as even and the loss about the same. Bids without a capacity limit didn't collapse here either.
+
 ## Combinations that don't work, and why
 
 - **Exact vector prices through a black box.** There is nothing to differentiate. The only options are
@@ -299,6 +344,14 @@ away.
   revives them; it's the same fix as the load-balancing bias in mixtures of experts.
 - **Selection alone as credit assignment.** My Hayek-style population is far slower and less reliable
   than agents that learn their valuations, under the same market rules.
+- **Charging a unit its inputs' marginal contribution.** For bias-free ReLU units profit is then zero for
+  every weight, so profit-seeking gives no signal. Units must buy inputs at a price per unit.
+- **Voluntary payment for activations.** A buyer gets a broadcast activation whether it pays or not, so
+  it pays nothing, and only the last layer learns (tested).
+- **One posted price for every example.** It can't turn a hidden unit toward a feature (tested), and a
+  non-negative ask only ever says "produce more".
+- **Bids that can only rank.** In an auction a bid is compared across tokens, so it must forecast an amount:
+  linear bids, which can't represent the loss reduction, route badly (tested).
 
 ## Connections to the `one-model` page
 
@@ -319,6 +372,11 @@ away.
   bids. Its weak results are about this version, not about Baum's.
 - **Not modelled:** second-order and natural-gradient geometry, meta-learning, evolution strategies'
   population, and target propagation's inverses. They are placed in the table, not implemented.
+- **The dense-layer market is myopic.** Buyers who weigh how their payment improves the supplier later
+  (a dynamic contribution game) aren't simulated, and neither is Schmidhuber's neural bucket brigade.
+  Access sold at its true value assumes buyers' losses can be seen.
+- **The experts task is small and symmetric:** equal, well-separated clusters, where the gate barely needs
+  its bias. A task with unequal or overlapping clusters would test rationing harder.
 
 ## References
 
@@ -327,15 +385,21 @@ were checked against two readings. "Partly verified" means the record or the cla
 from a secondary source, a reprint or an author's draft.
 
 - Ancona, Ceolini, Öztireli & Gross (2018). Towards better understanding of gradient-based attribution methods for deep neural networks. ICLR. [arXiv:1711.06104](https://arxiv.org/abs/1711.06104). Gradient × Input = ε-LRP needs only ReLUs; completeness also needs no biases.
+- Arrow (1964). The role of securities in the optimal allocation of risk-bearing. *Review of Economic Studies* 31(2):91. [doi:10.2307/2296188](https://doi.org/10.2307/2296188). Complete markets need a price for each good in each state of the world.
 - Arora, Hazan & Kale (2012). The multiplicative weights update method: a meta-algorithm and applications. *Theory of Computing* 8:121–164. [doi:10.4086/toc.2012.v008a006](https://doi.org/10.4086/toc.2012.v008a006)
 - Baum (1999). Toward a model of intelligence as an economy of agents. *Machine Learning* 35(2):155–185. [doi:10.1023/a:1007593124513](https://doi.org/10.1023/a:1007593124513). See also Baum & Durdanovic (2000), *Neural Computation* 12(12):2743–2775, [doi:10.1162/089976600300014700](https://doi.org/10.1162/089976600300014700). Partly verified: the "two principles" (property rights, conservation of money) are quoted from the 2000 author draft.
+- Bergstrom, Blume & Varian (1986). On the private provision of public goods. *Journal of Public Economics* 29(1):25–49. [doi:10.1016/0047-2727(86)90024-1](https://doi.org/10.1016/0047-2727(86)90024-1)
+- Bertsekas (1988). The auction algorithm: a distributed relaxation method for the assignment problem. *Annals of Operations Research* 14(1):105–123. [doi:10.1007/BF02186476](https://doi.org/10.1007/BF02186476)
 - Birnbaum, Devanur & Xiao (2011). Distributed algorithms via gradient descent for Fisher markets. EC'11, 127–136. [doi:10.1145/1993574.1993594](https://doi.org/10.1145/1993574.1993594)
 - Boyd, Parikh, Chu, Peleato & Eckstein (2011). Distributed optimization and statistical learning via the alternating direction method of multipliers. *Foundations and Trends in Machine Learning* 3(1):1–122. [doi:10.1561/2200000016](https://doi.org/10.1561/2200000016)
 - Bull (2014). A brief history of learning classifier systems: from CS-1 to XCS. [arXiv:1401.3607](https://arxiv.org/abs/1401.3607). A secondary source for Holland's bucket brigade.
 - Carreira-Perpiñán & Wang (2014). Distributed optimization of deeply nested systems. AISTATS, PMLR 33:10–19. [link](https://proceedings.mlr.press/v33/carreira-perpinan14.html)
 - Chang, Kaushik, Weinberg, Griffiths & Levine (2020). Decentralized reinforcement learning: global decision-making via local economic transactions. ICML. [arXiv:2007.02382](https://arxiv.org/abs/2007.02382)
+- Clarke (1971). Multipart pricing of public goods. *Public Choice* 11(1):17–33. [doi:10.1007/BF01726210](https://doi.org/10.1007/BF01726210)
 - Edelman (1987). *Neural Darwinism: The Theory of Neuronal Group Selection*. Basic Books.
 - Frémaux & Gerstner (2016). Neuromodulated spike-timing-dependent plasticity, and theory of three-factor learning rules. *Frontiers in Neural Circuits* 9:85. [doi:10.3389/fncir.2015.00085](https://doi.org/10.3389/fncir.2015.00085)
+- Green & Laffont (1977). Characterization of satisfactory mechanisms for the revelation of preferences for public goods. *Econometrica* 45(2):427. [doi:10.2307/1911219](https://doi.org/10.2307/1911219)
+- Groves (1973). Incentives in teams. *Econometrica* 41(4):617. [doi:10.2307/1914085](https://doi.org/10.2307/1914085)
 - Hayek (1945). The use of knowledge in society. *American Economic Review* 35(4):519–530. [JSTOR 1809376](https://www.jstor.org/stable/1809376)
 - Hinton (2022). The forward-forward algorithm: some preliminary investigations. [arXiv:2212.13345](https://arxiv.org/abs/2212.13345)
 - Holland (1985). Properties of the bucket brigade. *Proc. 1st International Conference on Genetic Algorithms*, 1–7; and Holland (1986), Escaping brittleness, in *Machine Learning: An AI Approach* vol. 2, 593–623. Not verified from the primary texts; described here through Sutton (1988) and Bull (2014). Taxes are attested only in later systems (BOOLE, ZCS).
@@ -351,6 +415,7 @@ from a secondary source, a reprint or an author's draft.
 - Linnainmaa (1976). Taylor expansion of the accumulated rounding error. *BIT* 16(2):146–160. [doi:10.1007/BF01931367](https://doi.org/10.1007/BF01931367)
 - Montavon, Lapuschkin, Binder, Samek & Müller (2017). Explaining nonlinear classification decisions with deep Taylor decomposition. *Pattern Recognition* 65:211–222. [doi:10.1016/j.patcog.2016.11.008](https://doi.org/10.1016/j.patcog.2016.11.008)
 - Nøkland (2016). Direct feedback alignment provides learning in deep neural networks. NeurIPS. [arXiv:1609.01596](https://arxiv.org/abs/1609.01596)
+- Riquelme, Puigcerver, Mustafa, Neumann, Jenatton, Susano Pinto, Keysers & Houlsby (2021). Scaling vision with sparse mixture of experts. NeurIPS. [arXiv:2106.05974](https://arxiv.org/abs/2106.05974). Batch prioritized routing: tokens claim expert capacity in order of their gate probability.
 - Rumelhart, Hinton & Williams (1986). Learning representations by back-propagating errors. *Nature* 323:533–536. [doi:10.1038/323533a0](https://doi.org/10.1038/323533a0)
 - Samuelson (1954). The pure theory of public expenditure. *Review of Economics and Statistics* 36(4):387–389. [doi:10.2307/1925895](https://doi.org/10.2307/1925895)
 - Scellier & Bengio (2017). Equilibrium propagation: bridging the gap between energy-based models and backpropagation. *Frontiers in Computational Neuroscience* 11:24. [doi:10.3389/fncom.2017.00024](https://doi.org/10.3389/fncom.2017.00024)
@@ -358,6 +423,7 @@ from a secondary source, a reprint or an author's draft.
 - Sundararajan, Taly & Yan (2017). Axiomatic attribution for deep networks. ICML, PMLR 70:3319–3328. [arXiv:1703.01365](https://arxiv.org/abs/1703.01365)
 - Sutton (1988). Learning to predict by the methods of temporal differences. *Machine Learning* 3(1):9–44. [doi:10.1007/BF00115009](https://doi.org/10.1007/BF00115009)
 - Vickrey (1961). Counterspeculation, auctions, and competitive sealed tenders. *Journal of Finance* 16(1):8–37. [doi:10.1111/j.1540-6261.1961.tb02789.x](https://doi.org/10.1111/j.1540-6261.1961.tb02789.x)
+- Wang, Gao, Zhao, Sun & Dai (2024). Auxiliary-loss-free load balancing strategy for mixture-of-experts. [arXiv:2408.15664](https://arxiv.org/abs/2408.15664). The balancing bias that DeepSeek-V3 uses.
 - Whittington & Bogacz (2017). An approximation of the error backpropagation algorithm in a predictive coding network with local Hebbian synaptic plasticity. *Neural Computation* 29(5):1229–1262. [doi:10.1162/NECO_a_00949](https://doi.org/10.1162/NECO_a_00949)
 - Wicksteed (1894). *An Essay on the Co-ordination of the Laws of Distribution*. Macmillan. Product exhaustion; the Euler's-theorem form came later.
 - Williams (1992). Simple statistical gradient-following algorithms for connectionist reinforcement learning. *Machine Learning* 8:229–256. [doi:10.1007/BF00992696](https://doi.org/10.1007/BF00992696). Unbiasedness needs one learning rate for every weight.

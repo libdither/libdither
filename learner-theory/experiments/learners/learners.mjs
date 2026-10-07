@@ -16,8 +16,9 @@
 //   population       a fixed set of units, or units that are born rich and die broke
 //
 // Part A works on white-box stages (known, differentiable layers), Part B on black-box stages (an
-// environment nobody can differentiate), Part C on unsupervised competition. learners.test.mjs
-// checks each named learner against its textbook definition.
+// environment nobody can differentiate), Part C on unsupervised competition, Part D on a market for
+// the units of a dense layer, Part E on one price for both rationing and credit in a mixture of experts.
+// learners.test.mjs checks each named learner against its textbook definition.
 
 // ---------------------------------------------------------------- small numerics
 export function rng(seed = 1) {
@@ -583,6 +584,385 @@ export function competitive(data, { K, steps = 4000, eta = 0.05, alloc = 'hard',
     }
   }
   return { W, wins, price };
+}
+
+// ================================================================= Part D: a market for a dense layer
+// The units of a dense network as firms. A unit buys its inputs at a price per unit of each input and
+// sells its output; it raises its own profit at the prices it faces, taking them as given:
+// ΔW_ki = η·g_k·h_i, with g_k = c_k·f′(z_k) its output's price per unit of net input. A unit doesn't pay
+// its suppliers their marginal contribution π_k·f′(z_k)·W_ki·h_i: that payment grows with its own
+// weights, and for bias-free ReLU units it leaves profit at exactly zero for every weight (Euler), so
+// "raise your profit" would say nothing. The last layer is paid by the customer, honestly, the price
+// y − h per unit. Each buyer k's marginal value for one more unit of supplier i's output is
+// v_ki = g_k·W_ki, and the designs differ only in what supplier i is told, its credit c_i:
+//   honest     Σ_k v_ki each example: backprop's price, paid as money
+//   voluntary  what self-interested buyers pay for a good they get anyway (non-excludable): nothing
+//   vcg        buyers report values and pay a Clarke tax v²/2 (Clarke 1971); reporting truly is
+//              dominant, so c_i = Σ_k v_ki, and the books record what the supplier's push costs
+//   average    the honest price averaged over examples: signed and true, but not per example
+//   posted     excludable: a supplier asks each buyer a price per unit of its output; a buyer that
+//              refuses is cut off. One hidden layer only (the buyers are the linear outputs)
+export function makeDenseMarket(net, { design = 'honest', ema = 0.01, askStep = 1e-3 } = {}) {
+  const L = net.sizes.length - 1;
+  if (design === 'posted' && L !== 2) throw new Error('posted prices: one hidden layer only');
+  const m = { design, ema, askStep, n: 0, paid: 0, cost: 0, avg: [], ask: null, sub: null, val: null, hh: null, qty: null };
+  for (let l = 1; l < L; l++) m.avg[l] = zeros(net.sizes[l]);
+  if (design === 'posted') {
+    const n = net.sizes[2] * net.sizes[1];
+    m.ask = zeros(n);
+    m.sub = Float64Array.from({ length: n }, () => 1);
+    m.val = zeros(n);
+    m.hh = zeros(n);
+    m.qty = zeros(n);
+  }
+  return m;
+}
+// forward with optional connection masks (mask[l−1][k·cols + i] ∈ {0, 1}), one unit removed (drop =
+// [l, i]), and noise added to net inputs
+export function forwardMasked(net, x, { mask = null, drop = null, noise = null } = {}) {
+  const h = [Float64Array.from(x)];
+  const z = [null];
+  for (let l = 1; l < net.sizes.length; l++) {
+    const rows = net.sizes[l];
+    const cols = net.sizes[l - 1];
+    const W = net.W[l - 1];
+    const M = mask && mask[l - 1];
+    const zl = zeros(rows);
+    for (let k = 0; k < rows; k++) {
+      let s = 0;
+      for (let i = 0; i < cols; i++) s += W[k * cols + i] * h[l - 1][i] * (M ? M[k * cols + i] : 1);
+      zl[k] = s + net.b[l - 1][k] + (noise && noise[l] ? noise[l][k] : 0);
+    }
+    const hl = Float64Array.from(zl, ACT[net.acts[l - 1]].f);
+    if (drop && drop[0] === l) hl[drop[1]] = 0;
+    z.push(zl);
+    h.push(hl);
+  }
+  return { h, z };
+}
+export function denseMarketStep(net, x, y, eta, m) {
+  const L = net.sizes.length - 1;
+  const mask = m.design === 'posted' ? [null, m.sub] : null;
+  const fw = forwardMasked(net, x, { mask });
+  const warm = Math.max(m.ema, 1 / (m.n + 1)); // running averages: plain means while they warm up
+  const c = Array(L + 1).fill(null);
+  const g = Array(L + 1).fill(null);
+  c[L] = Float64Array.from(fw.h[L], (v, i) => y[i] - v);
+  for (let l = L; l >= 1; l--) {
+    g[l] = Float64Array.from(c[l], (v, k) => v * ACT[net.acts[l - 1]].df(fw.z[l][k]));
+    if (l === 1) break;
+    const rows = net.sizes[l];
+    const cols = net.sizes[l - 1];
+    const W = net.W[l - 1];
+    c[l - 1] = zeros(cols);
+    for (let i = 0; i < cols; i++) {
+      let sum = 0;
+      let sq = 0;
+      for (let k = 0; k < rows; k++) {
+        const v = g[l][k] * W[k * cols + i];
+        if (m.design !== 'posted') {
+          sum += v;
+          sq += v * v;
+          continue;
+        }
+        const j = k * cols + i;
+        if (!m.sub[j]) continue;
+        const hi = fw.h[l - 1][i];
+        sum += m.ask[j];
+        m.paid += m.ask[j] * hi;
+        // the buyer values access at its best use: the loss it could remove with the best weight on
+        // input i, (E[r·h])² / (2·E[h²]), r its error without i. Never negative.
+        const r = c[l][k] + W[j] * hi;
+        m.val[j] += warm * (r * hi - m.val[j]);
+        m.hh[j] += warm * (hi * hi - m.hh[j]);
+        m.qty[j] += warm * (hi - m.qty[j]);
+      }
+      if (m.design === 'honest' || m.design === 'vcg' || m.design === 'posted') c[l - 1][i] = sum;
+      if (m.design === 'vcg') {
+        m.paid += sq / 2;
+        m.cost += (sum * sum) / 2;
+      }
+      if (m.design === 'average') {
+        m.avg[l - 1][i] += warm * (sum - m.avg[l - 1][i]);
+        c[l - 1][i] = m.avg[l - 1][i];
+      }
+    }
+  }
+  for (let l = 1; l <= L; l++) {
+    const rows = net.sizes[l];
+    const cols = net.sizes[l - 1];
+    const M = mask && mask[l - 1];
+    for (let k = 0; k < rows; k++) for (let i = 0; i < cols; i++) net.W[l - 1][k * cols + i] += eta * g[l][k] * fw.h[l - 1][i] * (M ? M[k * cols + i] : 1);
+  }
+  if (m.design === 'posted') {
+    // keep access while its value covers its cost; a supplier raises an accepted ask and lowers a refused one
+    for (let j = 0; j < m.ask.length; j++) {
+      const worth = m.hh[j] > 1e-12 ? (m.val[j] * m.val[j]) / (2 * m.hh[j]) : Infinity;
+      m.sub[j] = worth >= m.ask[j] * m.qty[j] ? 1 : 0;
+      m.ask[j] = Math.max(0, m.ask[j] + (m.sub[j] ? m.askStep : -m.askStep));
+    }
+  }
+  m.n++;
+  return { fw, c };
+}
+// Excludable access sold at each buyer's true value, example by example. Supplier i's fee is what its
+// buyers would lose without it: D_i = L(without i) − L(with i), a difference reward (Wolpert & Tumer
+// 1999). D_i alone says how much, not which way, so each supplier jitters its own net input and
+// correlates the change in its fee with its jitter. Removing i from both terms cancels the other
+// units' jitter to first order, which a broadcast change in loss (node perturbation) doesn't.
+// The output layer is paid by the customer, as in the market above.
+export function accessStep(net, x, y, eta, { sigma = 1e-3, rng: r = rng(17) } = {}) {
+  const L = net.sizes.length - 1;
+  const noise = net.sizes.map((n, l) => (l === 0 || l === L ? null : Float64Array.from({ length: n }, () => sigma * r.normal())));
+  const lossOf = (opt) => loss(forwardMasked(net, x, opt).h[L], y);
+  const base = lossOf({});
+  const jit = lossOf({ noise });
+  const fw = forward(net, x);
+  const e = Array(L + 1).fill(null);
+  for (let l = 1; l < L; l++) {
+    e[l] = Float64Array.from(noise[l], (xi, i) => {
+      const fee = lossOf({ noise, drop: [l, i] }) - jit;
+      const fee0 = lossOf({ drop: [l, i] }) - base;
+      return (-(fee - fee0) * xi) / (sigma * sigma);
+    });
+  }
+  e[L] = Float64Array.from(fw.h[L], (v, i) => (v - y[i]) * ACT[net.acts[L - 1]].df(fw.z[L][i]));
+  for (let l = 1; l <= L; l++) {
+    const rows = net.sizes[l];
+    const cols = net.sizes[l - 1];
+    for (let k = 0; k < rows; k++) for (let i = 0; i < cols; i++) net.W[l - 1][k * cols + i] -= eta * e[l][k] * fw.h[l - 1][i];
+  }
+  return e;
+}
+
+// ================================================================= Part E: one price for rationing and credit
+// A mixture-of-experts layer with a capacity per expert, routed two ways.
+//   gate     the engineered split: a router score trained by the gradient through its gate (credit) plus a
+//            balancing bias moved by DeepSeek's fixed step toward the average load (rationing). Tokens over
+//            capacity are dropped, in arrival order or by gate probability (batch prioritized routing).
+//   auction  one price: each expert bids its forecast of the loss reduction it would deliver on a token.
+//            An ascending auction with one price per expert assigns tokens subject to capacity (rationing),
+//            and each expert moves its bid toward the loss reduction it realized, what it is paid (credit).
+// The task: inputs from NC clusters, each with its own linear map; a dropped token costs ½‖y‖².
+export function makeMoETask({ D = 8, O = 4, NC = 4, seed = 7 } = {}) {
+  const r = rng(seed);
+  const mu = Array.from({ length: NC }, () => Float64Array.from({ length: D }, () => 1.5 * r.normal()));
+  const T = Array.from({ length: NC }, () => Float64Array.from({ length: O * D }, () => r.normal() / Math.sqrt(D)));
+  const sample = (rr) => {
+    const c = Math.floor(rr() * NC);
+    const x = Float64Array.from(mu[c], (m) => m + rr.normal());
+    return { c, x, y: matvec(T[c], O, D, x) };
+  };
+  return { D, O, NC, sample };
+}
+// Each token takes the expert with the highest value minus price, or nothing (worth `outside`); an
+// overloaded expert raises its price by its (cap+1)-th largest margin, so exactly cap tokens stay. Prices
+// only rise, a full expert stays full, and at the end every token holds its best option at the posted
+// prices and every expert with a positive price is full: the complementary slackness of the assignment
+// problem, so the assignment maximizes total value (to within eps per token; each raise adds eps, which
+// stops displaced tokens from ping-ponging in tiny steps). Returns the assignment (−1: not served), the
+// prices (capacity multipliers) and each token's surplus.
+export function auctionAssign(value, cap, { outside = 0, eps = 1e-3 } = {}) {
+  const nT = value.length;
+  const nE = value[0].length;
+  const price = zeros(nE);
+  const where = new Int32Array(nT);
+  const surplus = zeros(nT);
+  for (let round = 0; round < 10000; round++) {
+    const load = new Int32Array(nE);
+    const margins = Array.from({ length: nE }, () => []);
+    for (let t = 0; t < nT; t++) {
+      let best = outside;
+      let second = outside;
+      let e1 = -1;
+      for (let e = 0; e < nE; e++) {
+        const net = value[t][e] - price[e];
+        if (net > best) {
+          second = best;
+          best = net;
+          e1 = e;
+        } else if (net > second) second = net;
+      }
+      where[t] = e1;
+      surplus[t] = Math.max(0, best);
+      if (e1 >= 0) {
+        load[e1]++;
+        margins[e1].push(best - second);
+      }
+    }
+    let over = false;
+    for (let e = 0; e < nE; e++) {
+      if (load[e] <= cap) continue;
+      over = true;
+      price[e] += margins[e].sort((a, b) => b - a)[cap] + eps;
+    }
+    if (!over) break;
+  }
+  return { where, price, surplus };
+}
+const sqn = (a) => a.reduce((s, v) => s + v * v, 0);
+const quadFeatures = (x) => {
+  const f = [...x];
+  for (let i = 0; i < x.length; i++) for (let j = i; j < x.length; j++) f.push((x[i] * x[j]) / 4);
+  return Float64Array.from(f);
+};
+// Train and evaluate one routing design. Returns test loss, share of tokens dropped, how much the
+// dropped tokens were worth (½‖y‖² relative to the average token), offered or served load (max ÷ mean),
+// each cluster's best expert fit (its loss with the expert that fits it best), and the routing of the
+// first test batch (for drawing).
+export function trainMoE(design, { task = makeMoETask(), K = 4, B = 64, cf = 1, steps = 3000, eta = 0.02, routerRate = 5, bias = true, biasStep = 0.01, priority = false, capacity = true, features = 'quadratic', seed = 1 } = {}) {
+  const { D, O, NC } = task;
+  const r = rng(seed + 100);
+  const rw = rng(seed);
+  const rr = rng(seed + 5);
+  const W = Array.from({ length: K }, () => Float64Array.from({ length: O * D }, () => (0.1 * rw.normal()) / Math.sqrt(D)));
+  const phi = design === 'auction' && features === 'quadratic' ? quadFeatures : (x) => x;
+  const nF = phi(new Float64Array(D)).length;
+  const G = Array.from({ length: K }, () => Float64Array.from({ length: nF + 1 }, () => 0.01 * rr.normal()));
+  const b = zeros(K);
+  const cap = Math.ceil((cf * B) / K);
+  const ev = { drop: 0, n: 0, load: 0, batches: 0, dropValue: 0, value: 0 };
+  let example = null; // the first test batch: each token's cluster and worth, and where it went
+  const step = (batch, train) => {
+    const nT = batch.length;
+    const feats = batch.map(({ x }) => phi(x));
+    const score = feats.map((f) => G.map((g) => g[nF] + dot(g.subarray(0, nF), f)));
+    const where = new Int32Array(nT).fill(-1);
+    let maxLoad = 0;
+    if (design === 'gate') {
+      const pick = score.map((sc) => {
+        let e = 0;
+        for (let k = 1; k < K; k++) if (sc[k] + (bias ? b[k] : 0) > sc[e] + (bias ? b[e] : 0)) e = k;
+        return e;
+      });
+      const prob = score.map((sc, t) => {
+        const m = Math.max(...sc);
+        return Math.exp(sc[pick[t]] - m) / sc.reduce((z, v) => z + Math.exp(v - m), 0);
+      });
+      const order = [...Array(nT).keys()];
+      if (priority) order.sort((u, v) => prob[v] - prob[u]);
+      const offered = new Int32Array(K);
+      for (const t of order) {
+        if (!capacity || offered[pick[t]] < cap) where[t] = pick[t];
+        offered[pick[t]]++;
+      }
+      maxLoad = Math.max(...offered);
+      if (train && bias) for (let k = 0; k < K; k++) b[k] += biasStep * Math.sign(nT / K - offered[k]);
+    } else {
+      const got = capacity ? auctionAssign(score, cap).where : Int32Array.from(score, (sc) => (Math.max(...sc) > 0 ? sc.indexOf(Math.max(...sc)) : -1));
+      where.set(got);
+      const served = new Int32Array(K);
+      for (const e of got) if (e >= 0) served[e]++;
+      maxLoad = Math.max(...served);
+    }
+    let total = 0;
+    const gW = W.map(() => zeros(O * D));
+    const gG = G.map(() => zeros(nF + 1));
+    for (let t = 0; t < nT; t++) {
+      const { x, y } = batch[t];
+      const e = where[t];
+      const worth = sqn(y) / 2;
+      if (!train) ev.value += worth;
+      if (e < 0) {
+        total += worth;
+        if (!train) {
+          ev.drop++;
+          ev.dropValue += worth;
+        }
+        continue;
+      }
+      const out = matvec(W[e], O, D, x);
+      let p = 1;
+      let P = null;
+      if (design === 'gate') {
+        const m = Math.max(...score[t]);
+        P = score[t].map((v) => Math.exp(v - m));
+        const z = P.reduce((a, c) => a + c, 0);
+        P = P.map((v) => v / z);
+        p = P[e];
+      }
+      const res = Float64Array.from(y, (v, i) => v - p * out[i]);
+      total += sqn(res) / 2;
+      if (!train) continue;
+      for (let i = 0; i < O; i++) for (let j = 0; j < D; j++) gW[e][i * D + j] -= p * res[i] * x[j];
+      if (design === 'gate') {
+        const dLdp = -res.reduce((s, v, i) => s + v * out[i], 0);
+        for (let k = 0; k < K; k++) {
+          const ds = dLdp * p * ((k === e ? 1 : 0) - P[k]);
+          for (let j = 0; j < D; j++) gG[k][j] += ds * x[j];
+          gG[k][nF] += ds;
+        }
+      } else {
+        const err = score[t][e] - (worth - sqn(res) / 2); // bid minus the loss reduction realized
+        for (let j = 0; j < nF; j++) gG[e][j] += err * feats[t][j];
+        gG[e][nF] += err;
+      }
+    }
+    if (train) {
+      for (let k = 0; k < K; k++) {
+        for (let i = 0; i < O * D; i++) W[k][i] -= (eta * gW[k][i]) / nT;
+        for (let i = 0; i <= nF; i++) G[k][i] -= (routerRate * eta * gG[k][i]) / nT;
+      }
+    } else {
+      ev.n += nT;
+      ev.load += maxLoad / (nT / K);
+      ev.batches++;
+      example ||= { tokens: batch.map(({ c, y }) => ({ c, worth: sqn(y) / 2 })), where: Array.from(where), cap };
+    }
+    return total / nT;
+  };
+  for (let s = 0; s < steps; s++) step(Array.from({ length: B }, () => task.sample(r)), true);
+  const rt = rng(999);
+  let loss = 0;
+  for (let s = 0; s < 40; s++) loss += step(Array.from({ length: B }, () => task.sample(rt)), false) / 40;
+  const fit = Array.from({ length: NC }, () => Infinity);
+  const re = rng(4242);
+  const sums = Array.from({ length: K }, () => zeros(NC));
+  const counts = zeros(NC);
+  for (let s = 0; s < 2000; s++) {
+    const { c, x, y } = task.sample(re);
+    counts[c]++;
+    for (let e = 0; e < K; e++) sums[e][c] += sqn(Float64Array.from(matvec(W[e], O, D, x), (v, i) => y[i] - v)) / 2;
+  }
+  for (let c = 0; c < NC; c++) for (let e = 0; e < K; e++) fit[c] = Math.min(fit[c], sums[e][c] / counts[c]);
+  return { loss, drop: ev.drop / ev.n, dropValue: ev.drop ? ev.dropValue / ev.drop / (ev.value / ev.n) : 0, load: ev.load / ev.batches, fit, example };
+}
+
+// How good a network's last hidden layer is as features: the lowest loss any linear readout could reach
+// on them over `data` (least squares, with a tiny ridge for safety).
+export function bestReadoutLoss(net, data) {
+  const L = net.sizes.length - 1;
+  const H = data.map(([x]) => forward(net, x).h[L - 1]);
+  const n = H[0].length;
+  const dOut = data[0][1].length;
+  const A = Array.from({ length: n }, () => zeros(n + dOut));
+  data.forEach(([, y], t) => {
+    for (let a = 0; a < n; a++) {
+      for (let b = 0; b < n; b++) A[a][b] += H[t][a] * H[t][b];
+      for (let k = 0; k < dOut; k++) A[a][n + k] += H[t][a] * y[k];
+    }
+  });
+  for (let a = 0; a < n; a++) A[a][a] += 1e-8 * data.length;
+  for (let col = 0; col < n; col++) {
+    let p = col;
+    for (let r = col + 1; r < n; r++) if (Math.abs(A[r][col]) > Math.abs(A[p][col])) p = r;
+    [A[col], A[p]] = [A[p], A[col]];
+    for (let r = 0; r < n; r++) {
+      if (r === col) continue;
+      const f = A[r][col] / A[col][col];
+      for (let k = col; k < n + dOut; k++) A[r][k] -= f * A[col][k];
+    }
+  }
+  const R = A.map((row, a) => Float64Array.from(row.slice(n), (v) => v / A[a][a]));
+  let total = 0;
+  data.forEach(([, y], t) => {
+    for (let k = 0; k < dOut; k++) {
+      let p = 0;
+      for (let a = 0; a < n; a++) p += H[t][a] * R[a][k];
+      total += 0.5 * (p - y[k]) ** 2;
+    }
+  });
+  return total / data.length;
 }
 
 export { flat };

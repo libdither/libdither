@@ -357,3 +357,213 @@ test('a conscience (a price for winning more than one’s share) revives dead un
   const shares = priced.wins.map((w) => w / 8000);
   assert.ok(Math.max(...shares) < 0.4, `balanced wins: ${shares.map((s) => s.toFixed(2))}`);
 });
+
+// ================================================================= Part D: a market for a dense layer
+// the ladder's supervised task: a linear teacher, 200 examples; rho > 0 makes the four outputs alike
+function supervisedData({ rho = 0, n = 200 } = {}) {
+  const r0 = X.rng(10);
+  const T = Float64Array.from({ length: 32 }, () => r0.normal() / Math.sqrt(8));
+  const base = (() => { const rb = X.rng(99); return Float64Array.from({ length: 8 }, () => rb.normal() / Math.sqrt(8)); })();
+  const Tm = rho ? Float64Array.from(T, (v, k) => Math.sqrt(rho) * base[k % 8] + Math.sqrt(1 - rho) * v) : T;
+  return Array.from({ length: n }, () => {
+    const x = sample(r0, 8);
+    return [x, X.matvec(Tm, 4, 8, x)];
+  });
+}
+const lastLayerOnly = (net, x, y, eta) => {
+  const { gW } = X.gradients(net, X.credit(net, x, y, 'backprop'));
+  const l = gW.length - 1;
+  for (let k = 0; k < gW[l].length; k++) net.W[l][k] -= eta * gW[l][k];
+};
+
+test('a market for a dense layer: honest per-example prices are backprop; voluntary payment for an activation everyone gets anyway is nothing, so only the last layer learns', () => {
+  const data = supervisedData({ n: 60 }).map(([x, y]) => [x.slice(0, 5), y.slice(0, 3)]);
+  for (const act of ['relu', 'tanh']) {
+    const bp = X.makeNet({ sizes: [5, 7, 6, 3], act, seed: 40 });
+    const honest = X.makeNet({ sizes: [5, 7, 6, 3], act, seed: 40 });
+    const ro = X.makeNet({ sizes: [5, 7, 6, 3], act, seed: 40 });
+    const vol = X.makeNet({ sizes: [5, 7, 6, 3], act, seed: 40 });
+    const mH = X.makeDenseMarket(honest, { design: 'honest' });
+    const mV = X.makeDenseMarket(vol, { design: 'voluntary' });
+    for (const [x, y] of data) {
+      X.step(bp, x, y, 'backprop', 0.01);
+      X.denseMarketStep(honest, x, y, 0.01, mH);
+      lastLayerOnly(ro, x, y, 0.01);
+      X.denseMarketStep(vol, x, y, 0.01, mV);
+    }
+    bp.W.forEach((W, l) => assert.ok(relErr(honest.W[l], W) < 1e-12, `${act}: honest = backprop, layer ${l + 1}`));
+    ro.W.forEach((W, l) => assert.ok(relErr(vol.W[l], W) < 1e-12, `${act}: voluntary = last layer only, layer ${l + 1}`));
+    const init = X.makeNet({ sizes: [5, 7, 6, 3], act, seed: 40 });
+    assert.ok(relErr(vol.W[0], init.W[0]) === 0 && relErr(vol.W[1], init.W[1]) === 0, 'hidden layers never move');
+  }
+});
+
+test('VCG for a feature: reporting truly is dominant, each buyer pays v²/2, and payments cover less of the supplier’s cost the more its buyers agree', () => {
+  // One supplier, buyers with values v_k for its push d, which costs d²/2. The welfare-maximizing push
+  // is Σ v (backprop's price); the Clarke tax for buyer k is (others' best welfare without k) − (their
+  // welfare at the chosen push) = v_k²/2 whatever the others report.
+  const r = X.rng(41);
+  for (let trial = 0; trial < 50; trial++) {
+    const v = r.normal();
+    const others = 3 * r.normal();
+    const tax = (rep) => (others ** 2) / 2 - (others * (others + rep) - (others + rep) ** 2 / 2);
+    assert.ok(Math.abs(tax(v) - v * v / 2) < 1e-12, 'Clarke tax = v²/2');
+    const utility = (rep) => v * (others + rep) - tax(rep);
+    for (const dev of [-1, -0.3, -0.01, 0.01, 0.3, 1]) assert.ok(utility(v + dev) < utility(v), 'misreporting never pays');
+  }
+  // Learning under VCG is backprop's; the books show payments Σ v²/2 against the cost (Σ v)²/2.
+  const ratio = (rho) => {
+    const data = supervisedData({ rho });
+    const net = X.makeNet({ sizes: [8, 16, 4], act: 'relu', seed: 12 });
+    const bp = X.makeNet({ sizes: [8, 16, 4], act: 'relu', seed: 12 });
+    const m = X.makeDenseMarket(net, { design: 'vcg' });
+    for (let ep = 0; ep < 30; ep++) for (const [x, y] of data) {
+      X.denseMarketStep(net, x, y, 0.01, m);
+      X.step(bp, x, y, 'backprop', 0.01);
+    }
+    bp.W.forEach((W, l) => assert.ok(relErr(net.W[l], W) < 1e-12, 'VCG learns as backprop does'));
+    return m.paid / m.cost;
+  };
+  const [independent, similar, alike] = [0, 0.9, 0.99].map(ratio);
+  assert.ok(independent > 0.85 && independent < 1.15, `independent outputs: payments ≈ cost (${independent})`);
+  assert.ok(independent > similar && similar > alike && alike < independent - 0.1, `outputs that agree leave a deficit (${independent}, ${similar}, ${alike})`);
+});
+
+test('a price that doesn’t vary with the example can’t teach a feature: E[f′(w·x)·x] points along w (ReLU) or vanishes (tanh), so averaged prices barely improve the features', () => {
+  const r = X.rng(42);
+  const w = sample(r, 6);
+  const N = 100000;
+  const eRelu = new Float64Array(6);
+  const eTanh = new Float64Array(6);
+  for (let t = 0; t < N; t++) {
+    const x = sample(r, 6);
+    const z = X.dot(w, x);
+    for (let j = 0; j < 6; j++) {
+      eRelu[j] += (z > 0 ? x[j] : 0) / N;
+      eTanh[j] += ((1 - Math.tanh(z) ** 2) * x[j]) / N;
+    }
+  }
+  // for Gaussian x, E[1(w·x > 0)·x] = w / (|w|·√(2π)): a supplier paid a fixed price can only grow
+  assert.ok(X.cosine(eRelu, w) > 0.999, 'ReLU: along w');
+  assert.ok(Math.abs(Math.hypot(...eRelu) - 1 / Math.sqrt(2 * Math.PI)) < 0.01, 'ReLU: norm 1/√(2π)');
+  assert.ok(Math.hypot(...eTanh) < 0.02 * Math.hypot(...eRelu), 'tanh: no drift at all');
+  const data = supervisedData();
+  for (const act of ['relu', 'tanh']) {
+    const init = X.bestReadoutLoss(X.makeNet({ sizes: [8, 16, 4], act, seed: 12 }), data);
+    const run = (design) => {
+      const net = X.makeNet({ sizes: [8, 16, 4], act, seed: 12 });
+      const m = X.makeDenseMarket(net, { design });
+      for (let ep = 0; ep < 30; ep++) for (const [x, y] of data) X.denseMarketStep(net, x, y, 0.01, m);
+      return X.bestReadoutLoss(net, data);
+    };
+    const honest = run('honest');
+    const average = run('average');
+    assert.ok(honest < 0.2 * init, `${act}: per-example prices teach features (${init} → ${honest})`);
+    assert.ok(average > 0.5 * init, `${act}: averaged prices barely do (${init} → ${average})`);
+  }
+});
+
+test('excludable posted prices: an ask only ever says “more”, so suppliers grow along their own weights, buyers drop in and out, and the features barely improve', () => {
+  const data = supervisedData();
+  const net = X.makeNet({ sizes: [8, 16, 4], act: 'relu', seed: 12 });
+  const init = X.makeNet({ sizes: [8, 16, 4], act: 'relu', seed: 12 });
+  const m = X.makeDenseMarket(net, { design: 'posted' });
+  let refused = 0;
+  for (let ep = 0; ep < 30; ep++) for (const [x, y] of data) {
+    X.denseMarketStep(net, x, y, 0.01, m);
+    refused += m.sub.length - m.sub.reduce((s, v) => s + v, 0);
+  }
+  const norm = (W) => Math.sqrt(X.dot(W, W));
+  assert.ok(norm(net.W[0]) > 1.5 * norm(init.W[0]), `suppliers grow (${norm(init.W[0])} → ${norm(net.W[0])})`);
+  let cos = 0;
+  for (let k = 0; k < 16; k++) cos += X.cosine(net.W[0].slice(k * 8, k * 8 + 8), init.W[0].slice(k * 8, k * 8 + 8)) / 16;
+  assert.ok(cos > 0.9, `directions barely move (${cos})`);
+  assert.ok(refused > 0, 'some buyers refuse at some point');
+  assert.ok(X.bestReadoutLoss(net, data) > 0.5 * X.bestReadoutLoss(init, data), 'features barely better than at the start');
+});
+
+test('excludable access sold at its true value per example is a difference reward: an unbiased price with a tenth of node perturbation’s variance', () => {
+  for (const act of ['relu', 'tanh']) {
+    const net = X.makeNet({ sizes: [6, 8, 3], act, seed: 21 });
+    const r = X.rng(22);
+    const x = sample(r, 6);
+    const y = sample(r, 3);
+    const exact = X.credit(net, x, y, 'backprop').e[1];
+    const N = 4000;
+    const mean = { access: new Float64Array(8), perturb: new Float64Array(8) };
+    const sq = { access: new Float64Array(8), perturb: new Float64Array(8) };
+    for (let t = 0; t < N; t++) {
+      const got = { access: X.accessStep(net, x, y, 0, { sigma: 1e-3, rng: r })[1], perturb: X.credit(net, x, y, 'perturb', { sigma: 1e-3, rng: r }).e[1] };
+      for (const k of ['access', 'perturb']) for (let i = 0; i < 8; i++) {
+        mean[k][i] += got[k][i] / N;
+        sq[k][i] += got[k][i] ** 2 / N;
+      }
+    }
+    assert.ok(relErr(mean.access, exact) < 0.06, `${act}: unbiased (${relErr(mean.access, exact)})`);
+    const variance = (k) => sq[k].reduce((s, v, i) => s + v - mean[k][i] ** 2, 0);
+    assert.ok(variance('access') < 0.2 * variance('perturb'), `${act}: variance ${variance('access') / variance('perturb')} of node perturbation's`);
+  }
+});
+
+// ================================================================= Part E: one price for rationing and credit
+test('one price per expert: the ascending auction keeps every expert within capacity, leaves every token at its best option, and maximizes total value; tokens’ surplus plus capacity rents is that value', () => {
+  const brute = (value, cap) => {
+    const nE = value[0].length;
+    const load = new Int32Array(nE);
+    let best = 0;
+    const rec = (t, acc) => {
+      if (t === value.length) { best = Math.max(best, acc); return; }
+      rec(t + 1, acc);
+      for (let e = 0; e < nE; e++) if (load[e] < cap) { load[e]++; rec(t + 1, acc + value[t][e]); load[e]--; }
+    };
+    rec(0, 0);
+    return best;
+  };
+  const r = X.rng(50);
+  const eps = 1e-3;
+  for (let trial = 0; trial < 200; trial++) {
+    const value = Array.from({ length: 7 }, () => Array.from({ length: 3 }, () => 2 * r.normal() + 0.5));
+    const { where } = X.auctionAssign(value, 2, { eps });
+    const got = where.reduce((s, e, t) => s + (e >= 0 ? value[t][e] : 0), 0);
+    assert.ok(brute(value, 2) - got <= 7 * eps, 'optimal to within ε per token');
+  }
+  for (let trial = 0; trial < 20; trial++) {
+    const value = Array.from({ length: 64 }, () => Array.from({ length: 4 }, () => 3 * r.normal() + 2));
+    const cap = 16;
+    const { where, price, surplus } = X.auctionAssign(value, cap, { eps });
+    const load = new Int32Array(4);
+    for (const e of where) if (e >= 0) load[e]++;
+    for (let e = 0; e < 4; e++) {
+      assert.ok(load[e] <= cap, 'within capacity');
+      if (price[e] > 0) assert.equal(load[e], cap, 'an expert with a positive price is full');
+    }
+    let served = 0;
+    where.forEach((e, t) => {
+      const net = e >= 0 ? value[t][e] - price[e] : 0;
+      for (let k = 0; k < 4; k++) assert.ok(net >= value[t][k] - price[k] - eps, 'every token holds its best option');
+      assert.ok(net >= -eps, 'or nothing');
+      if (e >= 0) served += value[t][e];
+    });
+    const dual = surplus.reduce((s, v) => s + v, 0) + cap * price.reduce((s, v) => s + v, 0);
+    assert.ok(Math.abs(dual - served) < 64 * eps, `surplus + rents = value (${dual} vs ${served})`);
+  }
+});
+
+test('mixture of experts: one auction price rations better than a balancing bias, dropping the least valuable tokens, but credits worse: its experts fit their clusters less well, and with slack capacity it loses', () => {
+  const run = (cf) => ({
+    arrival: X.trainMoE('gate', { cf }),
+    priority: X.trainMoE('gate', { cf, priority: true }),
+    auction: X.trainMoE('auction', { cf }),
+    linear: X.trainMoE('auction', { cf, features: 'linear', routerRate: 1 }),
+  });
+  const tight = run(1);
+  assert.ok(tight.auction.load <= 1 + 1e-9, 'the auction never serves more than capacity');
+  assert.ok(tight.auction.dropValue < 0.5 && tight.priority.dropValue > 0.6 && tight.arrival.dropValue > 0.9, `dropped tokens’ worth: auction ${tight.auction.dropValue}, priority ${tight.priority.dropValue}, arrival ${tight.arrival.dropValue}`);
+  assert.ok(tight.auction.loss < tight.priority.loss && tight.priority.loss < tight.arrival.loss, `tight capacity: ${tight.auction.loss} < ${tight.priority.loss} < ${tight.arrival.loss}`);
+  const slack = run(1.25);
+  assert.ok(slack.priority.loss < 0.8 * slack.auction.loss, `slack capacity: gradient routing wins (${slack.priority.loss} vs ${slack.auction.loss})`);
+  for (const r of [tight, slack]) {
+    assert.ok(Math.max(...r.priority.fit) < 0.5 * Math.max(...r.auction.fit), 'gate-trained experts fit their clusters better');
+    assert.ok(r.linear.loss > r.auction.loss, 'a bid must forecast an amount: linear bids do worse');
+  }
+});
