@@ -19,6 +19,9 @@
             pkg-config
             eza
             fd
+            # docs: build research/ locally with `mdbook build research -d /tmp/docs`
+            mdbook
+            mdbook-katex
             (rust-bin.fromRustupToolchainFile ./rust-toolchain.toml)
           ];
 
